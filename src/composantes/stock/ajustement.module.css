@@ -1,0 +1,696 @@
+/* ==============================
+   CONTENEUR PRINCIPAL
+============================== */
+
+.container {
+  min-height: 100vh;
+  background: #f5f8fc;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* ==============================
+   HEADER
+============================== */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.header > div {
+  flex: 1;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #172033;
+}
+
+.header p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* ==============================
+   BOUTON RETOUR
+============================== */
+
+.backButton {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #172033;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: 0.2s ease;
+}
+
+.backButton:hover {
+  background: #eff6ff;
+  transform: translateX(-2px);
+}
+
+/* ==============================
+   CARTES
+============================== */
+
+.formCard,
+.recapCard {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e8edf3;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+}
+
+/* ==============================
+   TITRE SECTION
+============================== */
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.sectionTitle h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #172033;
+}
+
+.sectionTitle p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.sectionTitle > span {
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 20px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ==============================
+   FORMULAIRE
+============================== */
+
+.formGroup {
+  margin-bottom: 18px;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #172033;
+}
+
+.formGroup input,
+.formGroup textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e1e7ef;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #172033;
+  font-size: 14px;
+  outline: none;
+  transition: 0.2s ease;
+}
+
+.formGroup input {
+  height: 46px;
+  padding: 0 13px;
+}
+
+.formGroup textarea {
+  padding: 12px 13px;
+  resize: vertical;
+  min-height: 90px;
+  font-family: inherit;
+}
+
+.formGroup input:focus,
+.formGroup textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+/* ==============================
+   RECHERCHE PRODUIT
+============================== */
+
+.searchBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchBox input {
+  padding-left: 42px;
+  padding-right: 42px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  z-index: 2;
+  font-size: 15px;
+  pointer-events: none;
+}
+
+.clearSearch {
+  position: absolute;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clearSearch:hover {
+  background: #e2e8f0;
+}
+
+/* ==============================
+   RESULTATS RECHERCHE
+============================== */
+
+.productResults {
+  margin-top: 6px;
+  background: #ffffff;
+  border: 1px solid #e1e7ef;
+  border-radius: 12px;
+  overflow: hidden;
+  max-height: 280px;
+  overflow-y: auto;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.productResult {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 13px;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.productResult:last-child {
+  border-bottom: none;
+}
+
+.productResult:hover {
+  background: #f8fafc;
+}
+
+.resultIcon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resultInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.resultInfo strong {
+  font-size: 13px;
+  color: #172033;
+}
+
+.resultInfo small {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.noResults {
+  padding: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* ==============================
+   PRODUIT SELECTIONNE
+============================== */
+
+.selectedProduct {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+}
+
+.selectedProduct > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.selectedProduct span {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.selectedProduct strong {
+  font-size: 14px;
+  color: #172033;
+}
+
+/* ==============================
+   TYPE AJUSTEMENT
+============================== */
+
+.typeButtons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.typeButton,
+.typeActive {
+  min-height: 44px;
+  padding: 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: 0.2s ease;
+}
+
+.typeButton {
+  background: #f8fafc;
+  border: 1px solid #e1e7ef;
+  color: #475569;
+}
+
+.typeButton:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.typeActive {
+  background: #2563eb;
+  border: 1px solid #2563eb;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+}
+
+/* ==============================
+   BOUTON AJOUTER
+============================== */
+
+.addAdjustmentButton {
+  width: 100%;
+  min-height: 46px;
+  border: none;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.addAdjustmentButton:hover {
+  background: #dbeafe;
+}
+
+.addAdjustmentButton:active {
+  transform: scale(0.99);
+}
+
+/* ==============================
+   TABLEAU
+============================== */
+
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
+}
+
+.adjustmentTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 500px;
+}
+
+.adjustmentTable thead {
+  background: #f8fafc;
+}
+
+.adjustmentTable th {
+  padding: 13px 15px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  border-bottom: 1px solid #e8edf3;
+  white-space: nowrap;
+}
+
+.adjustmentTable td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eef2f7;
+  font-size: 13px;
+  color: #334155;
+}
+
+.adjustmentTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.adjustmentTable tbody tr:hover {
+  background: #fafcff;
+}
+
+/* ==============================
+   PRODUIT TABLEAU
+============================== */
+
+.productCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 180px;
+}
+
+.productIcon {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 9px;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.productCell > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.productCell strong {
+  font-size: 13px;
+  color: #172033;
+}
+
+.productCell small {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* ==============================
+   QUANTITE
+============================== */
+
+.quantityCell {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.quantityCell input {
+  width: 90px;
+  height: 38px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  border: 1px solid #dbe2ea;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #172033;
+  font-size: 13px;
+  font-weight: 600;
+  outline: none;
+}
+
+.quantityCell input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.quantityCell span {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+/* ==============================
+   BOUTON SUPPRIMER
+============================== */
+
+.deleteButton {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #dc2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: 0.2s ease;
+}
+
+.deleteButton:hover {
+  background: #fee2e2;
+  transform: scale(1.04);
+}
+
+/* ==============================
+   RESUME AJUSTEMENTS
+============================== */
+
+.adjustmentSummary {
+  margin-top: 15px;
+  padding: 13px;
+  border-radius: 11px;
+  background: #f8fafc;
+  border: 1px solid #e8edf3;
+}
+
+.summaryLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 7px 0;
+}
+
+.summaryLine:not(:last-child) {
+  border-bottom: 1px solid #e8edf3;
+}
+
+.summaryLine span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.summaryLine strong {
+  font-size: 12px;
+  color: #2563eb;
+}
+
+/* ==============================
+   BOUTON ENREGISTRER
+============================== */
+
+.saveButton {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 5px 15px rgba(37, 99, 235, 0.2);
+  transition: 0.2s ease;
+}
+
+.saveButton:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.saveButton:active {
+  transform: translateY(0);
+}
+
+.saveButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ==============================
+   RESPONSIVE TABLETTE / PC
+============================== */
+
+@media (min-width: 768px) {
+
+  .container {
+    max-width: 950px;
+    margin: 0 auto;
+    padding: 30px;
+  }
+
+  .header h1 {
+    font-size: 26px;
+  }
+
+  .formCard,
+  .recapCard {
+    padding: 25px;
+  }
+
+  .formCard {
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .recapCard {
+    max-width: 850px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .addAdjustmentButton,
+  .saveButton {
+    max-width: 300px;
+  }
+
+  .saveButton {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* ==============================
+   MOBILE
+============================== */
+
+@media (max-width: 480px) {
+
+  .container {
+    padding: 15px;
+  }
+
+  .header {
+    gap: 10px;
+  }
+
+  .header h1 {
+    font-size: 19px;
+  }
+
+  .header p {
+    font-size: 12px;
+  }
+
+  .formCard,
+  .recapCard {
+    padding: 15px;
+  }
+
+  .typeButtons {
+    grid-template-columns: 1fr;
+  }
+
+  .selectedProduct {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .ajusteInp{
+    background-color: red;
+  }
+
+  .summaryLine {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .adjustmentTable {
+    min-width: 480px;
+  }
+}
+
+/* ==============================
+   TRES PETITS ECRANS
+============================== */
+
+@media (max-width: 380px) {
+
+  .sectionTitle {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .backButton {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+  }
+}

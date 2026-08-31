@@ -1,0 +1,646 @@
+
+/* ==============================
+   CONTAINER
+============================== */
+
+.container {
+  min-height: 100vh;
+  background: #f5f8fc;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+
+/* ==============================
+   HEADER
+============================== */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 25px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #172033;
+}
+
+
+/* ==============================
+   BOUTONS HEADER
+============================== */
+
+.backButton {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 20px;
+}
+
+.adjustButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  min-height: 46px;
+
+  margin: -5px 0 25px;
+
+  padding: 0 18px;
+
+  border: 1px solid #dbe5f5;
+  border-radius: 12px;
+
+  background: #ffffff;
+  color: #2563eb;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-sizing: border-box;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.08);
+}
+
+/* HOVER */
+
+.adjustButton:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+
+  transform: translateY(-1px);
+
+  box-shadow: 0 5px 14px rgba(37, 99, 235, 0.12);
+}
+
+/* CLICK */
+
+.adjustButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
+}  
+
+.backButton {
+  background: #ffffff;
+  color: #172033;
+
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.adjustButton {
+  background: #2563eb;
+  color: white;
+
+  box-shadow:
+    0 5px 15px rgba(37, 99, 235, 0.25);
+}
+
+
+/* ==============================
+   RESUME
+============================== */
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+
+  margin-bottom: 25px;
+}
+
+.summaryCard {
+  background: #ffffff;
+
+  border-radius: 14px;
+
+  padding: 15px;
+
+  border: 1px solid #e8edf3;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  box-sizing: border-box;
+}
+
+.summaryIcon {
+  width: 40px;
+  height: 40px;
+
+  border-radius: 11px;
+
+  background: #eff6ff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 20px;
+
+  flex-shrink: 0;
+}
+
+.summaryCard strong {
+  display: block;
+
+  font-size: 18px;
+
+  color: #172033;
+}
+
+.summaryCard p {
+  margin: 3px 0 0;
+
+  font-size: 12px;
+
+  color: #64748b;
+}
+
+
+/* ==============================
+   RECHERCHE
+============================== */
+
+.searchContainer {
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  background: white;
+
+  border-radius: 14px;
+
+  padding: 0 15px;
+
+  margin-bottom: 25px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #e6ebf2;
+}
+
+.searchContainer span {
+  font-size: 18px;
+}
+
+.searchContainer input {
+  width: 100%;
+  height: 100%;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+
+  font-size: 14px;
+
+  color: #172033;
+}
+
+.searchContainer input::placeholder {
+  color: #9aa4b2;
+}
+
+
+/* ==============================
+   TITRE
+============================== */
+
+.titleSection {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-bottom: 15px;
+
+  gap: 15px;
+}
+
+.titleSection h2 {
+  margin: 0;
+
+  font-size: 17px;
+
+  color: #172033;
+}
+
+.titleSection p {
+  margin: 4px 0 0;
+
+  font-size: 12px;
+
+  color: #64748b;
+}
+
+.titleSection > span {
+  font-size: 13px;
+
+  color: #64748b;
+
+  white-space: nowrap;
+}
+
+
+/* ==============================
+   TABLEAU CONTAINER
+============================== */
+
+.tableContainer {
+  width: 100%;
+
+  background: #ffffff;
+
+  border-radius: 16px;
+
+  border: 1px solid #e8edf3;
+
+  overflow-x: auto;
+
+  box-sizing: border-box;
+}
+
+
+/* ==============================
+   TABLEAU
+============================== */
+
+.stockTable {
+  width: 100%;
+
+  min-width: 750px;
+
+  border-collapse: collapse;
+
+  font-size: 13px;
+}
+
+
+/* ==============================
+   HEADER TABLEAU
+============================== */
+
+.stockTable thead {
+  background: #eff6ff;
+}
+
+.stockTable th {
+  padding: 14px 12px;
+
+  text-align: left;
+
+  color: #1e3a8a;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+
+  border-bottom: 1px solid #dbeafe;
+}
+
+
+/* ==============================
+   LIGNES
+============================== */
+
+.stockTable td {
+  padding: 13px 12px;
+
+  color: #64748b;
+
+  border-bottom: 1px solid #edf1f5;
+
+  vertical-align: middle;
+}
+
+.stockTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+
+/* ==============================
+   PRODUIT
+============================== */
+
+.productCell {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  min-width: 170px;
+}
+
+.productIcon {
+  width: 42px;
+  height: 42px;
+
+  min-width: 42px;
+
+  border-radius: 11px;
+
+  background: #eff6ff;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 20px;
+
+  overflow: hidden;
+}
+
+.productIcon img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  display: block;
+}
+
+.productCell strong {
+  display: block;
+
+  color: #172033;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+.productCell small {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #94a3b8;
+
+  font-size: 11px;
+}
+
+
+/* ==============================
+   STOCK NORMAL
+============================== */
+
+.stock {
+  display: inline-flex;
+
+  align-items: center;
+
+  padding: 5px 9px;
+
+  border-radius: 8px;
+
+  background: #f0fdf4;
+
+  color: #16a34a;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+/* ==============================
+   STOCK FAIBLE
+============================== */
+
+.lowStock {
+  display: inline-flex;
+
+  align-items: center;
+
+  padding: 5px 9px;
+
+  border-radius: 8px;
+
+  background: #fff7ed;
+
+  color: #ea580c;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+/* ==============================
+   RUPTURE
+============================== */
+
+.outOfStock {
+  display: inline-flex;
+
+  align-items: center;
+
+  padding: 5px 9px;
+
+  border-radius: 8px;
+
+  background: #fef2f2;
+
+  color: #dc2626;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+/* ==============================
+   BOUTON AJUSTER
+============================== */
+
+.adjustButtonTable {
+  border: none;
+
+  background: #eff6ff;
+
+  color: #2563eb;
+
+  padding: 8px 12px;
+
+  border-radius: 9px;
+
+  cursor: pointer;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+
+  transition: 0.2s;
+}
+
+.adjustButtonTable:hover {
+  background: #dbeafe;
+}
+
+
+/* ==============================
+   PRODUIT VIDE
+============================== */
+
+.empty {
+  background: white;
+
+  border-radius: 16px;
+
+  padding: 45px 20px;
+
+  text-align: center;
+
+  border: 1px solid #e8edf3;
+}
+
+.empty span {
+  font-size: 40px;
+}
+
+.empty p {
+  margin: 12px 0 0;
+
+  color: #64748b;
+
+  font-size: 14px;
+}
+
+
+/* ==============================
+   TABLETTE / PC
+============================== */
+
+@media (min-width: 768px) {
+
+  .container {
+    max-width: 1100px;
+
+    margin: 0 auto;
+
+    padding: 30px;
+  }
+
+  .header h1 {
+    font-size: 26px;
+  }
+
+  .summary {
+    grid-template-columns:
+      repeat(4, 1fr);
+
+    gap: 15px;
+  }
+
+  .summaryCard {
+    padding: 18px;
+  }
+
+  .summaryCard strong {
+    font-size: 20px;
+  }
+
+  .stockTable {
+    min-width: 0;
+  }
+
+}
+
+
+/* ==============================
+   GRAND ECRAN
+============================== */
+
+@media (min-width: 1100px) {
+
+  .container {
+    max-width: 1200px;
+  }
+
+}
+
+
+/* ==============================
+   PETITS ECRANS
+============================== */
+
+@media (max-width: 380px) {
+
+  .container {
+    padding: 15px;
+  }
+
+  .header h1 {
+    font-size: 19px;
+  }
+
+  .summary {
+    gap: 8px;
+  }
+
+  .summaryCard {
+    padding: 12px;
+
+    gap: 8px;
+  }
+
+  .summaryIcon {
+    width: 34px;
+    height: 34px;
+
+    font-size: 17px;
+  }
+
+  .summaryCard strong {
+    font-size: 16px;
+  }
+
+  .summaryCard p {
+    font-size: 11px;
+  }
+
+  .titleSection {
+    align-items: flex-start;
+  }
+
+}
