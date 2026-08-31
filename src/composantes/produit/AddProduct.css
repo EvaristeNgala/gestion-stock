@@ -1,0 +1,716 @@
+
+/* ==============================
+   CONTAINER PRINCIPAL
+============================== */
+
+.add-product-container {
+  min-height: 100vh;
+  width: 100%;
+
+  background: #f5f8fc;
+
+  padding: 20px;
+
+  box-sizing: border-box;
+}
+
+
+/* ==============================
+   OVERLAY
+============================== */
+
+.add-product-overlay {
+  min-height: 100vh;
+
+  background: transparent;
+
+  padding: 0;
+
+  display: flex;
+  justify-content: center;
+}
+
+
+/* ==============================
+   WRAPPER
+============================== */
+
+.add-product-wrapper {
+  width: 100%;
+  max-width: 900px;
+
+  margin: 0 auto;
+}
+
+.back-button{
+  border-radius: 9999px;
+  background-color: #64748bc7;
+  padding: 10px;
+  color: white;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+}
+
+/* ==============================
+   TITRE
+============================== */
+
+.add-product-title {
+  margin-left: auto;
+  font-size: 22px;
+  font-weight: 700;
+  color: #233d75;
+}
+
+
+/* ==============================
+   CARTE FORMULAIRE
+============================== */
+
+.product-form-card {
+  width: 100%;
+
+  background: #ffffff;
+
+  padding: 20px;
+
+  border-radius: 16px;
+
+  border: 1px solid #e8edf3;
+
+  box-sizing: border-box;
+
+  margin-bottom: 30px;
+}
+
+
+/* ==============================
+   GROUPE FORMULAIRE
+============================== */
+
+.form-group {
+  width: 100%;
+
+  margin-top: 15px;
+}
+
+
+/* ==============================
+   LABEL
+============================== */
+
+.form-label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+  color: #344054;
+}
+
+
+/* ==============================
+   INPUTS
+============================== */
+
+.product-input {
+  width: 100%;
+
+  height: 48px;
+
+  padding: 0 14px;
+
+  border-radius: 12px;
+
+  border: 1px solid #e6ebf2;
+
+  background: #ffffff;
+
+  color: #172033;
+
+  font-size: 14px;
+
+  outline: none;
+
+  box-sizing: border-box;
+
+  transition: 0.2s;
+}
+
+
+/* ==============================
+   FOCUS
+============================== */
+
+.product-input:focus {
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+
+/* ==============================
+   PLACEHOLDER
+============================== */
+
+.product-input::placeholder {
+  color: #9aa4b2;
+}
+
+
+/* ==============================
+   INPUT NUMBER
+============================== */
+
+.product-input[type="number"] {
+  appearance: textfield;
+}
+
+.product-input[type="number"]::-webkit-inner-spin-button,
+.product-input[type="number"]::-webkit-outer-spin-button {
+  margin: 0;
+}
+
+
+/* ==============================
+   INPUT FILE
+============================== */
+
+.file-input {
+  cursor: pointer;
+
+  padding: 6px;
+}
+
+.file-input::file-selector-button {
+  background: #eff6ff;
+
+  color: #2563eb;
+
+  border: none;
+
+  padding: 8px 12px;
+
+  border-radius: 8px;
+
+  margin-right: 10px;
+
+  cursor: pointer;
+
+  font-weight: 600;
+}
+
+
+/* ==============================
+   PREVIEW IMAGE
+============================== */
+
+.preview-image {
+  width: 100%;
+
+  height: 200px;
+
+  object-fit: cover;
+
+  border-radius: 14px;
+
+  margin-top: 15px;
+
+  display: block;
+
+  border: 1px solid #e8edf3;
+}
+
+
+/* ==============================
+   CATEGORIE
+============================== */
+
+.category-group {
+  margin-top: 18px;
+}
+
+
+/* ==============================
+   SELECT + BOUTON
+============================== */
+
+.category-select-row {
+  width: 100%;
+
+  display: flex;
+
+  gap: 8px;
+
+  align-items: center;
+}
+
+
+/* ==============================
+   SELECT
+============================== */
+
+.category-select {
+  flex: 1;
+
+  cursor: pointer;
+
+  appearance: auto;
+}
+
+.category-select:disabled {
+  cursor: not-allowed;
+
+  background: #f8fafc;
+
+  color: #98a2b3;
+}
+
+
+/* ==============================
+   BOUTON CREER CATEGORIE
+============================== */
+
+.create-category-button {
+  height: 48px;
+
+  padding: 0 14px;
+
+  border: none;
+
+  border-radius: 12px;
+
+  background: #eff6ff;
+
+  color: #2563eb;
+
+  cursor: pointer;
+
+  font-size: 13px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+
+  transition: 0.2s;
+}
+
+.create-category-button:hover {
+  background: #dbeafe;
+}
+
+
+/* ==============================
+   NOUVELLE CATEGORIE
+============================== */
+
+.new-category-box {
+  margin-top: 12px;
+
+  padding: 15px;
+
+  background: #f8fafc;
+
+  border: 1px solid #e8edf3;
+
+  border-radius: 12px;
+
+  box-sizing: border-box;
+}
+
+
+/* ==============================
+   ACTIONS CATEGORIE
+============================== */
+
+.new-category-actions {
+  display: flex;
+
+  gap: 8px;
+
+  margin-top: 10px;
+}
+
+
+/* ==============================
+   ANNULER CATEGORIE
+============================== */
+
+.cancel-category-button,
+.confirm-category-button {
+  min-height: 42px;
+
+  padding: 0 14px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+  transition: 0.2s;
+}
+
+
+.cancel-category-button {
+  background: #eef1f5;
+
+  color: #475467;
+
+  flex: 1;
+}
+
+.cancel-category-button:hover {
+  background: #e4e7ec;
+}
+
+
+/* ==============================
+   CONFIRMER CATEGORIE
+============================== */
+
+.confirm-category-button {
+  background: #2563eb;
+
+  color: #ffffff;
+
+  flex: 1;
+}
+
+.confirm-category-button:hover {
+  background: #1d4ed8;
+}
+
+
+/* ==============================
+   BOUTONS DESACTIVES
+============================== */
+
+.cancel-category-button:disabled,
+.confirm-category-button:disabled {
+  opacity: 0.6;
+
+  cursor: not-allowed;
+}
+
+
+/* ==============================
+   CATEGORIE SELECTIONNEE
+============================== */
+
+.selected-category {
+  margin-top: 10px;
+
+  padding: 9px 12px;
+
+  border-radius: 9px;
+
+  background: #eff6ff;
+
+  color: #2563eb;
+
+  font-size: 12px;
+
+  border: 1px solid #dbeafe;
+}
+
+.selected-category strong {
+  color: #1d4ed8;
+}
+
+
+/* ==============================
+   VARIANTES
+============================== */
+
+.variant-header {
+  margin-top: 28px;
+
+  margin-bottom: 10px;
+}
+
+.variant-header h3 {
+  margin: 0;
+
+  font-size: 17px;
+
+  color: #172033;
+}
+
+.variant-header p {
+  margin: 6px 0 0;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+
+  color: #64748b;
+}
+
+
+/* ==============================
+   CARTE VARIANTE
+============================== */
+
+.variant-card {
+  padding: 15px;
+
+  margin-top: 12px;
+
+  border-radius: 14px;
+
+  background: #f8fafc;
+
+  border: 1px solid #e8edf3;
+
+  box-sizing: border-box;
+}
+
+
+/* ==============================
+   BOUTONS
+============================== */
+
+.button-row {
+  width: 100%;
+
+  margin-top: 20px;
+
+  display: flex;
+
+  justify-content: flex-start;
+}
+
+
+/* ==============================
+   BOUTON AJOUTER VARIANTE
+============================== */
+
+.variant-button {
+  min-height: 42px;
+
+  padding: 0 18px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background: #eff6ff;
+
+  color: #2563eb;
+
+  cursor: pointer;
+
+  font-weight: 600;
+
+  font-size: 14px;
+
+  transition: 0.2s;
+}
+
+.variant-button:hover {
+  background: #dbeafe;
+}
+
+
+/* ==============================
+   BOUTON ENREGISTRER
+============================== */
+
+.save-row {
+  margin-top: 25px;
+}
+
+
+.save-button {
+  width: 100%;
+
+  min-height: 48px;
+
+  padding: 0 22px;
+
+  border: none;
+
+  border-radius: 12px;
+
+  background: #2563eb;
+
+  color: #ffffff;
+
+  cursor: pointer;
+
+  font-weight: 700;
+
+  font-size: 14px;
+
+  transition: 0.2s;
+
+  box-shadow:
+    0 5px 15px rgba(37, 99, 235, 0.20);
+}
+
+.save-button:hover {
+  background: #1d4ed8;
+
+  transform: translateY(-1px);
+}
+
+.save-button:active {
+  transform: translateY(0);
+}
+
+
+/* ==============================
+   TABLETTE
+============================== */
+
+@media (min-width: 600px) {
+
+  .add-product-container {
+    padding: 25px;
+  }
+
+  .product-form-card {
+    padding: 25px;
+  }
+
+  .preview-image {
+    height: 240px;
+  }
+
+}
+
+
+/* ==============================
+   PC
+============================== */
+
+@media (min-width: 768px) {
+
+  .add-product-container {
+    padding: 30px;
+  }
+
+  .add-product-title {
+    font-size: 26px;
+  }
+
+  .product-form-card {
+    padding: 30px;
+  }
+
+  .preview-image {
+    height: 280px;
+  }
+
+  /*
+    Les champs des variantes peuvent
+    être présentés sur une ligne
+    sur ordinateur.
+  */
+
+  .variant-card {
+    display: grid;
+
+    grid-template-columns:
+      1fr 1fr 1fr;
+
+    gap: 12px;
+
+    align-items: end;
+  }
+
+  .variant-card .form-group {
+    margin-top: 0;
+  }
+
+}
+
+
+/* ==============================
+   PETITS ECRANS
+============================== */
+
+@media (max-width: 420px) {
+
+  .add-product-container {
+    padding: 15px;
+  }
+
+  .product-form-card {
+    padding: 15px;
+  }
+
+  .add-product-title {
+    font-size: 20px;
+  }
+
+  .category-select-row {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+  .category-select {
+    width: 100%;
+  }
+
+  .create-category-button {
+    width: 100%;
+  }
+
+  .new-category-actions {
+    flex-direction: column;
+  }
+
+  .cancel-category-button,
+  .confirm-category-button {
+    width: 100%;
+  }
+
+  .preview-image {
+    height: 170px;
+  }
+
+  .variant-card {
+    padding: 12px;
+  }
+
+}
+
+
+/* ==============================
+   TRES PETITS ECRANS
+============================== */
+
+@media (max-width: 360px) {
+
+  .add-product-container {
+    padding: 12px;
+  }
+
+  .product-form-card {
+    padding: 12px;
+  }
+
+  .product-input {
+    font-size: 13px;
+  }
+
+  .save-button {
+    font-size: 13px;
+  }
+
+}
+

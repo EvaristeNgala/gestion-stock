@@ -1,0 +1,171 @@
+.dashboard{
+  min-height:100vh;
+  background:#f3f6fb;
+  display:flex;
+  flex-direction:column;
+  padding-bottom:80px;
+}
+
+/* HEADER */
+
+.header{
+  height:70px;
+  background:linear-gradient(135deg,#2563eb,#1d4ed8);
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 18px;
+  box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+
+.header h1{
+  font-size:20px;
+  margin:0;
+}
+
+.menu,.logo{
+  font-size:24px;
+}
+
+/* USER */
+
+.userCard{
+  background:#2563eb;
+  color:white;
+  display:flex;
+  gap:15px;
+  align-items:center;
+  padding:18px;
+}
+
+.avatar{
+  width:50px;
+  height:50px;
+  border-radius:50%;
+  background:white;
+  color:#2563eb;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:26px;
+}
+
+.userCard h2{
+  margin:0;
+  font-size:20px;
+}
+
+.userCard p{
+  margin:3px 0;
+}
+
+.userCard span{
+  font-size:13px;
+  opacity:.9;
+}
+
+/* BANNER */
+
+.banner{
+  margin:18px;
+  background:linear-gradient(135deg,#dbeafe,#bfdbfe);
+  border-radius:18px;
+  padding:18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  color:#1e3a8a;
+}
+
+.banner h3{
+  margin:0;
+  font-size:22px;
+}
+
+.banner p{
+  margin-top:6px;
+}
+
+.phone{
+  font-size:42px;
+}
+
+/* GRID */
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+  padding:0 18px;
+}
+
+.card{
+  background:rgba(255,255,255,0.08);
+  border:none;
+  border-radius:14px;
+  padding:16px 8px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  box-shadow:0 3px 10px rgba(0,0,0,.08);
+  transition:.2s;
+  cursor:pointer;
+}
+
+.title{
+  margin-bottom: 5px;
+}
+.card:hover{
+  transform:translateY(-4px);
+}
+
+.icon{
+  font-size:32px;
+}
+
+.card span:last-child{
+  font-size:14px;
+  color:#374151;
+  text-align:center;
+  font-weight:600;
+}
+
+/* NAV */
+
+.bottomNav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  height:68px;
+  background:white;
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  border-top:1px solid #e5e7eb;
+  box-shadow:0 -4px 12px rgba(0,0,0,.08);
+}
+
+.bottomNav button{
+  border:none;
+  background:none;
+  font-size:24px;
+  color:#64748b;
+}
+
+.active{
+  color:#2563eb !important;
+}
+
+@media (min-width:768px){
+
+  .dashboard{
+    max-width:430px;
+    margin:auto;
+    box-shadow:0 10px 30px rgba(0,0,0,.15);
+  }
+
+}

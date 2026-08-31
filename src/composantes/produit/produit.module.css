@@ -1,0 +1,642 @@
+
+/* ==============================
+   CONTENEUR
+============================== */
+
+.container {
+  min-height: 100vh;
+  background: #f5f8fc;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+
+/* ==============================
+   HEADER
+============================== */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 25px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #172033;
+}
+
+.backButton,
+.addButton {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 22px;
+}
+
+.backButton {
+  background: #ffffff;
+  color: #172033;
+
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.addButton {
+  background: #2563eb;
+  color: white;
+
+  font-size: 28px;
+
+  box-shadow:
+    0 5px 15px rgba(37, 99, 235, 0.25);
+}
+
+.backButton:hover {
+  background: #f1f5f9;
+}
+
+.addButton:hover {
+  background: #1d4ed8;
+}
+
+
+/* ==============================
+   RECHERCHE
+============================== */
+
+.searchContainer {
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  background: white;
+  border-radius: 14px;
+
+  padding: 0 15px;
+  margin-bottom: 25px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #e6ebf2;
+}
+
+.searchContainer span {
+  font-size: 18px;
+}
+
+.searchContainer input {
+  width: 100%;
+  height: 100%;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+
+  font-size: 14px;
+  color: #172033;
+}
+
+.searchContainer input::placeholder {
+  color: #9aa4b2;
+}
+
+
+/* ==============================
+   TITRE
+============================== */
+
+.titleSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 15px;
+}
+
+.titleSection h2 {
+  margin: 0;
+
+  font-size: 17px;
+  color: #172033;
+}
+
+.titleSection p {
+  margin: 4px 0 0;
+
+  font-size: 13px;
+  color: #64748b;
+}
+
+.titleSection > span {
+  font-size: 13px;
+  color: #64748b;
+
+  white-space: nowrap;
+}
+
+
+/* ==============================
+   CHARGEMENT
+============================== */
+
+.loading {
+  background: white;
+
+  border-radius: 16px;
+
+  padding: 50px 20px;
+
+  text-align: center;
+
+  border: 1px solid #e8edf3;
+}
+
+.loading span {
+  font-size: 35px;
+}
+
+.loading p {
+  margin: 12px 0 0;
+
+  color: #64748b;
+  font-size: 14px;
+}
+
+
+/* ==============================
+   CONTENEUR TABLEAU
+============================== */
+
+.tableContainer {
+  width: 100%;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  background: white;
+
+  border-radius: 16px;
+
+  border: 1px solid #e8edf3;
+
+  box-sizing: border-box;
+
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.03);
+
+  /*
+    Permet de faire défiler facilement
+    le tableau avec la molette / curseur
+  */
+  cursor: default;
+
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+
+/* ==============================
+   BARRE DE DEFILEMENT
+============================== */
+
+.tableContainer::-webkit-scrollbar {
+  height: 8px;
+}
+
+.tableContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tableContainer::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 20px;
+}
+
+.tableContainer::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+
+/* ==============================
+   TABLEAU
+============================== */
+
+.productTable {
+  width: 100%;
+
+  /*
+    Le tableau garde une largeur minimale
+    uniquement lorsque l'écran est trop petit.
+  */
+  min-width: 780px;
+
+  border-collapse: collapse;
+
+  font-size: 14px;
+}
+
+
+/* ==============================
+   EN-TETE TABLEAU
+============================== */
+
+.productTable thead {
+  background: #f8fafc;
+}
+
+.productTable th {
+  padding: 15px;
+
+  text-align: left;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  color: #64748b;
+
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+
+  white-space: nowrap;
+
+  border-bottom: 1px solid #e8edf3;
+}
+
+
+/* ==============================
+   CELLULES
+============================== */
+
+.productTable td {
+  padding: 14px 15px;
+
+  border-bottom: 1px solid #eef2f6;
+
+  color: #172033;
+
+  vertical-align: middle;
+}
+
+.productTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.productTable tbody tr:hover {
+  background: #fafcff;
+}
+
+
+/* ==============================
+   PRODUIT
+============================== */
+
+.productCell {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  min-width: 220px;
+}
+
+.productImage,
+.productImageFallback {
+  width: 48px;
+  height: 48px;
+
+  min-width: 48px;
+
+  border-radius: 12px;
+
+  object-fit: cover;
+
+  background: #eff6ff;
+}
+
+.productImageFallback {
+  align-items: center;
+  justify-content: center;
+
+  font-size: 22px;
+}
+
+.productName {
+  min-width: 0;
+}
+
+.productName strong {
+  display: block;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  color: #172033;
+
+  max-width: 220px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ==============================
+   CATEGORIE
+============================== */
+
+.categoryBadge {
+  display: inline-block;
+
+  padding: 5px 9px;
+
+  border-radius: 7px;
+
+  background: #f1f5f9;
+
+  color: #475569;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+
+/* ==============================
+   PRIX ACHAT
+============================== */
+
+.purchasePrice {
+  font-size: 13px;
+  font-weight: 600;
+
+  color: #172033;
+
+  white-space: nowrap;
+}
+
+
+/* ==============================
+   STOCK NORMAL
+============================== */
+
+.stock {
+  display: inline-block;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  color: #16a34a;
+
+  white-space: nowrap;
+}
+
+
+/* ==============================
+   STOCK FAIBLE
+============================== */
+
+.lowStock {
+  display: inline-block;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  color: #dc2626;
+
+  background: #fef2f2;
+
+  padding: 5px 8px;
+
+  border-radius: 7px;
+
+  white-space: nowrap;
+}
+
+
+/* ==============================
+   ACTIONS
+============================== */
+
+.actions {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+}
+
+.editButton,
+.deleteButton {
+  width: 34px;
+  height: 34px;
+
+  border: none;
+  border-radius: 9px;
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 15px;
+
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
+}
+
+.editButton {
+  background: #eff6ff;
+}
+
+.deleteButton {
+  background: #fef2f2;
+}
+
+.editButton:hover {
+  background: #dbeafe;
+
+  transform: translateY(-1px);
+}
+
+.deleteButton:hover {
+  background: #fee2e2;
+
+  transform: translateY(-1px);
+}
+
+
+/* ==============================
+   PRODUIT VIDE
+============================== */
+
+.empty {
+  background: white;
+
+  border-radius: 16px;
+
+  padding: 50px 20px;
+
+  text-align: center;
+
+  border: 1px solid #e8edf3;
+}
+
+.empty > span {
+  font-size: 40px;
+}
+
+.empty h3 {
+  margin: 12px 0 0;
+
+  color: #172033;
+  font-size: 16px;
+}
+
+.empty p {
+  margin: 8px 0 0;
+
+  color: #64748b;
+  font-size: 14px;
+}
+
+.emptyButton {
+  margin-top: 20px;
+
+  border: none;
+
+  background: #2563eb;
+  color: white;
+
+  padding: 11px 18px;
+
+  border-radius: 10px;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.emptyButton:hover {
+  background: #1d4ed8;
+}
+
+
+/* ==============================
+   TABLETTE / PC
+============================== */
+
+@media (min-width: 768px) {
+
+  .container {
+    max-width: 1200px;
+
+    margin: 0 auto;
+
+    padding: 30px;
+  }
+
+  .header h1 {
+    font-size: 26px;
+  }
+
+  .tableContainer {
+    /*
+      Pas de scrollbar verticale.
+      Le défilement horizontal apparaît
+      uniquement si nécessaire.
+    */
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .productTable {
+    min-width: 780px;
+  }
+}
+
+
+/* ==============================
+   PETITS ECRANS
+============================== */
+
+@media (max-width: 600px) {
+
+  .container {
+    padding: 15px;
+  }
+
+  .titleSection {
+    align-items: flex-start;
+  }
+
+  .titleSection h2 {
+    font-size: 16px;
+  }
+
+  .titleSection p {
+    font-size: 12px;
+  }
+
+  .tableContainer {
+    border-radius: 13px;
+
+    /*
+      Permet le défilement horizontal
+      au doigt sur téléphone.
+    */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .productTable th,
+  .productTable td {
+    padding: 12px;
+  }
+}
+
+
+/* ==============================
+   TRES PETITS ECRANS
+============================== */
+
+@media (max-width: 380px) {
+
+  .header {
+    margin-bottom: 20px;
+  }
+
+  .header h1 {
+    font-size: 20px;
+  }
+
+  .backButton,
+  .addButton {
+    width: 40px;
+    height: 40px;
+  }
+
+  .searchContainer {
+    margin-bottom: 20px;
+  }
+
+  .productTable {
+    min-width: 740px;
+  }
+}
+
