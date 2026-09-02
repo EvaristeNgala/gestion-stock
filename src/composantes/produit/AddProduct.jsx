@@ -663,7 +663,7 @@ function AddProduct() {
 
             <div
               onClick={() => navigate(-1)}
-              className="back-button"
+              className="backButton"
             >
               ← 
             </div>

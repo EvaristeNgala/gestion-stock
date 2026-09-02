@@ -42,16 +42,33 @@
   margin: 0 auto;
 }
 
-.back-button{
-  border-radius: 9999px;
-  background-color: #64748bc7;
-  padding: 10px;
-  color: white;
+.backButton {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #172033;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: 0.2s ease;
 }
+
+.backButton:hover {
+  background: #eff6ff;
+  transform: translateX(-2px);
+}
+
 
 .page-header {
   display: flex;
   align-items: center;
+  margin-bottom: 25px;
 }
 
 /* ==============================

@@ -16,56 +16,76 @@ import styles from "./ajustement.module.css";
 function Ajustement() {
   const navigate = useNavigate();
 
-  // ==============================
+  // ==========================================
   // PRODUITS
-  // ==============================
+  // ==========================================
 
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
-  // ==============================
-  // RECHERCHE PRODUIT
-  // ==============================
+  // ==========================================
+  // RECHERCHE
+  // ==========================================
 
   const [productSearch, setProductSearch] = useState("");
-  const [showProductResults, setShowProductResults] = useState(false);
+  const [showProductResults, setShowProductResults] =
+    useState(false);
 
-  // ==============================
-  // AJUSTEMENTS
-  // ==============================
+  // ==========================================
+  // PRODUIT SELECTIONNE
+  // ==========================================
 
-  const [adjustments, setAdjustments] = useState([]);
+  const [selectedProductId, setSelectedProductId] =
+    useState("");
 
-  // ==============================
+  // ==========================================
+  // VARIANTE SELECTIONNEE
+  // ==========================================
+
+  const [selectedVariantIndex, setSelectedVariantIndex] =
+    useState("");
+
+  // ==========================================
   // FORMULAIRE
-  // ==============================
+  // ==========================================
 
-  const [selectedProductId, setSelectedProductId] = useState("");
-
-  const [adjustmentType, setAdjustmentType] = useState("add");
+  const [adjustmentType, setAdjustmentType] =
+    useState("add");
 
   const [quantity, setQuantity] = useState("");
 
   const [reason, setReason] = useState("");
 
+  // ==========================================
+  // LISTE DES AJUSTEMENTS
+  // ==========================================
+
+  const [adjustments, setAdjustments] = useState([]);
+
+  // ==========================================
+  // ENREGISTREMENT
+  // ==========================================
+
   const [saving, setSaving] = useState(false);
 
-  // ==============================
-  // CHARGER LES PRODUITS
-  // ==============================
+  // ==========================================
+  // CHARGEMENT DES PRODUITS
+  // ==========================================
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, "products"),
       (snapshot) => {
-        const productsList = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const productsList = snapshot.docs.map(
+          (productDoc) => ({
+            id: productDoc.id,
+            ...productDoc.data(),
+          })
+        );
 
         productsList.sort((a, b) =>
-          (a.productName || a.name || "").localeCompare(
-            b.productName || b.name || "",
+          getProductName(a).localeCompare(
+            getProductName(b),
             "fr",
             {
               sensitivity: "base",
@@ -78,7 +98,7 @@ function Ajustement() {
       },
       (error) => {
         console.error(
-          "Erreur lors du chargement des produits :",
+          "Erreur chargement produits :",
           error
         );
 
@@ -89,108 +109,283 @@ function Ajustement() {
     return () => unsubscribe();
   }, []);
 
-  // ==============================
-  // PRODUITS RECHERCHES
-  // ==============================
+  // ==========================================
+  // NOM PRODUIT
+  // ==========================================
 
-  const filteredProducts = products.filter((product) => {
-    const productName = (
-      product.productName ||
-      product.name ||
-      ""
-    ).toLowerCase();
+  function getProductName(product) {
+    return (
+      product?.productName ||
+      product?.name ||
+      "Produit sans nom"
+    );
+  }
 
-    const categoryName = (
-      product.categoryName ||
-      product.category ||
-      ""
-    ).toLowerCase();
+  // ==========================================
+  // UNITE DE BASE
+  // ==========================================
 
-    const search = productSearch
-      .trim()
-      .toLowerCase();
+  function getBaseUnit(product) {
+    return (
+      product?.stockUnit ||
+      product?.unit ||
+      "unité"
+    );
+  }
 
-    if (!search) {
-      return false;
+  // ==========================================
+  // VARIANTES
+  //
+  // quantity = coefficient de conversion
+  //
+  // Exemple :
+  // Bouteille : quantity = 1
+  // Paquet    : quantity = 12
+  // Carton    : quantity = 24
+  // ==========================================
+
+  function getVariants(product) {
+    if (!product) {
+      return [];
     }
 
+    if (
+      Array.isArray(product.variants) &&
+      product.variants.length > 0
+    ) {
+      return product.variants;
+    }
+
+    // Compatibilité anciens produits
+    return [
+      {
+        type: getBaseUnit(product),
+        quantity: 1,
+        price:
+          product.price ||
+          product.salePrice ||
+          0,
+      },
+    ];
+  }
+
+  // ==========================================
+  // NOM VARIANTE
+  // ==========================================
+
+  function getVariantName(variant) {
     return (
-      productName.includes(search) ||
-      categoryName.includes(search)
+      variant?.type ||
+      variant?.name ||
+      variant?.unit ||
+      "Unité"
     );
-  });
+  }
 
-  // ==============================
-  // PRODUIT SELECTIONNE
-  // ==============================
+  // ==========================================
+  // COEFFICIENT DE CONVERSION
+  // ==========================================
 
-  const selectedProduct = products.find(
-    (product) => product.id === selectedProductId
+  function getConversionQuantity(variant) {
+    const conversion = Number(
+      variant?.quantity
+    );
+
+    if (
+      !Number.isFinite(conversion) ||
+      conversion <= 0
+    ) {
+      return 1;
+    }
+
+    return conversion;
+  }
+
+  // ==========================================
+  // STOCK REEL
+  // ==========================================
+
+  function getProductStock(product) {
+    return Number(product?.stock || 0);
+  }
+
+  // ==========================================
+  // RECHERCHE
+  // ==========================================
+
+  const filteredProducts = products.filter(
+    (product) => {
+      const search = productSearch
+        .trim()
+        .toLowerCase();
+
+      if (!search) {
+        return false;
+      }
+
+      const productName =
+        getProductName(product).toLowerCase();
+
+      const categoryName = (
+        product.categoryName ||
+        product.category ||
+        ""
+      ).toLowerCase();
+
+      return (
+        productName.includes(search) ||
+        categoryName.includes(search)
+      );
+    }
   );
 
-  // ==============================
-  // CALCUL NOUVEAU STOCK
-  // ==============================
+  // ==========================================
+  // PRODUIT SELECTIONNE
+  // ==========================================
 
-  const calculateNewStock = (
-    product,
-    type,
-    qty
+  const selectedProduct = products.find(
+    (product) =>
+      product.id === selectedProductId
+  );
+
+  // ==========================================
+  // VARIANTES DU PRODUIT
+  // ==========================================
+
+  const selectedProductVariants =
+    getVariants(selectedProduct);
+
+  // ==========================================
+  // VARIANTE SELECTIONNEE
+  // ==========================================
+
+  const selectedVariant =
+    selectedVariantIndex !== "" &&
+    selectedProductVariants[
+      Number(selectedVariantIndex)
+    ]
+      ? selectedProductVariants[
+          Number(selectedVariantIndex)
+        ]
+      : null;
+
+  // ==========================================
+  // EQUIVALENT EN UNITE DE BASE
+  // ==========================================
+
+  const calculateBaseQuantity = (
+    quantityValue,
+    variant
   ) => {
-    const currentStock = Number(
-      product?.stock || 0
+    const quantityNumber = Number(
+      quantityValue
     );
 
-    const quantityNumber = Number(qty || 0);
+    const conversion =
+      getConversionQuantity(variant);
+
+    if (
+      !Number.isFinite(quantityNumber) ||
+      quantityNumber < 0
+    ) {
+      return 0;
+    }
+
+    return quantityNumber * conversion;
+  };
+
+  // ==========================================
+  // NOUVEAU STOCK
+  // ==========================================
+
+  const calculateNewStock = (
+    currentStock,
+    type,
+    quantityBase
+  ) => {
+    const stock = Number(
+      currentStock || 0
+    );
+
+    const quantityInBase = Number(
+      quantityBase || 0
+    );
 
     if (type === "add") {
-      return currentStock + quantityNumber;
+      return stock + quantityInBase;
     }
 
     if (type === "remove") {
-      return currentStock - quantityNumber;
+      return stock - quantityInBase;
     }
 
     if (type === "correct") {
-      return quantityNumber;
+      return quantityInBase;
     }
 
-    return currentStock;
+    return stock;
   };
 
-  // ==============================
-  // SELECTIONNER PRODUIT
-  // ==============================
+  // ==========================================
+  // SELECTION PRODUIT
+  // ==========================================
 
   const selectProduct = (product) => {
     setSelectedProductId(product.id);
 
     setProductSearch(
-      product.productName ||
-        product.name ||
-        ""
+      getProductName(product)
     );
 
+    setSelectedVariantIndex("");
+
+    setQuantity("");
+
     setShowProductResults(false);
+  };
+
+  // ==========================================
+  // CHANGEMENT VARIANTE
+  // ==========================================
+
+  const handleVariantChange = (event) => {
+    setSelectedVariantIndex(
+      event.target.value
+    );
 
     setQuantity("");
   };
 
-  // ==============================
-  // AJOUTER AJUSTEMENT
-  // ==============================
+  // ==========================================
+  // AJOUTER UN AJUSTEMENT
+  // ==========================================
 
   const addAdjustment = () => {
-    if (!selectedProductId) {
-      alert("Veuillez sélectionner un produit.");
+    if (!selectedProduct) {
+      alert(
+        "Veuillez sélectionner un produit."
+      );
+      return;
+    }
+
+    if (
+      selectedVariantIndex === "" ||
+      !selectedVariant
+    ) {
+      alert(
+        "Veuillez sélectionner une variante."
+      );
       return;
     }
 
     if (
       quantity === "" ||
+      !Number.isFinite(Number(quantity)) ||
       Number(quantity) < 0
     ) {
-      alert("Veuillez entrer une quantité valide.");
+      alert(
+        "Veuillez entrer une quantité valide."
+      );
       return;
     }
 
@@ -201,76 +396,120 @@ function Ajustement() {
       return;
     }
 
-    if (!selectedProduct) {
-      alert("Produit introuvable.");
-      return;
-    }
-
     const quantityNumber = Number(quantity);
 
+    const conversion =
+      getConversionQuantity(
+        selectedVariant
+      );
+
+    // ========================================
+    // CONVERSION
+    // ========================================
+
+    const quantityBase =
+      calculateBaseQuantity(
+        quantityNumber,
+        selectedVariant
+      );
+
+    // ========================================
+    // STOCK ACTUEL REEL
+    // ========================================
+
+    const currentStock =
+      getProductStock(selectedProduct);
+
+    // ========================================
+    // NOUVEAU STOCK REEL
+    // ========================================
+
     const newStock = calculateNewStock(
-      selectedProduct,
+      currentStock,
       adjustmentType,
-      quantityNumber
+      quantityBase
     );
 
-    // ==============================
+    // ========================================
     // STOCK NEGATIF
-    // ==============================
+    // ========================================
 
     if (newStock < 0) {
       alert(
-        "Le stock ne peut pas devenir négatif."
+        `Stock insuffisant.\n\nStock actuel : ${currentStock} ${getBaseUnit(
+          selectedProduct
+        )}\nQuantité demandée : ${quantityBase} ${getBaseUnit(
+          selectedProduct
+        )}`
       );
+
       return;
     }
 
-    // ==============================
-    // VERIFIER SI PRODUIT DEJA PRESENT
-    // ==============================
+    // ========================================
+    // EVITER DOUBLON
+    // ========================================
 
-    const alreadyExists = adjustments.some(
-      (adjustment) =>
-        adjustment.productId ===
-        selectedProduct.id
-    );
+    const alreadyExists =
+      adjustments.some(
+        (adjustment) =>
+          adjustment.productId ===
+            selectedProduct.id &&
+          adjustment.variantIndex ===
+            Number(selectedVariantIndex)
+      );
 
     if (alreadyExists) {
       alert(
-        "Ce produit est déjà présent dans les ajustements."
+        "Cette variante est déjà présente dans la liste."
       );
+
       return;
     }
 
-    // ==============================
-    // NOUVEL AJUSTEMENT
-    // ==============================
+    // ========================================
+    // AJUSTEMENT
+    // ========================================
 
     const newAdjustment = {
       id: Date.now(),
 
-      productId: selectedProduct.id,
+      productId:
+        selectedProduct.id,
 
       productName:
-        selectedProduct.productName ||
-        selectedProduct.name ||
+        getProductName(selectedProduct),
+
+      categoryName:
+        selectedProduct.categoryName ||
+        selectedProduct.category ||
         "",
 
-      stockUnit:
-        selectedProduct.stockUnit ||
-        "unité",
+      baseUnit:
+        getBaseUnit(selectedProduct),
 
-      currentStock: Number(
-        selectedProduct.stock || 0
-      ),
+      variantIndex:
+        Number(selectedVariantIndex),
 
-      type: adjustmentType,
+      variantName:
+        getVariantName(selectedVariant),
 
-      quantity: quantityNumber,
+      conversion,
 
-      newStock: newStock,
+      quantity:
+        quantityNumber,
 
-      reason: reason.trim(),
+      quantityBase,
+
+      type:
+        adjustmentType,
+
+      currentStock,
+
+      newStock,
+
+      reason:
+        reason.trim(),
     };
 
     setAdjustments((previous) => [
@@ -278,11 +517,13 @@ function Ajustement() {
       newAdjustment,
     ]);
 
-    // ==============================
+    // ========================================
     // RESET
-    // ==============================
+    // ========================================
 
     setSelectedProductId("");
+
+    setSelectedVariantIndex("");
 
     setProductSearch("");
 
@@ -295,9 +536,9 @@ function Ajustement() {
     setShowProductResults(false);
   };
 
-  // ==============================
-  // MODIFIER QUANTITE
-  // ==============================
+  // ==========================================
+  // MODIFICATION QUANTITE DANS LE TABLEAU
+  // ==========================================
 
   const updateAdjustmentQuantity = (
     id,
@@ -310,6 +551,8 @@ function Ajustement() {
             ? {
                 ...adjustment,
                 quantity: "",
+                quantityBase: 0,
+                newStock: 0,
               }
             : adjustment
         )
@@ -318,39 +561,56 @@ function Ajustement() {
       return;
     }
 
-    const quantityNumber = Number(value);
+    const quantityNumber =
+      Number(value);
 
-    if (quantityNumber < 0) {
+    if (
+      !Number.isFinite(quantityNumber) ||
+      quantityNumber < 0
+    ) {
       return;
     }
 
     setAdjustments((previous) =>
       previous.map((adjustment) => {
-        if (adjustment.id !== id) {
+        if (
+          adjustment.id !== id
+        ) {
           return adjustment;
         }
 
-        const newStock = calculateNewStock(
-          {
-            stock:
-              adjustment.currentStock,
-          },
-          adjustment.type,
-          quantityNumber
-        );
+        // ======================================
+        // RECONVERSION
+        // ======================================
+
+        const quantityBase =
+          quantityNumber *
+          adjustment.conversion;
+
+        const newStock =
+          calculateNewStock(
+            adjustment.currentStock,
+            adjustment.type,
+            quantityBase
+          );
 
         return {
           ...adjustment,
-          quantity: quantityNumber,
-          newStock: newStock,
+
+          quantity:
+            quantityNumber,
+
+          quantityBase,
+
+          newStock,
         };
       })
     );
   };
 
-  // ==============================
-  // SUPPRIMER
-  // ==============================
+  // ==========================================
+  // SUPPRIMER AJUSTEMENT
+  // ==========================================
 
   const removeAdjustment = (id) => {
     setAdjustments((previous) =>
@@ -361,153 +621,9 @@ function Ajustement() {
     );
   };
 
-  // ==============================
-  // ENREGISTRER DANS FIREBASE
-  // ==============================
-
-  const saveAdjustments = async () => {
-    if (adjustments.length === 0) {
-      alert(
-        "Aucun ajustement à enregistrer."
-      );
-      return;
-    }
-
-    const invalidAdjustment =
-      adjustments.some(
-        (adjustment) =>
-          adjustment.quantity === "" ||
-          Number(adjustment.quantity) < 0 ||
-          Number(adjustment.newStock) < 0
-      );
-
-    if (invalidAdjustment) {
-      alert(
-        "Veuillez vérifier les quantités des ajustements."
-      );
-      return;
-    }
-
-    try {
-      setSaving(true);
-
-      const batch = writeBatch(db);
-
-      const historyCollection = collection(
-        db,
-        "stockAdjustments"
-      );
-
-      // ==============================
-      // TRAITER LES AJUSTEMENTS
-      // ==============================
-
-      for (const adjustment of adjustments) {
-        const productRef = doc(
-          db,
-          "products",
-          adjustment.productId
-        );
-
-        // Mise à jour du produit
-        batch.update(productRef, {
-          stock: Number(
-            adjustment.newStock
-          ),
-          updatedAt: serverTimestamp(),
-        });
-
-        // Historique
-        const historyRef = doc(
-          historyCollection
-        );
-
-        batch.set(historyRef, {
-          productId:
-            adjustment.productId,
-
-          productName:
-            adjustment.productName,
-
-          type:
-            adjustment.type,
-
-          quantity:
-            Number(adjustment.quantity),
-
-          stockBefore:
-            Number(
-              adjustment.currentStock
-            ),
-
-          stockAfter:
-            Number(
-              adjustment.newStock
-            ),
-
-          reason:
-            adjustment.reason,
-
-          stockUnit:
-            adjustment.stockUnit,
-
-          createdAt:
-            serverTimestamp(),
-        });
-      }
-
-      // ==============================
-      // SESSION D'AJUSTEMENT
-      // ==============================
-
-      const adjustmentSummaryRef =
-        doc(
-          collection(
-            db,
-            "stockAdjustmentSessions"
-          )
-        );
-
-      batch.set(
-        adjustmentSummaryRef,
-        {
-          numberOfAdjustments:
-            adjustments.length,
-
-          createdAt:
-            serverTimestamp(),
-        }
-      );
-
-      // ==============================
-      // ENREGISTREMENT
-      // ==============================
-
-      await batch.commit();
-
-      alert(
-        "Les ajustements ont été enregistrés avec succès !"
-      );
-
-      setAdjustments([]);
-
-    } catch (error) {
-      console.error(
-        "Erreur lors de l'enregistrement :",
-        error
-      );
-
-      alert(
-        "Une erreur est survenue lors de l'enregistrement."
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // ==============================
+  // ==========================================
   // LABEL TYPE
-  // ==============================
+  // ==========================================
 
   const getTypeLabel = (type) => {
     if (type === "add") {
@@ -521,20 +637,270 @@ function Ajustement() {
     return "Corriger";
   };
 
-  // ==============================
+  // ==========================================
+  // ENREGISTRER LES AJUSTEMENTS
+  // ==========================================
+
+  const saveAdjustments = async () => {
+    if (adjustments.length === 0) {
+      alert(
+        "Aucun ajustement à enregistrer."
+      );
+
+      return;
+    }
+
+    // ========================================
+    // VERIFICATION
+    // ========================================
+
+    for (const adjustment of adjustments) {
+      if (
+        adjustment.quantity === "" ||
+        !Number.isFinite(
+          Number(adjustment.quantity)
+        )
+      ) {
+        alert(
+          `Quantité invalide pour ${adjustment.productName}.`
+        );
+
+        return;
+      }
+
+      if (
+        Number(adjustment.quantityBase) <
+        0
+      ) {
+        alert(
+          `Quantité invalide pour ${adjustment.productName}.`
+        );
+
+        return;
+      }
+
+      if (
+        Number(adjustment.newStock) <
+        0
+      ) {
+        alert(
+          `Le stock de ${adjustment.productName} ne peut pas être négatif.`
+        );
+
+        return;
+      }
+    }
+
+    try {
+      setSaving(true);
+
+      const batch = writeBatch(db);
+
+      // ========================================
+      // HISTORIQUE
+      // ========================================
+
+      const historyCollection =
+        collection(
+          db,
+          "stockAdjustments"
+        );
+
+      // ========================================
+      // TRAITER CHAQUE AJUSTEMENT
+      // ========================================
+
+      for (const adjustment of adjustments) {
+        const productRef = doc(
+          db,
+          "products",
+          adjustment.productId
+        );
+
+        // ======================================
+        // RECUPERER PRODUIT ACTUEL
+        // ======================================
+
+        const product = products.find(
+          (item) =>
+            item.id ===
+            adjustment.productId
+        );
+
+        if (!product) {
+          throw new Error(
+            `Produit introuvable : ${adjustment.productName}`
+          );
+        }
+
+        // ======================================
+        // IMPORTANT :
+        //
+        // LE STOCK RESTE DANS product.stock
+        //
+        // PAS DANS variants
+        // ======================================
+
+        const currentFirestoreStock =
+          getProductStock(product);
+
+        // ======================================
+        // RECALCUL SECURISE
+        // ======================================
+
+        const newStock =
+          calculateNewStock(
+            currentFirestoreStock,
+            adjustment.type,
+            Number(
+              adjustment.quantityBase
+            )
+          );
+
+        if (newStock < 0) {
+          throw new Error(
+            `Stock insuffisant pour ${adjustment.productName}.`
+          );
+        }
+
+        // ======================================
+        // MISE A JOUR DU PRODUIT
+        // ======================================
+
+        batch.update(
+          productRef,
+          {
+            stock: Number(newStock),
+
+            updatedAt:
+              serverTimestamp(),
+          }
+        );
+
+        // ======================================
+        // HISTORIQUE
+        // ======================================
+
+        const historyRef = doc(
+          historyCollection
+        );
+
+        batch.set(
+          historyRef,
+          {
+            productId:
+              adjustment.productId,
+
+            productName:
+              adjustment.productName,
+
+            categoryName:
+              adjustment.categoryName,
+
+            variantName:
+              adjustment.variantName,
+
+            conversion:
+              Number(
+                adjustment.conversion
+              ),
+
+            quantity:
+              Number(
+                adjustment.quantity
+              ),
+
+            quantityBase:
+              Number(
+                adjustment.quantityBase
+              ),
+
+            baseUnit:
+              adjustment.baseUnit,
+
+            type:
+              adjustment.type,
+
+            stockBefore:
+              Number(
+                currentFirestoreStock
+              ),
+
+            stockAfter:
+              Number(newStock),
+
+            reason:
+              adjustment.reason,
+
+            createdAt:
+              serverTimestamp(),
+          }
+        );
+      }
+
+      // ========================================
+      // ENREGISTRER LA SESSION
+      // ========================================
+
+      const sessionRef = doc(
+        collection(
+          db,
+          "stockAdjustmentSessions"
+        )
+      );
+
+      batch.set(
+        sessionRef,
+        {
+          numberOfAdjustments:
+            adjustments.length,
+
+          createdAt:
+            serverTimestamp(),
+        }
+      );
+
+      // ========================================
+      // COMMIT FIRESTORE
+      // ========================================
+
+      await batch.commit();
+
+      alert(
+        "Les ajustements ont été enregistrés avec succès !"
+      );
+
+      setAdjustments([]);
+    } catch (error) {
+      console.error(
+        "Erreur enregistrement ajustements :",
+        error
+      );
+
+      alert(
+        error.message ||
+          "Une erreur est survenue lors de l'enregistrement."
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ==========================================
   // AFFICHAGE
-  // ==============================
+  // ==========================================
 
   return (
     <div className={styles.container}>
 
-      {/* ==========================
+      {/* ======================================
           HEADER
-      =========================== */}
+      ======================================= */}
 
       <header className={styles.header}>
 
         <button
+          type="button"
           className={styles.backButton}
           onClick={() =>
             navigate("/stock")
@@ -549,24 +915,35 @@ function Ajustement() {
           </h1>
 
           <p>
-            Ajoutez, retirez ou corrigez
-            plusieurs produits.
+            Ajustez le stock en bouteille,
+            paquet, lot, carton, etc.
           </p>
         </div>
 
       </header>
 
-      {/* ==========================
+      {/* ======================================
           FORMULAIRE
-      =========================== */}
+      ======================================= */}
 
-      <section className={styles.formCard}>
+      <section
+        className={styles.formCard}
+      >
 
-        <div className={styles.sectionTitle}>
+        <div
+          className={styles.sectionTitle}
+        >
+          <div>
+            <h2>
+              Nouvel ajustement
+            </h2>
 
-          <h2>
-            Nouvel ajustement
-          </h2>
+            <p>
+              La variante sert uniquement
+              à convertir la quantité en unité
+              de base.
+            </p>
+          </div>
 
           <span>
             {adjustments.length} ajustement
@@ -574,30 +951,30 @@ function Ajustement() {
               ? "s"
               : ""}
           </span>
-
         </div>
 
-        {/* ==========================
-            RECHERCHE PRODUIT
-        =========================== */}
+        {/* ====================================
+            RECHERCHE
+        ===================================== */}
 
-        <div className={styles.formGroup}>
+        <div
+          className={styles.formGroup}
+        >
 
           <label>
             Rechercher un produit
           </label>
 
-          <div className={styles.searchBox}>
+          <div
+            className={styles.searchBox}
+          >
 
-            <span className={styles.searchIcon}>
-              🔍
-            </span>
 
             <input
               type="text"
               placeholder={
                 loadingProducts
-                  ? "Chargement des produits..."
+                  ? "Chargement..."
                   : "Tapez le nom du produit..."
               }
               value={productSearch}
@@ -609,12 +986,16 @@ function Ajustement() {
 
                 setSelectedProductId("");
 
+                setSelectedVariantIndex("");
+
                 setShowProductResults(
                   true
                 );
               }}
               onFocus={() => {
-                if (productSearch.trim()) {
+                if (
+                  productSearch.trim()
+                ) {
                   setShowProductResults(
                     true
                   );
@@ -625,11 +1006,19 @@ function Ajustement() {
             {productSearch && (
               <button
                 type="button"
-                className={styles.clearSearch}
+                className={
+                  styles.clearSearch
+                }
                 onClick={() => {
                   setProductSearch("");
+
                   setSelectedProductId("");
-                  setShowProductResults(false);
+
+                  setSelectedVariantIndex("");
+
+                  setShowProductResults(
+                    false
+                  );
                 }}
               >
                 ×
@@ -638,9 +1027,9 @@ function Ajustement() {
 
           </div>
 
-          {/* ==========================
-              RESULTATS RECHERCHE
-          =========================== */}
+          {/* ==================================
+              RESULTATS
+          =================================== */}
 
           {showProductResults &&
             productSearch.trim() && (
@@ -689,18 +1078,21 @@ function Ajustement() {
                         >
 
                           <strong>
-                            {product.productName ||
-                              product.name ||
-                              "Produit sans nom"}
+                            {getProductName(
+                              product
+                            )}
                           </strong>
 
                           <small>
                             Stock :{" "}
-                            {Number(
-                              product.stock || 0
+                            {getProductStock(
+                              product
                             ).toLocaleString()}{" "}
-                            {product.stockUnit ||
-                              "unité"}
+                            {
+                              getBaseUnit(
+                                product
+                              )
+                            }
                           </small>
 
                         </div>
@@ -716,9 +1108,9 @@ function Ajustement() {
 
         </div>
 
-        {/* ==========================
+        {/* ======================================
             PRODUIT SELECTIONNE
-        =========================== */}
+        ======================================= */}
 
         {selectedProduct && (
 
@@ -730,26 +1122,30 @@ function Ajustement() {
 
             <div>
               <span>
-                Produit sélectionné
+                Produit
               </span>
 
               <strong>
-                {selectedProduct.productName ||
-                  selectedProduct.name}
+                {getProductName(
+                  selectedProduct
+                )}
               </strong>
             </div>
 
             <div>
               <span>
-                Stock actuel
+                Stock réel
               </span>
 
               <strong>
-                {Number(
-                  selectedProduct.stock || 0
+                {getProductStock(
+                  selectedProduct
                 ).toLocaleString()}{" "}
-                {selectedProduct.stockUnit ||
-                  "unité"}
+                {
+                  getBaseUnit(
+                    selectedProduct
+                  )
+                }
               </strong>
             </div>
 
@@ -757,11 +1153,130 @@ function Ajustement() {
 
         )}
 
-        {/* ==========================
-            TYPE
-        =========================== */}
+        {/* ======================================
+            VARIANTE
+        ======================================= */}
 
-        <div className={styles.formGroup}>
+        {selectedProduct && (
+
+          <div
+            className={styles.formGroup}
+          >
+
+            <label>
+              Unité / variante de vente
+            </label>
+
+            <select
+              className={
+                styles.variantSelect
+              }
+              value={
+                selectedVariantIndex
+              }
+              onChange={
+                handleVariantChange
+              }
+            >
+
+              <option value="">
+                Sélectionner une variante
+              </option>
+
+              {selectedProductVariants.map(
+                (variant, index) => {
+
+                  const conversion =
+                    getConversionQuantity(
+                      variant
+                    );
+
+                  const variantName =
+                    getVariantName(
+                      variant
+                    );
+
+                  return (
+                    <option
+                      key={index}
+                      value={index}
+                    >
+                      {variantName} — 1{" "}
+                      {variantName} ={" "}
+                      {conversion}{" "}
+                      {
+                        getBaseUnit(
+                          selectedProduct
+                        )
+                      }
+                    </option>
+                  );
+                }
+              )}
+
+            </select>
+
+          </div>
+
+        )}
+
+        {/* ======================================
+            INFORMATIONS CONVERSION
+        ======================================= */}
+
+        {selectedVariant && (
+
+          <div
+            className={
+              styles.selectedVariant
+            }
+          >
+
+            <div>
+              <span>
+                Variante choisie
+              </span>
+
+              <strong>
+                {getVariantName(
+                  selectedVariant
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span>
+                Conversion
+              </span>
+
+              <strong>
+                1{" "}
+                {getVariantName(
+                  selectedVariant
+                )}{" "}
+                ={" "}
+                {getConversionQuantity(
+                  selectedVariant
+                )}{" "}
+                {
+                  getBaseUnit(
+                    selectedProduct
+                  )
+                }
+              </strong>
+            </div>
+
+          </div>
+
+        )}
+
+        {/* ======================================
+            TYPE
+        ======================================= */}
+
+        <div
+          className={styles.formGroup}
+        >
 
           <label>
             Type d'ajustement
@@ -781,7 +1296,9 @@ function Ajustement() {
                   : styles.typeButton
               }
               onClick={() =>
-                setAdjustmentType("add")
+                setAdjustmentType(
+                  "add"
+                )
               }
             >
               + Ajouter
@@ -825,27 +1342,30 @@ function Ajustement() {
 
         </div>
 
-        {/* ==========================
+        {/* ======================================
             QUANTITE
-        =========================== */}
+        ======================================= */}
 
-        <div className={styles.formGroup}>
+        <div
+          className={styles.formGroup}
+        >
 
           <label>
             {adjustmentType ===
             "correct"
-              ? "Nouveau stock"
-              : "Quantité"}
+              ? "Nouvelle quantité"
+              : "Quantité à ajuster"}
           </label>
 
           <input
             type="number"
             min="0"
+            step="1"
             placeholder={
               adjustmentType ===
               "correct"
-                ? "Ex : 50"
-                : "Ex : 10"
+                ? "Ex : 10"
+                : "Ex : 2"
             }
             value={quantity}
             onChange={(e) =>
@@ -855,20 +1375,58 @@ function Ajustement() {
             }
           />
 
+          {/* CONVERSION EN DIRECT */}
+
+          {selectedVariant &&
+            quantity !== "" && (
+              <div
+                className={
+                  styles.conversionPreview
+                }
+              >
+                <span>
+                  Conversion :
+                </span>
+
+                <strong>
+                  {quantity}{" "}
+                  {getVariantName(
+                    selectedVariant
+                  )}{" "}
+                  ×{" "}
+                  {getConversionQuantity(
+                    selectedVariant
+                  )}{" "}
+                  ={" "}
+                  {calculateBaseQuantity(
+                    quantity,
+                    selectedVariant
+                  )}{" "}
+                  {
+                    getBaseUnit(
+                      selectedProduct
+                    )
+                  }
+                </strong>
+              </div>
+            )}
+
         </div>
 
-        {/* ==========================
+        {/* ======================================
             MOTIF
-        =========================== */}
+        ======================================= */}
 
-        <div className={styles.formGroup}>
+        <div
+          className={styles.formGroup}
+        >
 
           <label>
             Motif
           </label>
 
           <textarea
-            placeholder="Ex : Réception de marchandises, produit endommagé, inventaire..."
+            placeholder="Ex : Réception de marchandises, inventaire, produit endommagé..."
             value={reason}
             onChange={(e) =>
               setReason(
@@ -880,25 +1438,31 @@ function Ajustement() {
 
         </div>
 
-        {/* ==========================
+        {/* ======================================
             AJOUTER
-        =========================== */}
+        ======================================= */}
 
         <button
           type="button"
           className={
             styles.addAdjustmentButton
           }
-          onClick={addAdjustment}
+          onClick={
+            addAdjustment
+          }
+          disabled={
+            !selectedProduct ||
+            !selectedVariant
+          }
         >
           + Ajouter cet ajustement
         </button>
 
       </section>
 
-      {/* ==========================
-          TABLEAU AJUSTEMENTS
-      =========================== */}
+      {/* ========================================
+          TABLEAU
+      ========================================= */}
 
       {adjustments.length > 0 && (
 
@@ -918,8 +1482,9 @@ function Ajustement() {
               </h2>
 
               <p>
-                Modifiez les quantités avant
-                l'enregistrement final.
+                Les quantités seront converties
+                en unité de base lors de
+                l'enregistrement.
               </p>
             </div>
 
@@ -928,10 +1493,6 @@ function Ajustement() {
             </span>
 
           </div>
-
-          {/* ==========================
-              TABLEAU
-          =========================== */}
 
           <div
             className={
@@ -947,8 +1508,13 @@ function Ajustement() {
 
               <thead>
                 <tr>
+
                   <th>
                     Produit
+                  </th>
+
+                  <th>
+                    Variante
                   </th>
 
                   <th>
@@ -956,8 +1522,13 @@ function Ajustement() {
                   </th>
 
                   <th>
+                    Équivalent
+                  </th>
+
+                  <th>
                     Action
                   </th>
+
                 </tr>
               </thead>
 
@@ -975,29 +1546,59 @@ function Ajustement() {
                       {/* PRODUIT */}
 
                       <td>
+
                         <div
                           className={
                             styles.productCell
                           }
                         >
 
-                          
-
-                          <div>
-                            <strong>
-                              {
-                                adjustment.productName
-                              }
-                            </strong>
-
-                            <small>
-                              {
-                                adjustment.stockUnit
-                              }
-                            </small>
+                          <div
+                            className={
+                              styles.productIcon
+                            }
+                          >
+                            📦
                           </div>
 
+                          <strong>
+                            {
+                              adjustment.productName
+                            }
+                          </strong>
+
                         </div>
+
+                      </td>
+
+                      {/* VARIANTE */}
+
+                      <td>
+
+                        <div
+                          className={
+                            styles.variantCell
+                          }
+                        >
+
+                          <strong>
+                            {
+                              adjustment.variantName
+                            }
+                          </strong>
+
+                          <small>
+                            1 ={" "}
+                            {
+                              adjustment.conversion
+                            }{" "}
+                            {
+                              adjustment.baseUnit
+                            }
+                          </small>
+
+                        </div>
+
                       </td>
 
                       {/* QUANTITE */}
@@ -1013,6 +1614,7 @@ function Ajustement() {
                           <input
                             type="number"
                             min="0"
+                            step="1"
                             value={
                               adjustment.quantity
                             }
@@ -1024,7 +1626,37 @@ function Ajustement() {
                             }
                           />
 
-                          
+                          <span>
+                            {
+                              adjustment.variantName
+                            }
+                          </span>
+
+                        </div>
+
+                      </td>
+
+                      {/* EQUIVALENT */}
+
+                      <td>
+
+                        <div
+                          className={
+                            styles.equivalentCell
+                          }
+                        >
+
+                          <strong>
+                            {
+                              adjustment.quantityBase
+                            }
+                          </strong>
+
+                          <span>
+                            {
+                              adjustment.baseUnit
+                            }
+                          </span>
 
                         </div>
 
@@ -1062,9 +1694,9 @@ function Ajustement() {
 
           </div>
 
-          {/* ==========================
+          {/* ====================================
               RESUME
-          =========================== */}
+          ===================================== */}
 
           <div
             className={
@@ -1074,37 +1706,59 @@ function Ajustement() {
 
             {adjustments.map(
               (adjustment) => (
+
                 <div
-                  key={adjustment.id}
+                  key={
+                    adjustment.id
+                  }
                   className={
                     styles.summaryLine
                   }
                 >
 
                   <span>
-                    {adjustment.productName}
+                    {adjustment.productName}{" "}
+                    —{" "}
+                    {
+                      adjustment.variantName
+                    }
                   </span>
 
                   <strong>
                     {getTypeLabel(
                       adjustment.type
                     )}{" "}
-                    {adjustment.quantity}{" "}
-                    {adjustment.stockUnit}
-                    {" → "}
-                    {adjustment.newStock}{" "}
-                    {adjustment.stockUnit}
+                    {
+                      adjustment.quantity
+                    }{" "}
+                    {
+                      adjustment.variantName
+                    }{" "}
+                    →{" "}
+                    {
+                      adjustment.type ===
+                      "correct"
+                        ? "Stock"
+                        : ""
+                    }{" "}
+                    {
+                      adjustment.quantityBase
+                    }{" "}
+                    {
+                      adjustment.baseUnit
+                    }
                   </strong>
 
                 </div>
+
               )
             )}
 
           </div>
 
-          {/* ==========================
+          {/* ====================================
               ENREGISTRER
-          =========================== */}
+          ===================================== */}
 
           <button
             type="button"
