@@ -1,0 +1,1444 @@
+/* =========================================
+   CONTENEUR PRINCIPAL
+========================================= */
+
+.pos {
+  min-height: 100vh;
+
+  background: #f4f7fb;
+
+  color: #1f2937;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  display: flex;
+
+  flex-direction: column;
+}
+
+
+/* =========================================
+   HEADER
+========================================= */
+
+.header {
+  height: 64px;
+
+  background: #ffffff;
+
+  border-bottom: 1px solid #e5e7eb;
+
+  display: flex;
+
+  align-items: center;
+
+  padding: 0 20px;
+
+  gap: 15px;
+
+  position: sticky;
+
+  top: 0;
+
+  z-index: 20;
+}
+
+.menu {
+  width: 40px;
+
+  height: 40px;
+
+  border: none;
+
+  background: transparent;
+
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  font-size: 22px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+.menu:hover {
+  background: #f1f5f9;
+}
+
+.title {
+  flex: 1;
+
+  font-size: 20px;
+
+  font-weight: 700;
+
+  color: #111827;
+}
+
+
+/* =========================================
+   BOUTON TICKET HEADER
+========================================= */
+
+.ticketButtonHeader {
+  position: relative;
+
+  width: 42px;
+
+  height: 42px;
+
+  border: none;
+
+  border-radius: 9px;
+
+  background: #eff6ff;
+
+  color: #1e3a8a;
+
+  font-size: 21px;
+
+  cursor: pointer;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+.ticketButtonHeader:hover {
+  background: #dbeafe;
+}
+
+.headerTicketCount {
+  position: absolute;
+
+  top: -5px;
+
+  right: -5px;
+
+  min-width: 20px;
+
+  height: 20px;
+
+  padding: 0 5px;
+
+  border-radius: 20px;
+
+  background: #dc2626;
+
+  color: #ffffff;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+
+/* =========================================
+   BARRE TICKET / TOTAL
+========================================= */
+
+.paymentBar {
+  background: #ffffff;
+
+  display: flex;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.openTickets,
+.payment {
+  flex: 1;
+
+  min-height: 70px;
+
+  border: none;
+
+  background: #ffffff;
+
+  cursor: pointer;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 12px;
+}
+
+.openTickets {
+  border-right: 1px solid #e5e7eb;
+}
+
+.openTickets:hover,
+.payment:hover {
+  background: #f8fafc;
+}
+
+.openTickets span,
+.payment span {
+  font-size: 11px;
+
+  font-weight: 700;
+
+  color: #6b7280;
+}
+
+.openTickets strong {
+  color: #1e3a8a;
+
+  font-size: 18px;
+}
+
+.payment strong {
+  color: #16a34a;
+
+  font-size: 18px;
+}
+
+
+/* =========================================
+   RECHERCHE
+========================================= */
+
+.searchBar {
+  background: #ffffff;
+
+  padding: 15px 20px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  border-bottom: 1px solid #e5e7eb;
+
+  position: sticky;
+
+  top: 64px;
+
+  z-index: 10;
+}
+
+.searchBar input {
+  flex: 1;
+
+  height: 44px;
+
+  border: 1px solid #d1d5db;
+
+  border-radius: 8px;
+
+  padding: 0 14px;
+
+  font-size: 14px;
+
+  outline: none;
+}
+
+.searchBar input:focus {
+  border-color: #1e3a8a;
+
+  box-shadow:
+    0 0 0 2px
+    rgba(30, 58, 138, 0.08);
+}
+
+.category {
+  min-width: 190px;
+
+  height: 44px;
+
+  border: 1px solid #d1d5db;
+
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  padding: 0 12px;
+
+  font-size: 14px;
+
+  cursor: pointer;
+
+  outline: none;
+}
+
+.category:focus {
+  border-color: #1e3a8a;
+}
+
+.searchIcon {
+  width: 44px;
+
+  height: 44px;
+
+  border-radius: 8px;
+
+  background: #1e3a8a;
+
+  color: #ffffff;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 18px;
+}
+
+
+/* =========================================
+   SECTION PRODUITS
+========================================= */
+
+.productsSection {
+  width: 100%;
+
+  max-width: 1600px;
+
+  margin: 0 auto;
+
+  padding: 20px;
+
+  box-sizing: border-box;
+}
+
+.sectionTitle {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-bottom: 15px;
+}
+
+.sectionTitle h2 {
+  margin: 0;
+
+  font-size: 20px;
+
+  color: #111827;
+}
+
+.sectionTitle span {
+  color: #6b7280;
+
+  font-size: 13px;
+}
+
+
+/* =========================================
+   GRILLE PRODUITS
+========================================= */
+
+.products {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fill,
+      minmax(190px, 1fr)
+    );
+
+  gap: 15px;
+}
+
+
+/* =========================================
+   PRODUIT
+========================================= */
+
+.product {
+  border: 1px solid #e5e7eb;
+
+  border-radius: 12px;
+
+  background: #ffffff;
+
+  padding: 12px;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  display: flex;
+
+  flex-direction: column;
+
+  min-width: 0;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+
+  font-family: inherit;
+}
+
+.product:hover:not(:disabled) {
+  transform: translateY(-2px);
+
+  border-color: #bfdbfe;
+
+  box-shadow:
+    0 6px 18px
+    rgba(0, 0, 0, 0.08);
+}
+
+.product:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.productDisabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   IMAGE
+========================================= */
+
+.productImage {
+  width: 100%;
+
+  height: 150px;
+
+  border-radius: 9px;
+
+  overflow: hidden;
+
+  background: #f8fafc;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  margin-bottom: 10px;
+}
+
+.productImage img {
+  width: 100%;
+
+  height: 100%;
+
+  object-fit: contain;
+}
+
+.noImage {
+  width: 100%;
+
+  height: 100%;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 42px;
+}
+
+
+/* =========================================
+   INFORMATIONS
+========================================= */
+
+.productInfo {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+.productName {
+  font-size: 15px;
+
+  font-weight: 700;
+
+  color: #111827;
+
+  line-height: 1.3;
+
+  min-height: 38px;
+}
+
+.productPrice {
+  font-size: 16px;
+
+  font-weight: 700;
+
+  color: #1e3a8a;
+}
+
+.variantHint {
+  font-size: 12px;
+
+  color: #1e3a8a;
+
+  font-weight: 600;
+
+  background: #eff6ff;
+
+  border-radius: 6px;
+
+  padding: 6px 8px;
+
+  text-align: center;
+}
+
+
+/* =========================================
+   STOCK
+========================================= */
+
+.stock,
+.lowStock,
+.outOfStock {
+  font-size: 12px;
+
+  font-weight: 600;
+
+  margin-top: 3px;
+}
+
+.stock {
+  color: #16a34a;
+}
+
+.lowStock {
+  color: #d97706;
+}
+
+.outOfStock {
+  color: #dc2626;
+}
+
+
+/* =========================================
+   MESSAGE
+========================================= */
+
+.message {
+  grid-column: 1 / -1;
+
+  min-height: 200px;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 10px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  color: #6b7280;
+
+  font-size: 14px;
+}
+
+
+/* =========================================
+   MODAL GÉNÉRALE
+========================================= */
+
+.modalOverlay {
+  position: fixed;
+
+  inset: 0;
+
+  background:
+    rgba(15, 23, 42, 0.55);
+
+  z-index: 100;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 20px;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================
+   MODAL VARIANTES
+========================================= */
+
+.variantModal {
+  width: 100%;
+
+  max-width: 480px;
+
+  max-height: 85vh;
+
+  background: #ffffff;
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 20px 50px
+    rgba(0, 0, 0, 0.2);
+
+  overflow: hidden;
+
+  animation:
+    modalOpen 0.2s ease;
+}
+
+@keyframes modalOpen {
+  from {
+    opacity: 0;
+
+    transform: translateY(10px)
+      scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+
+    transform: translateY(0)
+      scale(1);
+  }
+}
+
+
+/* =========================================
+   HEADER MODAL
+========================================= */
+
+.modalHeader {
+  padding: 18px;
+
+  border-bottom: 1px solid #e5e7eb;
+
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  gap: 15px;
+}
+
+.modalHeader h2 {
+  margin: 0 0 5px 0;
+
+  font-size: 19px;
+
+  color: #111827;
+}
+
+.modalHeader p {
+  margin: 0;
+
+  font-size: 13px;
+
+  color: #6b7280;
+}
+
+.closeButton {
+  width: 34px;
+
+  height: 34px;
+
+  flex-shrink: 0;
+
+  border: none;
+
+  border-radius: 50%;
+
+  background: #f1f5f9;
+
+  color: #374151;
+
+  font-size: 23px;
+
+  line-height: 1;
+
+  cursor: pointer;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+.closeButton:hover {
+  background: #e5e7eb;
+
+  color: #111827;
+}
+
+
+/* =========================================
+   LISTE VARIANTES
+========================================= */
+
+.variantList {
+  padding: 15px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 10px;
+
+  overflow-y: auto;
+
+  max-height: 60vh;
+}
+
+.variantModalButton {
+  width: 100%;
+
+  min-height: 68px;
+
+  border: 1px solid #bfdbfe;
+
+  border-radius: 9px;
+
+  background: #eff6ff;
+
+  padding: 10px 13px;
+
+  cursor: pointer;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 15px;
+
+  text-align: left;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.variantModalButton:hover:not(:disabled) {
+  background: #dbeafe;
+
+  border-color: #1e3a8a;
+
+  transform: translateY(-1px);
+}
+
+.variantModalButton:disabled {
+  opacity: 0.45;
+
+  cursor: not-allowed;
+
+  background: #f3f4f6;
+
+  border-color: #e5e7eb;
+}
+
+.variantModalInfo {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+.variantModalInfo strong {
+  color: #1e3a8a;
+
+  font-size: 15px;
+}
+
+.variantModalInfo span {
+  color: #6b7280;
+
+  font-size: 12px;
+}
+
+.variantModalPrice {
+  color: #111827;
+
+  font-size: 15px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================
+   MODAL TICKET
+========================================= */
+
+.ticketModal {
+  width: 100%;
+
+  max-width: 520px;
+
+  max-height: 90vh;
+
+  background: #ffffff;
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 20px 50px
+    rgba(0, 0, 0, 0.2);
+
+  display: flex;
+
+  flex-direction: column;
+
+  overflow: hidden;
+
+  animation:
+    modalOpen 0.2s ease;
+}
+
+.ticketModalHeader {
+  padding: 17px 18px;
+
+  border-bottom: 1px solid #e5e7eb;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+}
+
+.ticketModalHeader h2 {
+  margin: 0 0 4px 0;
+
+  font-size: 19px;
+}
+
+.ticketModalHeader span {
+  font-size: 12px;
+
+  color: #6b7280;
+}
+
+
+/* =========================================
+   ARTICLES TICKET
+========================================= */
+
+.ticketItems {
+  flex: 1;
+
+  overflow-y: auto;
+
+  padding: 8px 12px;
+
+  min-height: 150px;
+
+  max-height: 55vh;
+}
+
+.emptyTicket {
+  min-height: 250px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  text-align: center;
+
+  color: #6b7280;
+}
+
+.emptyTicket div {
+  font-size: 45px;
+
+  margin-bottom: 10px;
+}
+
+.emptyTicket p {
+  margin: 0 0 5px 0;
+
+  color: #374151;
+
+  font-size: 15px;
+
+  font-weight: 700;
+}
+
+.emptyTicket span {
+  font-size: 12px;
+}
+
+
+/* =========================================
+   LIGNE TICKET
+========================================= */
+
+.ticketItem {
+  position: relative;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    auto;
+
+  gap: 10px;
+
+  padding: 13px 28px 13px 6px;
+
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ticketItem:last-child {
+  border-bottom: none;
+}
+
+.ticketItemInfo {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.ticketItemInfo strong {
+  font-size: 13px;
+
+  color: #111827;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+.ticketItemInfo span {
+  font-size: 12px;
+
+  color: #1e3a8a;
+
+  font-weight: 600;
+}
+
+.ticketItemInfo small {
+  font-size: 11px;
+
+  color: #6b7280;
+}
+
+
+/* =========================================
+   DROITE TICKET
+========================================= */
+
+.ticketItemRight {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: flex-end;
+
+  gap: 7px;
+}
+
+.ticketItemRight > strong {
+  font-size: 13px;
+
+  color: #111827;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================
+   QUANTITÉ
+========================================= */
+
+.quantityControls {
+  display: flex;
+
+  align-items: center;
+
+  border: 1px solid #d1d5db;
+
+  border-radius: 6px;
+
+  overflow: hidden;
+}
+
+.quantityControls button {
+  width: 29px;
+
+  height: 28px;
+
+  border: none;
+
+  background: #f8fafc;
+
+  color: #1e3a8a;
+
+  cursor: pointer;
+
+  font-size: 17px;
+}
+
+.quantityControls button:hover {
+  background: #e5e7eb;
+}
+
+.quantityControls span {
+  min-width: 30px;
+
+  text-align: center;
+
+  font-size: 12px;
+
+  font-weight: 700;
+}
+
+
+/* =========================================
+   SUPPRESSION
+========================================= */
+
+.removeButton {
+  position: absolute;
+
+  top: 10px;
+
+  right: 4px;
+
+  width: 22px;
+
+  height: 22px;
+
+  border: none;
+
+  border-radius: 50%;
+
+  background: transparent;
+
+  color: #9ca3af;
+
+  cursor: pointer;
+
+  font-size: 18px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+.removeButton:hover {
+  background: #fee2e2;
+
+  color: #dc2626;
+}
+
+
+/* =========================================
+   FOOTER TICKET
+========================================= */
+
+.ticketFooter {
+  padding: 13px 15px 15px;
+
+  border-top: 1px solid #e5e7eb;
+
+  background: #ffffff;
+}
+
+.clearButton {
+  width: 100%;
+
+  height: 36px;
+
+  margin-bottom: 10px;
+
+  border: 1px solid #fecaca;
+
+  border-radius: 7px;
+
+  background: #fff1f2;
+
+  color: #dc2626;
+
+  cursor: pointer;
+
+  font-size: 12px;
+
+  font-weight: 600;
+}
+
+.clearButton:hover {
+  background: #fee2e2;
+}
+
+.totalRow {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-bottom: 10px;
+
+  font-size: 14px;
+}
+
+.totalRow span {
+  color: #6b7280;
+}
+
+.totalAmount {
+  color: #1e3a8a;
+
+  font-size: 21px;
+}
+
+
+/* =========================================
+   BOUTON PAYER
+========================================= */
+
+.payButton {
+  width: 100%;
+
+  height: 48px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  background: #16a34a;
+
+  color: #ffffff;
+
+  font-size: 15px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease;
+}
+
+.payButton:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.payButton:disabled {
+  background: #9ca3af;
+
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   TABLETTE
+========================================= */
+
+@media (max-width: 900px) {
+
+  .productsSection {
+    padding: 15px;
+  }
+
+  .products {
+    grid-template-columns:
+      repeat(
+        auto-fill,
+        minmax(170px, 1fr)
+      );
+  }
+
+  .productImage {
+    height: 135px;
+  }
+
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+
+  .header {
+    height: 58px;
+
+    padding: 0 10px;
+
+    gap: 8px;
+  }
+
+  .title {
+    font-size: 17px;
+  }
+
+  .menu {
+    width: 36px;
+
+    height: 36px;
+
+    font-size: 19px;
+  }
+
+  .ticketButtonHeader {
+    width: 38px;
+
+    height: 38px;
+
+    font-size: 19px;
+  }
+
+
+  /* Recherche */
+
+  .searchBar {
+    top: 58px;
+
+    padding: 10px;
+
+    flex-wrap: wrap;
+  }
+
+  .searchBar input {
+    flex: 1 1 100%;
+
+    width: 100%;
+
+    height: 42px;
+  }
+
+  .category {
+    flex: 1;
+
+    min-width: 0;
+
+    height: 42px;
+  }
+
+  .searchIcon {
+    width: 42px;
+
+    height: 42px;
+  }
+
+
+  /* Barre ticket */
+
+  .openTickets,
+  .payment {
+    min-height: 60px;
+
+    gap: 6px;
+
+    padding: 8px;
+  }
+
+  .openTickets span,
+  .payment span {
+    font-size: 9px;
+  }
+
+  .openTickets strong,
+  .payment strong {
+    font-size: 14px;
+  }
+
+
+  /* Produits */
+
+  .productsSection {
+    padding: 10px;
+  }
+
+  .products {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 9px;
+  }
+
+  .product {
+    padding: 8px;
+
+    border-radius: 9px;
+  }
+
+  .productImage {
+    height: 105px;
+
+    margin-bottom: 8px;
+  }
+
+  .noImage {
+    font-size: 32px;
+  }
+
+  .productName {
+    font-size: 13px;
+
+    min-height: 34px;
+  }
+
+  .productPrice {
+    font-size: 14px;
+  }
+
+  .stock,
+  .lowStock,
+  .outOfStock {
+    font-size: 10px;
+  }
+
+  .variantHint {
+    font-size: 10px;
+
+    padding: 5px;
+  }
+
+
+  /* Modal */
+
+  .modalOverlay {
+    padding: 10px;
+
+    align-items: flex-end;
+  }
+
+  .variantModal,
+  .ticketModal {
+    max-width: 100%;
+
+    border-radius: 14px 14px 0 0;
+
+    max-height: 90vh;
+  }
+
+  .modalHeader {
+    padding: 15px;
+  }
+
+  .modalHeader h2 {
+    font-size: 17px;
+  }
+
+  .variantList {
+    padding: 12px;
+
+    max-height: 55vh;
+  }
+
+  .variantModalButton {
+    min-height: 64px;
+
+    padding: 9px 11px;
+  }
+
+  .variantModalInfo strong {
+    font-size: 14px;
+  }
+
+  .variantModalPrice {
+    font-size: 14px;
+  }
+
+
+  /* Ticket */
+
+  .ticketModalHeader {
+    padding: 14px 15px;
+  }
+
+  .ticketItems {
+    max-height: 52vh;
+  }
+
+  .ticketFooter {
+    padding: 12px;
+  }
+
+  .payButton {
+    height: 46px;
+  }
+
+}
+
+
+/* =========================================
+   TRÈS PETIT MOBILE
+========================================= */
+
+@media (max-width: 380px) {
+
+  .products {
+    gap: 7px;
+  }
+
+  .productImage {
+    height: 90px;
+  }
+
+  .productName {
+    font-size: 12px;
+  }
+
+  .variantHint {
+    font-size: 9px;
+  }
+
+  .openTickets,
+  .payment {
+    flex-direction: column;
+
+    gap: 2px;
+  }
+
+}

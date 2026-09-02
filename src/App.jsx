@@ -5,6 +5,7 @@ import Produit from "./composantes/produit/produit";
 import AddProduct from "./composantes/produit/AddProduct";
 import Stock from "./composantes/stock/stock";
 import Ajustement from "./composantes/stock/Ajustement";
+import POS from "./composantes/pos/pos";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
       <Route path="/Addproducts" element={<AddProduct />} />
       <Route path="/stock" element={<Stock />} />
       <Route path="/stock/adjustment" element={<Ajustement />} />
+      <Route path="/pos" element={<POS />} />
     </Routes>
   );
 }
