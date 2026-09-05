@@ -596,15 +596,15 @@
 ========================================= */
 
 .variantModal {
-  width: 100%;
+  width: 90%;
+
+  margin-bottom: 80px;
 
   max-width: 480px;
 
   max-height: 85vh;
 
   background: #ffffff;
-
-  border-radius: 14px;
 
   box-shadow:
     0 20px 50px

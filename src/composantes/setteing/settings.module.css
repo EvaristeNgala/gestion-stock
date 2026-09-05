@@ -1,0 +1,481 @@
+/* =========================================
+   CONTENEUR PRINCIPAL
+========================================= */
+
+.settings {
+  width: 100%;
+  min-height: 100vh;
+  padding: 24px;
+  background: #f5f7fb;
+  box-sizing: border-box;
+}
+
+/* =========================================
+   HEADER
+========================================= */
+
+.header {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto 24px;
+}
+
+.header h1 {
+  margin: 0;
+  color: #172033;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.header p {
+  margin: 7px 0 0;
+  color: #6b7280;
+  font-size: 15px;
+}
+
+/* =========================================
+   MESSAGES
+========================================= */
+
+.successMessage,
+.errorMessage {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto 20px;
+  padding: 13px 16px;
+  border-radius: 10px;
+  box-sizing: border-box;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.successMessage {
+  background: #ecfdf3;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.errorMessage {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+/* =========================================
+   GRILLE
+========================================= */
+
+.settingsGrid {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+/* =========================================
+   CARDS
+========================================= */
+
+.settingsCard {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 22px;
+  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 22px;
+}
+
+.cardIcon {
+  width: 43px;
+  height: 43px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eff6ff;
+  border-radius: 10px;
+  font-size: 21px;
+}
+
+.cardHeader h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.cardHeader p {
+  margin: 4px 0 0;
+  color: #7b8494;
+  font-size: 13px;
+}
+
+/* =========================================
+   FORMULAIRE
+========================================= */
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.field label {
+  margin-bottom: 7px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  height: 44px;
+  padding: 0 13px;
+  border: 1px solid #d7dce5;
+  border-radius: 9px;
+  outline: none;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.09);
+}
+
+.field input::placeholder {
+  color: #a1a8b3;
+}
+
+.field small {
+  margin-top: 7px;
+  color: #8a93a3;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* =========================================
+   CODE POS
+========================================= */
+
+.passwordContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordContainer input {
+  padding-right: 85px;
+}
+
+.showButton {
+  position: absolute;
+  right: 8px;
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.showButton:hover {
+  color: #1d4ed8;
+}
+
+/* =========================================
+   TOGGLE STOCK
+========================================= */
+
+.toggleField {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.toggleField strong {
+  display: block;
+  color: #374151;
+  font-size: 13px;
+}
+
+.toggleField p {
+  margin: 4px 0 0;
+  color: #8a93a3;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* =========================================
+   SWITCH
+========================================= */
+
+.switch {
+  position: relative;
+  width: 43px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  background: #d1d5db;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.slider::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  top: 3px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: 0.25s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.switch input:checked + .slider {
+  background: #2563eb;
+}
+
+.switch input:checked + .slider::before {
+  transform: translateX(19px);
+}
+
+/* =========================================
+   EMPLOYÉS
+========================================= */
+
+.employeeCard {
+  grid-column: 1 / -1;
+}
+
+.employeeContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.employeeContent strong {
+  display: block;
+  color: #374151;
+  font-size: 14px;
+}
+
+.employeeContent p {
+  max-width: 700px;
+  margin: 6px 0 0;
+  color: #7b8494;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.secondaryButton {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.secondaryButton:hover {
+  background: #eff6ff;
+}
+
+/* =========================================
+   BOUTON SAUVEGARDE
+========================================= */
+
+.saveContainer {
+  width: 100%;
+  max-width: 1200px;
+  margin: 25px auto 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.saveButton {
+  min-width: 220px;
+  height: 45px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 9px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.saveButton:hover {
+  background: #1d4ed8;
+}
+
+.saveButton:active {
+  transform: translateY(1px);
+}
+
+.saveButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   CHARGEMENT
+========================================= */
+
+.loading {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 15px;
+}
+
+/* =========================================
+   TABLETTE
+========================================= */
+
+@media (max-width: 850px) {
+  .settings {
+    padding: 20px;
+  }
+
+  .settingsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .employeeCard {
+    grid-column: auto;
+  }
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+  .settings {
+    padding: 15px;
+  }
+
+  .header {
+    margin-bottom: 18px;
+  }
+
+  .header h1 {
+    font-size: 25px;
+  }
+
+  .header p {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .settingsGrid {
+    gap: 14px;
+  }
+
+  .settingsCard {
+    padding: 17px;
+    border-radius: 12px;
+  }
+
+  .cardHeader {
+    margin-bottom: 18px;
+  }
+
+  .cardIcon {
+    width: 39px;
+    height: 39px;
+    font-size: 19px;
+  }
+
+  .cardHeader h2 {
+    font-size: 16px;
+  }
+
+  .cardHeader p {
+    font-size: 12px;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .fullWidth {
+    grid-column: auto;
+  }
+
+  .employeeContent {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .secondaryButton {
+    width: 100%;
+  }
+
+  .saveContainer {
+    margin-top: 18px;
+  }
+
+  .saveButton {
+    width: 100%;
+  }
+}

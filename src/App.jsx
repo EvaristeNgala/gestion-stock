@@ -6,6 +6,8 @@ import AddProduct from "./composantes/produit/AddProduct";
 import Stock from "./composantes/stock/stock";
 import Ajustement from "./composantes/stock/Ajustement";
 import POS from "./composantes/pos/pos";
+import Reports from "./composantes/report/Reports";
+import Settings from "./composantes/setteing/Settings";
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
       <Route path="/stock" element={<Stock />} />
       <Route path="/stock/adjustment" element={<Ajustement />} />
       <Route path="/pos" element={<POS />} />
+      <Route path="/reports" element={<Reports />} />
+      <Route path="/settings" element={<Settings />} />
     </Routes>
   );
 }
