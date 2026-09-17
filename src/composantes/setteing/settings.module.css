@@ -1,3 +1,4 @@
+
 /* =========================================
    CONTENEUR PRINCIPAL
 ========================================= */
@@ -179,32 +180,28 @@
 }
 
 /* =========================================
-   CODE POS
+   SÉCURITÉ / ACCÈS
 ========================================= */
 
-.passwordContainer {
-  position: relative;
-  display: flex;
-  align-items: center;
+.securityInfo {
+  padding: 15px 16px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
 }
 
-.passwordContainer input {
-  padding-right: 85px;
+.securityInfo strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #374151;
+  font-size: 14px;
 }
 
-.showButton {
-  position: absolute;
-  right: 8px;
-  border: none;
-  background: transparent;
-  color: #2563eb;
+.securityInfo p {
+  margin: 0;
+  color: #7b8494;
   font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.showButton:hover {
-  color: #1d4ed8;
+  line-height: 1.6;
 }
 
 /* =========================================
@@ -479,3 +476,26 @@
     width: 100%;
   }
 }
+
+/* =========================================
+   PETIT MOBILE
+========================================= */
+
+@media (max-width: 400px) {
+  .settings {
+    padding: 12px;
+  }
+
+  .settingsCard {
+    padding: 15px;
+  }
+
+  .header h1 {
+    font-size: 23px;
+  }
+
+  .saveButton {
+    min-width: 0;
+  }
+}
+

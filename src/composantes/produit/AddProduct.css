@@ -1,4 +1,3 @@
-
 /* ==============================
    CONTAINER PRINCIPAL
 ============================== */
@@ -42,20 +41,33 @@
   margin: 0 auto;
 }
 
+
+/* ==============================
+   BOUTON RETOUR
+============================== */
+
 .backButton {
   width: 42px;
   height: 42px;
   min-width: 42px;
+
   border: none;
   border-radius: 12px;
+
   cursor: pointer;
+
   font-size: 22px;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   background: #ffffff;
   color: #172033;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.06);
+
   transition: 0.2s ease;
 }
 
@@ -65,11 +77,17 @@
 }
 
 
+/* ==============================
+   HEADER
+============================== */
+
 .page-header {
   display: flex;
   align-items: center;
+
   margin-bottom: 25px;
 }
+
 
 /* ==============================
    TITRE
@@ -77,8 +95,10 @@
 
 .add-product-title {
   margin-left: auto;
+
   font-size: 22px;
   font-weight: 700;
+
   color: #233d75;
 }
 
@@ -160,22 +180,12 @@
   transition: 0.2s;
 }
 
-
-/* ==============================
-   FOCUS
-============================== */
-
 .product-input:focus {
   border-color: #2563eb;
 
   box-shadow:
     0 0 0 3px rgba(37, 99, 235, 0.08);
 }
-
-
-/* ==============================
-   PLACEHOLDER
-============================== */
 
 .product-input::placeholder {
   color: #9aa4b2;
@@ -269,11 +279,6 @@
   align-items: center;
 }
 
-
-/* ==============================
-   SELECT
-============================== */
-
 .category-select {
   flex: 1;
 
@@ -323,6 +328,12 @@
   background: #dbeafe;
 }
 
+.create-category-button:disabled {
+  opacity: 0.6;
+
+  cursor: not-allowed;
+}
+
 
 /* ==============================
    NOUVELLE CATEGORIE
@@ -357,7 +368,7 @@
 
 
 /* ==============================
-   ANNULER CATEGORIE
+   BOUTONS CATEGORIE
 ============================== */
 
 .cancel-category-button,
@@ -379,7 +390,6 @@
   transition: 0.2s;
 }
 
-
 .cancel-category-button {
   background: #eef1f5;
 
@@ -392,11 +402,6 @@
   background: #e4e7ec;
 }
 
-
-/* ==============================
-   CONFIRMER CATEGORIE
-============================== */
-
 .confirm-category-button {
   background: #2563eb;
 
@@ -408,11 +413,6 @@
 .confirm-category-button:hover {
   background: #1d4ed8;
 }
-
-
-/* ==============================
-   BOUTONS DESACTIVES
-============================== */
 
 .cancel-category-button:disabled,
 .confirm-category-button:disabled {
@@ -447,9 +447,9 @@
 }
 
 
-/* ==============================
+/* ==================================================
    VARIANTES
-============================== */
+================================================== */
 
 .variant-header {
   margin-top: 28px;
@@ -461,6 +461,8 @@
   margin: 0;
 
   font-size: 17px;
+
+  font-weight: 700;
 
   color: #172033;
 }
@@ -476,11 +478,135 @@
 }
 
 
-/* ==============================
-   CARTE VARIANTE
-============================== */
+/* ==================================================
+   ACTIVATION DES VARIANTES
+================================================== */
+
+.variant-toggle {
+  width: 100%;
+
+  min-height: 52px;
+
+  padding: 10px 14px;
+
+  box-sizing: border-box;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 15px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 12px;
+
+  background: #f8fafc;
+
+  color: #334155;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  transition: 0.2s ease;
+}
+
+.variant-toggle:hover {
+  border-color: #bfdbfe;
+
+  background: #f8fbff;
+}
+
+
+/* ==================================================
+   SWITCH CHECKBOX
+================================================== */
+
+.variant-switch {
+  position: relative;
+
+  width: 44px;
+  height: 24px;
+
+  flex-shrink: 0;
+
+  display: block;
+
+  cursor: pointer;
+}
+
+.variant-switch input {
+  opacity: 0;
+
+  width: 0;
+  height: 0;
+
+  position: absolute;
+}
+
+.variant-slider {
+  position: absolute;
+
+  inset: 0;
+
+  background: #cbd5e1;
+
+  border-radius: 30px;
+
+  transition: 0.25s;
+}
+
+.variant-slider::before {
+  content: "";
+
+  position: absolute;
+
+  width: 18px;
+  height: 18px;
+
+  left: 3px;
+  top: 3px;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.18);
+
+  transition: 0.25s;
+}
+
+.variant-switch input:checked + .variant-slider {
+  background: #2563eb;
+}
+
+.variant-switch input:checked + .variant-slider::before {
+  transform: translateX(20px);
+}
+
+
+/* ==================================================
+   SECTION VARIANTES
+================================================== */
+
+.variant-section {
+  width: 100%;
+
+  margin-top: 12px;
+}
+
+
+/* ==================================================
+   CARTE AJOUT VARIANTE
+================================================== */
 
 .variant-card {
+  width: 100%;
+
   padding: 15px;
 
   margin-top: 12px;
@@ -492,30 +618,51 @@
   border: 1px solid #e8edf3;
 
   box-sizing: border-box;
+
+  display: grid;
+
+  grid-template-columns: 1.3fr 0.8fr 1fr auto;
+
+  gap: 12px;
+
+  align-items: end;
 }
 
 
-/* ==============================
-   BOUTONS
-============================== */
+/* ==================================================
+   CHAMPS VARIANTE
+================================================== */
 
-.button-row {
-  width: 100%;
+.variant-field {
+  min-width: 0;
+}
 
-  margin-top: 20px;
+.variant-field .form-label {
+  margin-top: 0;
+}
 
+
+/* ==================================================
+   ZONE BOUTON AJOUT
+================================================== */
+
+.variant-add-area {
   display: flex;
 
-  justify-content: flex-start;
+  align-items: flex-end;
+}
+
+.variant-add-area .variant-button {
+  margin: 0;
 }
 
 
-/* ==============================
+/* ==================================================
    BOUTON AJOUTER VARIANTE
-============================== */
+================================================== */
 
 .variant-button {
-  min-height: 42px;
+  min-height: 48px;
 
   padding: 0 18px;
 
@@ -529,26 +676,207 @@
 
   cursor: pointer;
 
-  font-weight: 600;
+  font-weight: 700;
 
-  font-size: 14px;
+  font-size: 13px;
 
-  transition: 0.2s;
+  white-space: nowrap;
+
+  transition: 0.2s ease;
 }
 
 .variant-button:hover {
   background: #dbeafe;
+
+  transform: translateY(-1px);
+}
+
+.variant-button:active {
+  transform: translateY(0);
 }
 
 
-/* ==============================
-   BOUTON ENREGISTRER
-============================== */
+/* ==================================================
+   VARIANTES AJOUTEES
+================================================== */
+
+.saved-variants {
+  width: 100%;
+
+  margin-top: 20px;
+}
+
+.saved-variants-title {
+  margin-bottom: 10px;
+
+  font-size: 14px;
+
+  font-weight: 700;
+
+  color: #334155;
+}
+
+.saved-variants-list {
+  width: 100%;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+
+/* ==================================================
+   UNE VARIANTE AJOUTEE
+================================================== */
+
+.saved-variant-item {
+  width: 100%;
+
+  min-height: 48px;
+
+  padding: 9px 12px;
+
+  box-sizing: border-box;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 15px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 10px;
+
+  transition: 0.2s ease;
+}
+
+.saved-variant-item:hover {
+  border-color: #bfdbfe;
+
+  background: #f8fbff;
+}
+
+
+/* ==================================================
+   INFORMATIONS VARIANTE
+================================================== */
+
+.variant-info {
+  flex: 1;
+
+  min-width: 0;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(90px, 1.2fr)
+    minmax(100px, 1fr)
+    minmax(90px, 1fr);
+
+  align-items: center;
+
+  gap: 15px;
+}
+
+.variant-name {
+  font-size: 14px;
+
+  font-weight: 700;
+
+  color: #1e3a8a;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+.variant-quantity {
+  font-size: 13px;
+
+  color: #64748b;
+
+  white-space: nowrap;
+}
+
+.variant-price {
+  font-size: 13px;
+
+  font-weight: 700;
+
+  color: #334155;
+
+  white-space: nowrap;
+}
+
+
+/* ==================================================
+   BOUTON SUPPRIMER
+================================================== */
+
+.remove-variant-button {
+  min-height: 34px;
+
+  padding: 0 11px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  background: #fff1f2;
+
+  color: #e11d48;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+
+  flex-shrink: 0;
+
+  transition: 0.2s ease;
+}
+
+.remove-variant-button:hover {
+  background: #ffe4e6;
+
+  color: #be123c;
+}
+
+
+/* ==================================================
+   BOUTONS GENERAUX
+================================================== */
+
+.button-row {
+  width: 100%;
+
+  margin-top: 20px;
+
+  display: flex;
+
+  justify-content: flex-start;
+}
+
+
+/* ==================================================
+   ENREGISTRER
+================================================== */
 
 .save-row {
   margin-top: 25px;
 }
-
 
 .save-button {
   width: 100%;
@@ -588,9 +916,9 @@
 }
 
 
-/* ==============================
+/* ==================================================
    TABLETTE
-============================== */
+================================================== */
 
 @media (min-width: 600px) {
 
@@ -609,9 +937,9 @@
 }
 
 
-/* ==============================
+/* ==================================================
    PC
-============================== */
+================================================== */
 
 @media (min-width: 768px) {
 
@@ -631,33 +959,78 @@
     height: 280px;
   }
 
-  /*
-    Les champs des variantes peuvent
-    être présentés sur une ligne
-    sur ordinateur.
-  */
+}
+
+
+/* ==================================================
+   PETITS ECRANS
+================================================== */
+
+@media (max-width: 767px) {
 
   .variant-card {
-    display: grid;
+    grid-template-columns: 1fr 1fr;
 
+    gap: 12px;
+  }
+
+  .variant-field:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .variant-add-area {
+    grid-column: 1 / -1;
+  }
+
+  .variant-button {
+    width: 100%;
+  }
+
+  .variant-info {
     grid-template-columns:
       1fr 1fr 1fr;
 
-    gap: 12px;
-
-    align-items: end;
-  }
-
-  .variant-card .form-group {
-    margin-top: 0;
+    gap: 8px;
   }
 
 }
 
 
-/* ==============================
-   PETITS ECRANS
-============================== */
+/* ==================================================
+   ECRANS < 600
+================================================== */
+
+@media (max-width: 599px) {
+
+  .saved-variant-item {
+    gap: 10px;
+  }
+
+  .variant-info {
+    grid-template-columns:
+      minmax(70px, 1fr)
+      minmax(70px, 1fr)
+      minmax(70px, 1fr);
+  }
+
+  .variant-name,
+  .variant-quantity,
+  .variant-price {
+    font-size: 12px;
+  }
+
+  .remove-variant-button {
+    padding: 0 8px;
+
+    font-size: 11px;
+  }
+
+}
+
+
+/* ==================================================
+   MOBILE
+================================================== */
 
 @media (max-width: 420px) {
 
@@ -702,14 +1075,50 @@
 
   .variant-card {
     padding: 12px;
+
+    grid-template-columns: 1fr;
+  }
+
+  .variant-field:first-child {
+    grid-column: auto;
+  }
+
+  .variant-add-area {
+    grid-column: auto;
+  }
+
+  .variant-button {
+    width: 100%;
+  }
+
+  /*
+     Sur très petit écran, les informations
+     restent compactes mais le bouton supprimer
+     reste visible.
+  */
+
+  .saved-variant-item {
+    padding: 9px;
+  }
+
+  .variant-info {
+    grid-template-columns: 1fr;
+
+    gap: 3px;
+  }
+
+  .variant-name,
+  .variant-quantity,
+  .variant-price {
+    white-space: normal;
   }
 
 }
 
 
-/* ==============================
+/* ==================================================
    TRES PETITS ECRANS
-============================== */
+================================================== */
 
 @media (max-width: 360px) {
 
@@ -729,5 +1138,24 @@
     font-size: 13px;
   }
 
-}
+  .variant-toggle {
+    padding: 10px 12px;
 
+    font-size: 13px;
+  }
+
+  .variant-switch {
+    width: 40px;
+    height: 22px;
+  }
+
+  .variant-slider::before {
+    width: 16px;
+    height: 16px;
+  }
+
+  .variant-switch input:checked + .variant-slider::before {
+    transform: translateX(18px);
+  }
+
+}

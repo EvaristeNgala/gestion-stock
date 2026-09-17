@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -7,6 +6,7 @@ import {
   onSnapshot,
   query,
   orderBy,
+  where,
 } from "firebase/firestore";
 
 import { db } from "../../firebase";
@@ -15,6 +15,18 @@ import styles from "./stock.module.css";
 
 function Stock() {
   const navigate = useNavigate();
+
+  // ==============================
+  // SESSION MAGASIN
+  // ==============================
+
+  const savedSession = localStorage.getItem("storeSession");
+
+  const session = savedSession
+    ? JSON.parse(savedSession)
+    : null;
+
+  const storeId = session?.storeId || "";
 
   // ==============================
   // RECHERCHE
@@ -40,8 +52,33 @@ function Stock() {
   // ==============================
 
   useEffect(() => {
+    // ==============================
+    // AUCUN MAGASIN CONNECTE
+    // ==============================
+
+    if (!storeId) {
+      console.warn(
+        "Aucun magasin connecté pour charger le stock."
+      );
+
+      setProducts([]);
+      setLoading(false);
+
+      return;
+    }
+
+    // ==============================
+    // PRODUITS DU MAGASIN UNIQUEMENT
+    // ==============================
+
     const productsQuery = query(
       collection(db, "products"),
+
+      // IMPORTANT :
+      // on récupère uniquement les produits
+      // appartenant au magasin connecté
+      where("storeId", "==", storeId),
+
       orderBy("createdAt", "desc")
     );
 
@@ -62,27 +99,37 @@ function Stock() {
           error
         );
 
+        setProducts([]);
         setLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [storeId]);
 
   // ==============================
   // RECHERCHE
   // ==============================
 
   const filteredProducts = products.filter((product) => {
-    const productName = product.productName || "";
-    const categoryName =
-      product.categoryName || product.category || "";
+    const productName =
+      product.productName || "";
 
-    const searchText = search.toLowerCase().trim();
+    const categoryName =
+      product.categoryName ||
+      product.category ||
+      "";
+
+    const searchText =
+      search.toLowerCase().trim();
 
     return (
-      productName.toLowerCase().includes(searchText) ||
-      categoryName.toLowerCase().includes(searchText)
+      productName
+        .toLowerCase()
+        .includes(searchText) ||
+      categoryName
+        .toLowerCase()
+        .includes(searchText)
     );
   });
 
@@ -90,33 +137,49 @@ function Stock() {
   // CALCULS STOCK
   // ==============================
 
-  const totalProducts = products.length;
+  const totalProducts =
+    products.length;
 
-  const lowStockProducts = products.filter((product) => {
-    const stock = Number(product.stock || 0);
-    const alertStock = Number(product.alertStock || 0);
+  const lowStockProducts =
+    products.filter((product) => {
+      const stock =
+        Number(product.stock || 0);
 
-    return stock > 0 && stock <= alertStock;
-  }).length;
+      const alertStock =
+        Number(product.alertStock || 0);
 
-  const outOfStockProducts = products.filter((product) => {
-    return Number(product.stock || 0) <= 0;
-  }).length;
+      return (
+        stock > 0 &&
+        stock <= alertStock
+      );
+    }).length;
 
-  const normalStockProducts = products.filter((product) => {
-    const stock = Number(product.stock || 0);
-    const alertStock = Number(product.alertStock || 0);
+  const outOfStockProducts =
+    products.filter((product) => {
+      return Number(product.stock || 0) <= 0;
+    }).length;
 
-    return stock > alertStock;
-  }).length;
+  const normalStockProducts =
+    products.filter((product) => {
+      const stock =
+        Number(product.stock || 0);
+
+      const alertStock =
+        Number(product.alertStock || 0);
+
+      return stock > alertStock;
+    }).length;
 
   // ==============================
   // ETAT DU STOCK
   // ==============================
 
   const getStockStatus = (product) => {
-    const stock = Number(product.stock || 0);
-    const alertStock = Number(product.alertStock || 0);
+    const stock =
+      Number(product.stock || 0);
+
+    const alertStock =
+      Number(product.alertStock || 0);
 
     if (stock <= 0) {
       return {
@@ -142,7 +205,10 @@ function Stock() {
   // CHANGER DE VARIANTE
   // ==============================
 
-  const handleVariantChange = (productId, value) => {
+  const handleVariantChange = (
+    productId,
+    value
+  ) => {
     setSelectedVariants((previous) => ({
       ...previous,
       [productId]: value,
@@ -154,9 +220,10 @@ function Stock() {
   // ==============================
 
   const getSelectedVariant = (product) => {
-    const variants = Array.isArray(product.variants)
-      ? product.variants
-      : [];
+    const variants =
+      Array.isArray(product.variants)
+        ? product.variants
+        : [];
 
     const selectedValue =
       selectedVariants[product.id];
@@ -168,7 +235,8 @@ function Stock() {
       return null;
     }
 
-    const variantIndex = Number(selectedValue);
+    const variantIndex =
+      Number(selectedValue);
 
     if (
       Number.isNaN(variantIndex) ||
@@ -185,7 +253,8 @@ function Stock() {
   // ==============================
 
   const formatStock = (product) => {
-    const stock = Number(product.stock || 0);
+    const stock =
+      Number(product.stock || 0);
 
     const stockUnit =
       product.stockUnit || "unité";
@@ -208,9 +277,8 @@ function Stock() {
       );
     }
 
-    const quantity = Number(
-      variant.quantity || 0
-    );
+    const quantity =
+      Number(variant.quantity || 0);
 
     const variantType =
       variant.type?.trim() || "unité";
@@ -291,12 +359,16 @@ function Stock() {
 
         <button
           className={styles.backButton}
-          onClick={() => navigate("/dashboard")}
+          onClick={() =>
+            navigate("/dashboard")
+          }
         >
           ←
         </button>
 
-        <h1>Gestion du stock</h1>
+        <h1>
+          Gestion du stock
+        </h1>
 
       </header>
 
@@ -453,10 +525,6 @@ function Stock() {
 
             <div className={styles.empty}>
 
-              <span>
-                📦
-              </span>
-
               <p>
                 {search
                   ? "Aucun produit trouvé"
@@ -558,7 +626,7 @@ function Stock() {
                               ) : (
 
                                 <span>
-                                  📦
+                                
                                 </span>
 
                               )}
@@ -632,8 +700,10 @@ function Stock() {
                             >
 
                               <option value="">
-                                {product.stockUnit ||
-                                  "Unité principale"}
+                                {
+                                  product.stockUnit ||
+                                  "Unité principale"
+                                }
                               </option>
 
                               {variants.map(
@@ -652,8 +722,7 @@ function Stock() {
                                     variant.type?.trim();
 
                                   // Ne pas afficher
-                                  // les variantes
-                                  // incomplètes
+                                  // les variantes invalides
 
                                   if (
                                     !type ||
@@ -668,6 +737,7 @@ function Stock() {
                                       key={index}
                                       value={index}
                                     >
+
                                       {type} (
                                       {quantity}{" "}
                                       {
@@ -675,6 +745,7 @@ function Stock() {
                                         "unité"
                                       }
                                       )
+
                                     </option>
 
                                   );
@@ -684,16 +755,20 @@ function Stock() {
 
                             </select>
 
-                            {/* STOCK CALCULE */}
+                            {/* ======================
+                                STOCK CALCULE
+                            ======================= */}
 
                             <div
                               className={
                                 styles.stockDisplay
                               }
                             >
+
                               {formatStock(
                                 product
                               )}
+
                             </div>
 
                           </div>

@@ -1,0 +1,748 @@
+
+/* =========================================
+   CONTENEUR PRINCIPAL
+========================================= */
+
+.container {
+  width: 100%;
+  min-height: 100vh;
+  padding: 24px;
+  background: #f5f7fb;
+  box-sizing: border-box;
+}
+
+/* =========================================
+   HEADER
+========================================= */
+
+.header {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto 24px;
+}
+
+.backButton {
+  margin-bottom: 12px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.backButton:hover {
+  color: #1d4ed8;
+}
+
+.header h1 {
+  margin: 0;
+  color: #172033;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.header p {
+  margin: 7px 0 0;
+  color: #6b7280;
+  font-size: 15px;
+}
+
+/* =========================================
+   CONTENU PRINCIPAL
+========================================= */
+
+.content {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  display: grid;
+  grid-template-columns:
+    minmax(340px, 420px)
+    minmax(0, 1fr);
+
+  gap: 20px;
+  align-items: start;
+}
+
+/* =========================================
+   CARTE FORMULAIRE
+========================================= */
+
+.formCard,
+.listCard {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 22px;
+  box-sizing: border-box;
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.formCard h2,
+.listCard h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.formCard > h2 {
+  margin-bottom: 22px;
+}
+
+/* =========================================
+   FORMULAIRE
+========================================= */
+
+.formCard form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.formGroup label {
+  margin-bottom: 7px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.formGroup input,
+.formGroup select {
+  width: 100%;
+  height: 44px;
+  padding: 0 13px;
+
+  border: 1px solid #d7dce5;
+  border-radius: 9px;
+
+  outline: none;
+  background: #ffffff;
+  color: #1f2937;
+
+  font-size: 14px;
+  box-sizing: border-box;
+
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(37, 99, 235, 0.09);
+}
+
+.formGroup input::placeholder {
+  color: #a1a8b3;
+}
+
+.formGroup input:disabled {
+  background: #f8fafc;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.formGroup small {
+  margin-top: 7px;
+  color: #8a93a3;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* =========================================
+   CODE EMPLOYÉ
+========================================= */
+
+.codeRow {
+  display: flex;
+  gap: 8px;
+}
+
+.codeRow input {
+  flex: 1;
+  min-width: 0;
+}
+
+.generateButton {
+  flex-shrink: 0;
+
+  height: 44px;
+  padding: 0 13px;
+
+  border: 1px solid #2563eb;
+  border-radius: 9px;
+
+  background: #eff6ff;
+  color: #2563eb;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.generateButton:hover {
+  background: #dbeafe;
+  border-color: #1d4ed8;
+}
+
+/* =========================================
+   PERMISSIONS
+========================================= */
+
+.permissionsSection {
+  padding: 15px;
+
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.permissionsSection h3 {
+  margin: 0 0 14px;
+
+  color: #374151;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.permissionsGrid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 8px;
+}
+
+.permissionItem {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  min-height: 38px;
+  padding: 0 10px;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.permissionItem:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.permissionItem input {
+  width: 16px;
+  height: 16px;
+
+  accent-color: #2563eb;
+
+  cursor: pointer;
+}
+
+.permissionItem span {
+  color: #374151;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* =========================================
+   BOUTON AJOUT
+========================================= */
+
+.saveButton {
+  width: 100%;
+  height: 45px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: #2563eb;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s,
+    transform 0.1s;
+}
+
+.saveButton:hover {
+  background: #1d4ed8;
+}
+
+.saveButton:active {
+  transform: translateY(1px);
+}
+
+.saveButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   HEADER DE LA LISTE
+========================================= */
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 18px;
+}
+
+.listHeader h2 {
+  margin: 0;
+}
+
+.listHeader p {
+  margin: 5px 0 0;
+
+  color: #8a93a3;
+  font-size: 12px;
+}
+
+/* =========================================
+   MESSAGE VIDE
+========================================= */
+
+.emptyMessage {
+  min-height: 220px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  color: #8a93a3;
+  font-size: 13px;
+}
+
+/* =========================================
+   LISTE EMPLOYÉS
+========================================= */
+
+.employeeList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* =========================================
+   CARTE EMPLOYÉ
+========================================= */
+
+.employeeCard {
+  display: grid;
+
+  grid-template-columns:
+    minmax(150px, 1fr)
+    auto
+    minmax(120px, 1.3fr)
+    auto
+    auto;
+
+  align-items: center;
+
+  gap: 15px;
+
+  padding: 14px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.employeeCard:hover {
+  border-color: #dbe3ef;
+
+  box-shadow:
+    0 2px 7px
+    rgba(15, 23, 42, 0.04);
+}
+
+/* =========================================
+   INFORMATIONS EMPLOYÉ
+========================================= */
+
+.employeeMain {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  min-width: 0;
+}
+
+.employeeAvatar {
+  width: 38px;
+  height: 38px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #eff6ff;
+  color: #2563eb;
+
+  border-radius: 50%;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.employeeMain h3 {
+  margin: 0;
+
+  overflow: hidden;
+
+  color: #172033;
+
+  font-size: 13px;
+  font-weight: 650;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.roleBadge {
+  display: inline-block;
+
+  margin-top: 3px;
+
+  color: #7b8494;
+
+  font-size: 11px;
+}
+
+/* =========================================
+   CODE EMPLOYÉ
+========================================= */
+
+.employeeCode {
+  display: flex;
+  align-items: center;
+
+  white-space: nowrap;
+
+  color: #8a93a3;
+  font-size: 11px;
+}
+
+.employeeCode span {
+  margin-right: 4px;
+}
+
+.employeeCode strong {
+  color: #374151;
+
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+/* =========================================
+   PERMISSIONS EMPLOYÉ
+========================================= */
+
+.permissionBadges {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 5px;
+}
+
+.permissionBadge {
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 24px;
+
+  padding: 0 7px;
+
+  background: #f8fafc;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+
+  color: #5b6472;
+
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* =========================================
+   STATUT
+========================================= */
+
+.statusRow {
+  display: flex;
+  align-items: center;
+}
+
+.active,
+.inactive {
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 25px;
+
+  padding: 0 9px;
+
+  border-radius: 20px;
+
+  font-size: 10px;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.active {
+  background: #ecfdf3;
+  color: #15803d;
+}
+
+.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* =========================================
+   ACTIONS
+========================================= */
+
+.actions {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+}
+
+.statusButton,
+.deleteButton {
+  height: 32px;
+
+  padding: 0 9px;
+
+  border-radius: 7px;
+
+  font-size: 10px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.statusButton {
+  border: 1px solid #d7dce5;
+
+  background: #ffffff;
+  color: #374151;
+}
+
+.statusButton:hover {
+  background: #f8fafc;
+}
+
+.deleteButton {
+  border: 1px solid #fecaca;
+
+  background: #ffffff;
+  color: #dc2626;
+}
+
+.deleteButton:hover {
+  background: #fef2f2;
+}
+
+/* =========================================
+   TABLETTE
+========================================= */
+
+@media (max-width: 1050px) {
+
+  .content {
+    grid-template-columns: 1fr;
+  }
+
+  .employeeCard {
+    grid-template-columns:
+      minmax(180px, 1fr)
+      auto
+      minmax(150px, 1fr)
+      auto;
+  }
+
+  .actions {
+    grid-column: 1 / -1;
+
+    justify-content: flex-end;
+
+    padding-top: 5px;
+
+    border-top: 1px solid #f0f1f4;
+  }
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 650px) {
+
+  .container {
+    padding: 15px;
+  }
+
+  .header {
+    margin-bottom: 18px;
+  }
+
+  .header h1 {
+    font-size: 25px;
+  }
+
+  .header p {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .content {
+    gap: 14px;
+  }
+
+  .formCard,
+  .listCard {
+    padding: 17px;
+    border-radius: 12px;
+  }
+
+  .permissionsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .employeeCard {
+    display: flex;
+    flex-direction: column;
+
+    align-items: stretch;
+
+    gap: 11px;
+  }
+
+  .employeeMain {
+    width: 100%;
+  }
+
+  .employeeCode {
+    padding-top: 8px;
+
+    border-top: 1px solid #f0f1f4;
+  }
+
+  .permissionBadges {
+    padding-top: 3px;
+  }
+
+  .statusRow {
+    padding-top: 3px;
+  }
+
+  .actions {
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    padding-top: 10px;
+
+    border-top: 1px solid #f0f1f4;
+  }
+
+  .statusButton,
+  .deleteButton {
+    width: 100%;
+    height: 38px;
+  }
+}
+
+/* =========================================
+   PETIT MOBILE
+========================================= */
+
+@media (max-width: 400px) {
+
+  .container {
+    padding: 12px;
+  }
+
+  .formCard,
+  .listCard {
+    padding: 15px;
+  }
+
+  .codeRow {
+    flex-direction: column;
+  }
+
+  .generateButton {
+    width: 100%;
+  }
+
+  .header h1 {
+    font-size: 23px;
+  }
+
+  .formGroup input,
+  .formGroup select {
+    height: 42px;
+  }
+
+  .saveButton {
+    height: 44px;
+  }
+}

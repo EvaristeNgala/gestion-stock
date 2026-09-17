@@ -80,12 +80,15 @@
 
   display: flex;
   align-items: center;
+
   gap: 10px;
 
   background: white;
+
   border-radius: 14px;
 
   padding: 0 15px;
+
   margin-bottom: 25px;
 
   box-sizing: border-box;
@@ -107,6 +110,7 @@
   background: transparent;
 
   font-size: 14px;
+
   color: #172033;
 }
 
@@ -131,6 +135,7 @@
   margin: 0;
 
   font-size: 17px;
+
   color: #172033;
 }
 
@@ -138,11 +143,13 @@
   margin: 4px 0 0;
 
   font-size: 13px;
+
   color: #64748b;
 }
 
 .titleSection > span {
   font-size: 13px;
+
   color: #64748b;
 
   white-space: nowrap;
@@ -173,6 +180,7 @@
   margin: 12px 0 0;
 
   color: #64748b;
+
   font-size: 14px;
 }
 
@@ -198,14 +206,13 @@
   box-shadow:
     0 2px 8px rgba(15, 23, 42, 0.03);
 
-  /*
-    Permet de faire défiler facilement
-    le tableau avec la molette / curseur
-  */
   cursor: default;
 
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+
+  scrollbar-color:
+    #cbd5e1
+    transparent;
 }
 
 
@@ -238,11 +245,7 @@
 .productTable {
   width: 100%;
 
-  /*
-    Le tableau garde une largeur minimale
-    uniquement lorsque l'écran est trop petit.
-  */
-  min-width: 780px;
+  min-width: 880px;
 
   border-collapse: collapse;
 
@@ -264,11 +267,13 @@
   text-align: left;
 
   font-size: 12px;
+
   font-weight: 700;
 
   color: #64748b;
 
   text-transform: uppercase;
+
   letter-spacing: 0.3px;
 
   white-space: nowrap;
@@ -301,11 +306,29 @@
 
 
 /* ==============================
+   LIGNE PRODUIT INACTIF
+============================== */
+
+.inactiveRow {
+  background: #fafafa;
+}
+
+.inactiveRow:hover {
+  background: #f7f7f7 !important;
+}
+
+.inactiveRow .productName strong {
+  color: #94a3b8;
+}
+
+
+/* ==============================
    PRODUIT
 ============================== */
 
 .productCell {
   display: flex;
+
   align-items: center;
 
   gap: 12px;
@@ -342,6 +365,7 @@
   display: block;
 
   font-size: 14px;
+
   font-weight: 600;
 
   color: #172033;
@@ -349,7 +373,9 @@
   max-width: 220px;
 
   overflow: hidden;
+
   text-overflow: ellipsis;
+
   white-space: nowrap;
 }
 
@@ -370,6 +396,7 @@
   color: #475569;
 
   font-size: 12px;
+
   font-weight: 600;
 
   white-space: nowrap;
@@ -382,6 +409,7 @@
 
 .purchasePrice {
   font-size: 13px;
+
   font-weight: 600;
 
   color: #172033;
@@ -398,6 +426,7 @@
   display: inline-block;
 
   font-size: 13px;
+
   font-weight: 600;
 
   color: #16a34a;
@@ -414,6 +443,7 @@
   display: inline-block;
 
   font-size: 13px;
+
   font-weight: 700;
 
   color: #dc2626;
@@ -429,11 +459,111 @@
 
 
 /* ==============================
+   ÉTAT ACTIF
+============================== */
+
+.activeStatus,
+.inactiveStatus {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  min-height: 32px;
+
+  padding: 5px 10px;
+
+  border-radius: 20px;
+
+  border: none;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+
+/* ==============================
+   ACTIF
+============================== */
+
+.activeStatus {
+  background: #ecfdf3;
+
+  color: #15803d;
+}
+
+.activeStatus:hover {
+  background: #dcfce7;
+
+  transform: translateY(-1px);
+}
+
+
+/* ==============================
+   INACTIF
+============================== */
+
+.inactiveStatus {
+  background: #f1f5f9;
+
+  color: #64748b;
+}
+
+.inactiveStatus:hover {
+  background: #e2e8f0;
+
+  transform: translateY(-1px);
+}
+
+
+/* ==============================
+   POINT ÉTAT
+============================== */
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: currentColor;
+
+  flex-shrink: 0;
+}
+
+
+/* ==============================
+   BOUTON ÉTAT DÉSACTIVÉ
+============================== */
+
+.activeStatus:disabled,
+.inactiveStatus:disabled {
+  cursor: default;
+
+  opacity: 1;
+}
+
+.activeStatus:disabled:hover,
+.inactiveStatus:disabled:hover {
+  transform: none;
+}
+
+
+/* ==============================
    ACTIONS
 ============================== */
 
 .actions {
   display: flex;
+
   align-items: center;
 
   gap: 7px;
@@ -445,12 +575,15 @@
   height: 34px;
 
   border: none;
+
   border-radius: 9px;
 
   cursor: pointer;
 
   display: flex;
+
   align-items: center;
+
   justify-content: center;
 
   font-size: 15px;
@@ -505,6 +638,7 @@
   margin: 12px 0 0;
 
   color: #172033;
+
   font-size: 16px;
 }
 
@@ -512,6 +646,7 @@
   margin: 8px 0 0;
 
   color: #64748b;
+
   font-size: 14px;
 }
 
@@ -521,6 +656,7 @@
   border: none;
 
   background: #2563eb;
+
   color: white;
 
   padding: 11px 18px;
@@ -528,6 +664,7 @@
   border-radius: 10px;
 
   font-size: 14px;
+
   font-weight: 600;
 
   cursor: pointer;
@@ -557,17 +694,13 @@
   }
 
   .tableContainer {
-    /*
-      Pas de scrollbar verticale.
-      Le défilement horizontal apparaît
-      uniquement si nécessaire.
-    */
     overflow-x: auto;
+
     overflow-y: hidden;
   }
 
   .productTable {
-    min-width: 780px;
+    min-width: 880px;
   }
 }
 
@@ -597,10 +730,6 @@
   .tableContainer {
     border-radius: 13px;
 
-    /*
-      Permet le défilement horizontal
-      au doigt sur téléphone.
-    */
     -webkit-overflow-scrolling: touch;
   }
 
@@ -636,7 +765,6 @@
   }
 
   .productTable {
-    min-width: 740px;
+    min-width: 840px;
   }
 }
-

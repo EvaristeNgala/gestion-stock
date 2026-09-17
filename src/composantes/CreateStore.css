@@ -1,0 +1,294 @@
+/* ==============================
+   PAGE
+============================== */
+
+.create-store-page {
+  min-height: 100vh;
+  width: 100%;
+
+  position: relative;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 30px 20px;
+
+  box-sizing: border-box;
+
+  background-image:
+    url("https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1600&q=80");
+
+  background-size: cover;
+  background-position: center;
+
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ==============================
+   OVERLAY
+============================== */
+
+.create-store-overlay {
+  position: absolute;
+  inset: 0;
+
+  background: rgba(8, 20, 40, 0.72);
+}
+
+/* ==============================
+   CONTENEUR
+============================== */
+
+.create-store-container {
+  position: relative;
+  z-index: 2;
+
+  width: 100%;
+  max-width: 500px;
+}
+
+/* ==============================
+   RETOUR
+============================== */
+
+.create-store-back {
+  border: none;
+
+  background: transparent;
+
+  color: white;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  padding: 0;
+
+  margin-bottom: 15px;
+}
+
+.create-store-back:hover {
+  text-decoration: underline;
+}
+
+/* ==============================
+   CARTE
+============================== */
+
+.create-store-card {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 30px;
+
+  border-radius: 20px;
+
+  background: white;
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+/* ==============================
+   HEADER
+============================== */
+
+.create-store-header {
+  text-align: center;
+
+  margin-bottom: 26px;
+}
+
+.create-store-icon {
+  width: 58px;
+  height: 58px;
+
+  margin: 0 auto 14px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border-radius: 15px;
+
+  background: #eff6ff;
+
+  font-size: 28px;
+}
+
+.create-store-header h1 {
+  margin: 0 0 8px;
+
+  font-size: 27px;
+
+  color: #172033;
+}
+
+.create-store-header p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 14px;
+
+  line-height: 1.5;
+}
+
+/* ==============================
+   FORMULAIRE
+============================== */
+
+.create-form-group {
+  margin-bottom: 17px;
+}
+
+.create-form-group label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #334155;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.create-form-group input {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 13px 14px;
+
+  border: 1px solid #dbe2ea;
+
+  border-radius: 10px;
+
+  outline: none;
+
+  background: #f8fafc;
+
+  color: #172033;
+
+  font-size: 15px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.create-form-group input:focus {
+  border-color: #2563eb;
+
+  background: white;
+
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.10);
+}
+
+/* ==============================
+   BOUTON
+============================== */
+
+.create-store-submit {
+  width: 100%;
+
+  padding: 14px;
+
+  margin-top: 5px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background: #2563eb;
+
+  color: white;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.create-store-submit:hover {
+  background: #1d4ed8;
+
+  transform: translateY(-1px);
+}
+
+.create-store-submit:disabled {
+  opacity: 0.65;
+
+  cursor: not-allowed;
+
+  transform: none;
+}
+
+/* ==============================
+   INFORMATION
+============================== */
+
+.create-store-info {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 9px;
+
+  margin-top: 20px;
+
+  padding: 12px;
+
+  border-radius: 10px;
+
+  background: #f8fafc;
+}
+
+.create-store-info span {
+  font-size: 16px;
+}
+
+.create-store-info p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+/* ==============================
+   MOBILE
+============================== */
+
+@media (max-width: 600px) {
+
+  .create-store-page {
+    padding: 20px 15px;
+  }
+
+  .create-store-card {
+    padding: 23px 18px;
+
+    border-radius: 16px;
+  }
+
+  .create-store-header h1 {
+    font-size: 24px;
+  }
+
+  .create-store-header p {
+    font-size: 13px;
+  }
+
+}

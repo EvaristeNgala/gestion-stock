@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -8,24 +7,30 @@ import {
   collection,
   addDoc,
   getDocs,
-  serverTimestamp
+  serverTimestamp,
+  query,
+  where,
 } from "firebase/firestore";
 
 import {
   ref,
   uploadBytes,
-  getDownloadURL
+  getDownloadURL,
 } from "firebase/storage";
 
 import "./AddProduct.css";
 
 function AddProduct() {
-
-  // ==============================
-  // NAVIGATION
-  // ==============================
-
   const navigate = useNavigate();
+
+  // ==============================
+  // SESSION MAGASIN
+  // ==============================
+
+  const savedSession = localStorage.getItem("storeSession");
+  const session = savedSession ? JSON.parse(savedSession) : null;
+
+  const storeId = session?.storeId || "";
 
   // ==============================
   // CATEGORIES
@@ -43,11 +48,10 @@ function AddProduct() {
   const [creatingCategory, setCreatingCategory] = useState(false);
 
   // ==============================
-  // CHAMPS PRODUIT
+  // PRODUIT
   // ==============================
 
   const [productName, setProductName] = useState("");
-
   const [purchasePrice, setPurchasePrice] = useState("");
 
   const [stock, setStock] = useState("");
@@ -65,49 +69,53 @@ function AddProduct() {
   // VARIANTES
   // ==============================
 
-  const [variants, setVariants] = useState([
-    {
-      type: "",
-      quantity: "",
-      price: ""
-    }
-  ]);
+  const [hasVariants, setHasVariants] = useState(false);
+
+  const [variants, setVariants] = useState([]);
+
+  const [variantType, setVariantType] = useState("");
+  const [variantQuantity, setVariantQuantity] = useState("");
+  const [variantPrice, setVariantPrice] = useState("");
 
   // ==============================
   // CHARGER LES CATEGORIES
   // ==============================
 
   useEffect(() => {
-
     const loadCategories = async () => {
+      if (!storeId) {
+        setCategories([]);
+        setLoadingCategories(false);
+        return;
+      }
 
       setLoadingCategories(true);
 
       try {
-
-        const querySnapshot = await getDocs(
-          collection(db, "categories")
+        const categoriesQuery = query(
+          collection(db, "categories"),
+          where("storeId", "==", storeId)
         );
 
-        const categoriesList = querySnapshot.docs
-          .map((doc) => ({
-            id: doc.id,
-            ...doc.data()
+        const snapshot = await getDocs(categoriesQuery);
+
+        const categoriesList = snapshot.docs
+          .map((categoryDoc) => ({
+            id: categoryDoc.id,
+            ...categoryDoc.data(),
           }))
           .sort((a, b) =>
             (a.name || "").localeCompare(
               b.name || "",
               "fr",
               {
-                sensitivity: "base"
+                sensitivity: "base",
               }
             )
           );
 
         setCategories(categoriesList);
-
       } catch (error) {
-
         console.error(
           "Erreur lors du chargement des catégories :",
           error
@@ -116,25 +124,19 @@ function AddProduct() {
         alert(
           "Impossible de charger les catégories."
         );
-
       } finally {
-
         setLoadingCategories(false);
-
       }
-
     };
 
     loadCategories();
-
-  }, []);
+  }, [storeId]);
 
   // ==============================
-  // SELECTIONNER UNE CATEGORIE
+  // CHANGEMENT CATEGORIE
   // ==============================
 
   const handleCategoryChange = (e) => {
-
     const selectedId = e.target.value;
 
     setCategoryId(selectedId);
@@ -144,88 +146,64 @@ function AddProduct() {
     );
 
     if (selectedCategory) {
-
-      setCategoryName(
-        selectedCategory.name
-      );
-
+      setCategoryName(selectedCategory.name);
     } else {
-
       setCategoryName("");
-
     }
-
   };
 
   // ==============================
-  // AFFICHER FORMULAIRE CATEGORIE
+  // OUVRIR CREATION CATEGORIE
   // ==============================
 
   const openNewCategory = () => {
-
     setNewCategoryName("");
-
     setShowNewCategory(true);
-
   };
 
   // ==============================
-  // ANNULER CREATION CATEGORIE
+  // ANNULER CATEGORIE
   // ==============================
 
   const cancelNewCategory = () => {
-
     setNewCategoryName("");
-
     setShowNewCategory(false);
-
   };
 
   // ==============================
-  // CREER UNE CATEGORIE
+  // CREER CATEGORIE
   // ==============================
 
   const createCategory = async () => {
+    const trimmedName = newCategoryName.trim();
 
-    const trimmedName =
-      newCategoryName.trim();
+    if (!storeId) {
+      alert("Aucun magasin connecté.");
+      return;
+    }
 
     if (!trimmedName) {
-
       alert(
         "Veuillez entrer le nom de la catégorie."
       );
-
       return;
-
     }
 
     try {
-
       setCreatingCategory(true);
 
-      // ==============================
-      // VERIFIER SI ELLE EXISTE DEJA
-      // ==============================
-
-      const existingCategory =
-        categories.find(
-          (category) =>
-            (category.name || "")
-              .trim()
-              .toLowerCase() ===
-            trimmedName.toLowerCase()
-        );
+      // Vérifier si elle existe déjà
+      const existingCategory = categories.find(
+        (category) =>
+          (category.name || "")
+            .trim()
+            .toLowerCase() ===
+          trimmedName.toLowerCase()
+      );
 
       if (existingCategory) {
-
-        setCategoryId(
-          existingCategory.id
-        );
-
-        setCategoryName(
-          existingCategory.name
-        );
+        setCategoryId(existingCategory.id);
+        setCategoryName(existingCategory.name);
 
         setShowNewCategory(false);
         setNewCategoryName("");
@@ -235,29 +213,23 @@ function AddProduct() {
         );
 
         return;
-
       }
 
-      // ==============================
-      // ENREGISTRER FIRESTORE
-      // ==============================
-
+      // Créer la catégorie
       const categoryRef = await addDoc(
         collection(db, "categories"),
         {
           name: trimmedName,
-          createdAt: serverTimestamp()
+          storeId: storeId,
+          createdAt: serverTimestamp(),
         }
       );
 
       const newCategory = {
         id: categoryRef.id,
-        name: trimmedName
+        name: trimmedName,
+        storeId: storeId,
       };
-
-      // ==============================
-      // AJOUT LOCAL
-      // ==============================
 
       setCategories((previousCategories) =>
         [...previousCategories, newCategory].sort(
@@ -266,34 +238,20 @@ function AddProduct() {
               b.name || "",
               "fr",
               {
-                sensitivity: "base"
+                sensitivity: "base",
               }
             )
         )
       );
 
-      // ==============================
-      // SELECTIONNER AUTOMATIQUEMENT
-      // ==============================
-
-      setCategoryId(
-        categoryRef.id
-      );
-
-      setCategoryName(
-        trimmedName
-      );
+      setCategoryId(categoryRef.id);
+      setCategoryName(trimmedName);
 
       setShowNewCategory(false);
-
       setNewCategoryName("");
 
-      alert(
-        "Catégorie créée avec succès !"
-      );
-
+      alert("Catégorie créée avec succès !");
     } catch (error) {
-
       console.error(
         "Erreur lors de la création de la catégorie :",
         error
@@ -302,71 +260,118 @@ function AddProduct() {
       alert(
         "Erreur lors de la création de la catégorie."
       );
-
     } finally {
-
       setCreatingCategory(false);
-
     }
+  };
 
+  // ==============================
+  // VARIANTES ON/OFF
+  // ==============================
+
+  const handleVariantsToggle = (e) => {
+    const enabled = e.target.checked;
+
+    setHasVariants(enabled);
+
+    if (!enabled) {
+      setVariants([]);
+
+      setVariantType("");
+      setVariantQuantity("");
+      setVariantPrice("");
+    }
   };
 
   // ==============================
   // AJOUTER UNE VARIANTE
   // ==============================
 
-  const addVariantField = () => {
+  const addVariant = () => {
+    const type = variantType.trim();
 
-    setVariants([
-      ...variants,
-      {
-        type: "",
-        quantity: "",
-        price: ""
-      }
-    ]);
+    if (!type) {
+      alert(
+        "Veuillez entrer le type de variante."
+      );
+      return;
+    }
 
-  };
+    if (
+      variantQuantity === "" ||
+      Number(variantQuantity) <= 0
+    ) {
+      alert(
+        "Veuillez entrer une quantité valide."
+      );
+      return;
+    }
 
-  // ==============================
-  // MODIFIER UNE VARIANTE
-  // ==============================
+    if (
+      variantPrice === "" ||
+      Number(variantPrice) < 0
+    ) {
+      alert(
+        "Veuillez entrer un prix valide."
+      );
+      return;
+    }
 
-  const handleVariantChange = (
-    index,
-    field,
-    value
-  ) => {
+    // Vérifier si le même type existe déjà
+    const alreadyExists = variants.some(
+      (variant) =>
+        variant.type.trim().toLowerCase() ===
+        type.toLowerCase()
+    );
 
-    const updatedVariants = [
-      ...variants
-    ];
+    if (alreadyExists) {
+      alert(
+        "Cette variante existe déjà."
+      );
+      return;
+    }
 
-    updatedVariants[index] = {
-      ...updatedVariants[index],
-      [field]: value
+    const newVariant = {
+      type: type,
+      quantity: Number(variantQuantity),
+      price: Number(variantPrice),
     };
 
-    setVariants(updatedVariants);
+    setVariants((previousVariants) => [
+      ...previousVariants,
+      newVariant,
+    ]);
 
+    // Vider les champs après ajout
+    setVariantType("");
+    setVariantQuantity("");
+    setVariantPrice("");
   };
 
   // ==============================
-  // CHOISIR UNE IMAGE
+  // SUPPRIMER VARIANTE
+  // ==============================
+
+  const removeVariant = (index) => {
+    setVariants((previousVariants) =>
+      previousVariants.filter(
+        (_, variantIndex) =>
+          variantIndex !== index
+      )
+    );
+  };
+
+  // ==============================
+  // IMAGE
   // ==============================
 
   const handleImageChange = (e) => {
-
     const file = e.target.files[0];
 
     if (file) {
-
       setImageFile(file);
-
       setImageUrl("");
-
     }
-
   };
 
   // ==============================
@@ -374,87 +379,76 @@ function AddProduct() {
   // ==============================
 
   const addProduct = async () => {
+    if (!storeId) {
+      alert(
+        "Aucun magasin connecté. Veuillez vous reconnecter."
+      );
+      return;
+    }
 
     // ==============================
-    // VERIFICATION CHAMPS
+    // VERIFICATION
     // ==============================
 
     if (
       !productName.trim() ||
       !categoryId ||
       !categoryName.trim() ||
-      !stock ||
+      stock === "" ||
       !stockUnit.trim() ||
       purchasePrice === ""
     ) {
-
       alert(
         "Veuillez remplir tous les champs importants !"
       );
-
       return;
-
     }
 
-    // ==============================
-    // VERIFICATION PRIX ACHAT
-    // ==============================
-
     if (Number(purchasePrice) < 0) {
-
       alert(
         "Le prix d'achat ne peut pas être négatif."
       );
-
       return;
-
     }
 
-    // ==============================
-    // VERIFICATION STOCK
-    // ==============================
-
     if (Number(stock) < 0) {
-
       alert(
         "Le stock ne peut pas être négatif."
       );
-
       return;
-
     }
-
-    // ==============================
-    // VERIFICATION ALERTE
-    // ==============================
 
     if (
       alertStock !== "" &&
       Number(alertStock) < 0
     ) {
-
       alert(
         "L'alerte stock ne peut pas être négative."
       );
-
       return;
+    }
 
+    if (
+      hasVariants &&
+      variants.length === 0
+    ) {
+      alert(
+        "Vous avez activé les variantes. Veuillez ajouter au moins une variante."
+      );
+      return;
     }
 
     try {
-
-      let finalImage =
-        imageUrl.trim();
+      let finalImage = imageUrl.trim();
 
       // ==============================
-      // UPLOAD IMAGE FIREBASE STORAGE
+      // UPLOAD IMAGE
       // ==============================
 
       if (imageFile) {
-
         const imageRef = ref(
           storage,
-          `products/${Date.now()}-${imageFile.name}`
+          `products/${storeId}/${Date.now()}-${imageFile.name}`
         );
 
         await uploadBytes(
@@ -462,107 +456,58 @@ function AddProduct() {
           imageFile
         );
 
-        finalImage =
-          await getDownloadURL(
-            imageRef
-          );
-
+        finalImage = await getDownloadURL(
+          imageRef
+        );
       }
 
       // ==============================
-      // PREPARER LES VARIANTES
-      // ==============================
-
-      const formattedVariants =
-        variants
-          .filter(
-            (variant) =>
-              variant.type.trim() !== "" ||
-              variant.quantity !== "" ||
-              variant.price !== ""
-          )
-          .map((variant) => ({
-            type: variant.type.trim(),
-
-            quantity:
-              variant.quantity === ""
-                ? 0
-                : Number(variant.quantity),
-
-            price:
-              variant.price === ""
-                ? 0
-                : Number(variant.price)
-          }));
-
-      // ==============================
-      // NOUVEAU PRODUIT
+      // PRODUIT
       // ==============================
 
       const newProduct = {
+        // Liaison au magasin
+        storeId: storeId,
 
-        productName:
-          productName.trim(),
+        // Produit
+        productName: productName.trim(),
 
-        // ============================
-        // CATEGORIE
-        // ============================
+        // Catégorie
+        categoryId: categoryId,
+        categoryName: categoryName.trim(),
 
-        categoryId:
-          categoryId,
+        // Compatibilité avec anciens composants
+        category: categoryName.trim(),
 
-        categoryName:
-          categoryName.trim(),
+        // Prix achat
+        purchasePrice: Number(purchasePrice),
 
-        // Compatibilité avec
-        // les anciens composants
-
-        category:
-          categoryName.trim(),
-
-        // ============================
-        // PRIX D'ACHAT
-        // ============================
-
-        purchasePrice:
-          Number(purchasePrice),
-
-        // ============================
-        // STOCK
-        // ============================
-
-        stock:
-          Number(stock),
-
-        stockUnit:
-          stockUnit.trim(),
+        // Stock
+        stock: Number(stock),
+        stockUnit: stockUnit.trim(),
 
         alertStock:
           alertStock === ""
             ? 0
             : Number(alertStock),
 
-        // ============================
-        // IMAGE
-        // ============================
+        // Image
+        image: finalImage,
 
-        image:
-          finalImage,
+        // Variantes
+        variants: hasVariants
+          ? variants
+          : [],
 
-        // ============================
-        // VARIANTES
-        // ============================
+        // ==============================
+        // STATUT DU PRODUIT
+        // ==============================
+        // Tous les nouveaux produits
+        // sont actifs par défaut.
+        isActive: true,
 
-        variants:
-          formattedVariants,
-
-        // ============================
-        // DATE
-        // ============================
-
-        createdAt:
-          serverTimestamp()
-
+        // Date
+        createdAt: serverTimestamp(),
       };
 
       // ==============================
@@ -579,7 +524,7 @@ function AddProduct() {
       );
 
       // ==============================
-      // RESET FORMULAIRE
+      // RESET
       // ==============================
 
       setProductName("");
@@ -596,31 +541,23 @@ function AddProduct() {
       setImageUrl("");
       setImageFile(null);
 
-      setVariants([
-        {
-          type: "",
-          quantity: "",
-          price: ""
-        }
-      ]);
+      setHasVariants(false);
+      setVariants([]);
 
-      // ==============================
-      // REINITIALISER INPUT FILE
-      // ==============================
+      setVariantType("");
+      setVariantQuantity("");
+      setVariantPrice("");
 
+      // Réinitialiser input fichier
       const fileInput =
         document.querySelector(
           'input[type="file"]'
         );
 
       if (fileInput) {
-
         fileInput.value = "";
-
       }
-
     } catch (error) {
-
       console.error(
         "Erreur lors de l'enregistrement :",
         error
@@ -629,28 +566,23 @@ function AddProduct() {
       alert(
         "Erreur lors de l'enregistrement du produit."
       );
-
     }
-
   };
 
   // ==============================
   // PREVIEW IMAGE
   // ==============================
 
-  const previewImage =
-    imageFile
-      ? URL.createObjectURL(imageFile)
-      : imageUrl;
+  const previewImage = imageFile
+    ? URL.createObjectURL(imageFile)
+    : imageUrl;
 
   // ==============================
   // AFFICHAGE
   // ==============================
 
   return (
-
     <div className="add-product-container">
-
       <div className="add-product-overlay">
 
         <div className="add-product-wrapper">
@@ -665,7 +597,7 @@ function AddProduct() {
               onClick={() => navigate(-1)}
               className="backButton"
             >
-              ← 
+              ←
             </div>
 
             <h1 className="add-product-title">
@@ -680,9 +612,7 @@ function AddProduct() {
 
           <div className="product-form-card">
 
-            {/* ==========================
-                IMAGE URL
-            =========================== */}
+            {/* IMAGE URL */}
 
             <div className="form-group">
 
@@ -703,9 +633,7 @@ function AddProduct() {
 
             </div>
 
-            {/* ==========================
-                IMAGE FICHIER
-            =========================== */}
+            {/* IMAGE FICHIER */}
 
             <div className="form-group">
 
@@ -718,23 +646,17 @@ function AddProduct() {
 
             </div>
 
-            {/* ==========================
-                PREVIEW
-            =========================== */}
+            {/* PREVIEW */}
 
             {previewImage && (
-
               <img
                 src={previewImage}
                 alt="Aperçu du produit"
                 className="preview-image"
               />
-
             )}
 
-            {/* ==========================
-                NOM PRODUIT
-            =========================== */}
+            {/* NOM */}
 
             <div className="form-group">
 
@@ -747,18 +669,14 @@ function AddProduct() {
                 placeholder="Ex : Coca-Cola"
                 value={productName}
                 onChange={(e) =>
-                  setProductName(
-                    e.target.value
-                  )
+                  setProductName(e.target.value)
                 }
                 className="product-input"
               />
 
             </div>
 
-            {/* ==========================
-                CATEGORIE
-            =========================== */}
+            {/* CATEGORIE */}
 
             <div className="form-group category-group">
 
@@ -772,25 +690,28 @@ function AddProduct() {
                   value={categoryId}
                   onChange={handleCategoryChange}
                   className="product-input category-select"
-                  disabled={loadingCategories}
+                  disabled={
+                    loadingCategories ||
+                    !storeId
+                  }
                 >
 
                   <option value="">
-                    {loadingCategories
-                      ? "Chargement des catégories..."
-                      : "Choisir une catégorie"}
+                    {!storeId
+                      ? "Aucun magasin connecté"
+                      : loadingCategories
+                        ? "Chargement des catégories..."
+                        : "Choisir une catégorie"}
                   </option>
 
                   {categories.map(
                     (category) => (
-
                       <option
                         key={category.id}
                         value={category.id}
                       >
                         {category.name}
                       </option>
-
                     )
                   )}
 
@@ -800,18 +721,16 @@ function AddProduct() {
                   type="button"
                   onClick={openNewCategory}
                   className="create-category-button"
+                  disabled={!storeId}
                 >
                   + Créer
                 </button>
 
               </div>
 
-              {/* ==========================
-                  CREATION CATEGORIE
-              =========================== */}
+              {/* CREATION CATEGORIE */}
 
               {showNewCategory && (
-
                 <div className="new-category-box">
 
                   <input
@@ -852,32 +771,21 @@ function AddProduct() {
                   </div>
 
                 </div>
-
               )}
 
-              {/* ==========================
-                  CATEGORIE SELECTIONNEE
-              =========================== */}
-
               {categoryName && (
-
                 <div className="selected-category">
-
                   Catégorie sélectionnée :
                   <strong>
                     {" "}
                     {categoryName}
                   </strong>
-
                 </div>
-
               )}
 
             </div>
 
-            {/* ==========================
-                PRIX ACHAT
-            =========================== */}
+            {/* PRIX ACHAT */}
 
             <div className="form-group">
 
@@ -889,7 +797,7 @@ function AddProduct() {
                 type="number"
                 min="0"
                 step="0.01"
-                placeholder="Ex : 1200"
+                placeholder="Ex : 800"
                 value={purchasePrice}
                 onChange={(e) =>
                   setPurchasePrice(
@@ -901,9 +809,7 @@ function AddProduct() {
 
             </div>
 
-            {/* ==========================
-                STOCK
-            =========================== */}
+            {/* STOCK */}
 
             <div className="form-group">
 
@@ -917,18 +823,14 @@ function AddProduct() {
                 placeholder="Ex : 100"
                 value={stock}
                 onChange={(e) =>
-                  setStock(
-                    e.target.value
-                  )
+                  setStock(e.target.value)
                 }
                 className="product-input"
               />
 
             </div>
 
-            {/* ==========================
-                UNITE
-            =========================== */}
+            {/* UNITE */}
 
             <div className="form-group">
 
@@ -950,9 +852,7 @@ function AddProduct() {
 
             </div>
 
-            {/* ==========================
-                ALERTE STOCK
-            =========================== */}
+            {/* ALERTE */}
 
             <div className="form-group">
 
@@ -986,23 +886,45 @@ function AddProduct() {
               </h3>
 
               <p>
-                Ajoutez des formats ou conditionnements
-                différents pour ce produit.
+                Activez cette option si ce produit
+                possède plusieurs formats ou
+                conditionnements.
               </p>
 
             </div>
 
-            {variants.map(
-              (variant, index) => (
+            {/* CHECKBOX */}
 
-                <div
-                  key={index}
-                  className="variant-card"
-                >
+            <div className="variant-toggle">
 
-                  {/* TYPE */}
+              <span>
+                Ce produit possède des variantes
+              </span>
 
-                  <div className="form-group">
+              <label className="variant-switch">
+
+                <input
+                  type="checkbox"
+                  checked={hasVariants}
+                  onChange={handleVariantsToggle}
+                />
+
+                <span className="variant-slider"></span>
+
+              </label>
+
+            </div>
+
+            {/* ==========================
+                FORMULAIRE VARIANTE
+            =========================== */}
+
+            {hasVariants && (
+              <div className="variant-section">
+
+                <div className="variant-card">
+
+                  <div className="variant-field">
 
                     <label className="form-label">
                       Type de variante
@@ -1010,12 +932,10 @@ function AddProduct() {
 
                     <input
                       type="text"
-                      placeholder="Ex : Pack, Carton..."
-                      value={variant.type}
+                      placeholder="Ex : Pack"
+                      value={variantType}
                       onChange={(e) =>
-                        handleVariantChange(
-                          index,
-                          "type",
+                        setVariantType(
                           e.target.value
                         )
                       }
@@ -1024,9 +944,7 @@ function AddProduct() {
 
                   </div>
 
-                  {/* QUANTITE */}
-
-                  <div className="form-group">
+                  <div className="variant-field">
 
                     <label className="form-label">
                       Quantité
@@ -1034,13 +952,15 @@ function AddProduct() {
 
                     <input
                       type="number"
-                      min="0"
-                      placeholder={`Quantité (${stockUnit || "unité"})`}
-                      value={variant.quantity}
+                      min="1"
+                      placeholder={
+                        stockUnit
+                          ? `Ex : 12 ${stockUnit}`
+                          : "Ex : 12"
+                      }
+                      value={variantQuantity}
                       onChange={(e) =>
-                        handleVariantChange(
-                          index,
-                          "quantity",
+                        setVariantQuantity(
                           e.target.value
                         )
                       }
@@ -1049,9 +969,7 @@ function AddProduct() {
 
                   </div>
 
-                  {/* PRIX */}
-
-                  <div className="form-group">
+                  <div className="variant-field">
 
                     <label className="form-label">
                       Prix de vente
@@ -1061,12 +979,10 @@ function AddProduct() {
                       type="number"
                       min="0"
                       step="0.01"
-                      placeholder="Prix"
-                      value={variant.price}
+                      placeholder="Ex : 9000"
+                      value={variantPrice}
                       onChange={(e) =>
-                        handleVariantChange(
-                          index,
-                          "price",
+                        setVariantPrice(
                           e.target.value
                         )
                       }
@@ -1075,26 +991,81 @@ function AddProduct() {
 
                   </div>
 
+                  <div className="variant-add-area">
+
+                    <button
+                      type="button"
+                      onClick={addVariant}
+                      className="variant-button"
+                    >
+                      + Ajouter
+                    </button>
+
+                  </div>
+
                 </div>
 
-              )
+                {/* ==========================
+                    VARIANTES AJOUTEES
+                =========================== */}
+
+                {variants.length > 0 && (
+                  <div className="saved-variants">
+
+                    <div className="saved-variants-title">
+                      Variantes ajoutées
+                    </div>
+
+                    <div className="saved-variants-list">
+
+                      {variants.map(
+                        (variant, index) => (
+                          <div
+                            key={index}
+                            className="saved-variant-item"
+                          >
+
+                            <div className="variant-info">
+
+                              <div className="variant-name">
+                                {variant.type}
+                              </div>
+
+                              <div className="variant-quantity">
+                                {variant.quantity}{" "}
+                                {stockUnit || "unité"}
+                              </div>
+
+                              <div className="variant-price">
+                                {variant.price.toLocaleString(
+                                  "fr-FR"
+                                )}{" "}
+                                FC
+                              </div>
+
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                removeVariant(index)
+                              }
+                              className="remove-variant-button"
+                            >
+                              Supprimer
+                            </button>
+
+                          </div>
+                        )
+                      )}
+
+                    </div>
+
+                  </div>
+                )}
+
+              </div>
             )}
-
-            {/* ==========================
-                AJOUT VARIANTE
-            =========================== */}
-
-            <div className="button-row">
-
-              <button
-                type="button"
-                onClick={addVariantField}
-                className="variant-button"
-              >
-                + Ajouter une variante
-              </button>
-
-            </div>
 
             {/* ==========================
                 ENREGISTRER
@@ -1117,12 +1088,8 @@ function AddProduct() {
         </div>
 
       </div>
-
     </div>
-
   );
-
 }
 
 export default AddProduct;
-

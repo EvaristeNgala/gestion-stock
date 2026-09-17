@@ -1,41 +1,383 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot } from "firebase/firestore";
+
+import {
+  collection,
+  onSnapshot,
+  query,
+  where,
+  addDoc,
+  updateDoc,
+  doc,
+  serverTimestamp,
+} from "firebase/firestore";
+
 import { db } from "../../firebase";
 import styles from "./pos.module.css";
 
 function POS() {
+  // ==============================
+  // PRODUITS / TICKET
+  // ==============================
+
   const [products, setProducts] = useState([]);
   const [ticket, setTicket] = useState([]);
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("Tous les articles");
+  const [category, setCategory] = useState(
+    "Tous les articles"
+  );
   const [loading, setLoading] = useState(true);
 
-  // Produit actuellement sélectionné pour la modal des variantes
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  // Produit actuellement sélectionné
+  // pour la modal des variantes
+  const [selectedProduct, setSelectedProduct] =
+    useState(null);
+
+  // Variante actuellement sélectionnée
+  // pour choisir sa quantité
+  const [selectedVariant, setSelectedVariant] =
+    useState(null);
+
+  // Quantité de la variante à ajouter
+  const [variantQuantity, setVariantQuantity] =
+    useState(1);
 
   // Affichage de la modal du ticket
   const [showTicket, setShowTicket] = useState(false);
+
+  // ==============================
+  // SESSION UTILISATEUR
+  // ==============================
+
+  const [session, setSession] = useState(null);
+
+  // ==============================
+  // CAISSE
+  // ==============================
+
+  const [cashSession, setCashSession] = useState(null);
+
+  const [cashLoading, setCashLoading] =
+    useState(true);
+
+  const [openingCash, setOpeningCash] =
+    useState(false);
+
+  const [closingCash, setClosingCash] =
+    useState(false);
+
+  // ==============================
+  // RÉCUPÉRER LA SESSION
+  // ==============================
+
+  useEffect(() => {
+    try {
+      const savedSession =
+        localStorage.getItem("storeSession");
+
+      if (savedSession) {
+        const parsedSession =
+          JSON.parse(savedSession);
+
+        setSession(parsedSession);
+      } else {
+        console.warn(
+          "Aucune session utilisateur trouvée."
+        );
+
+        setCashLoading(false);
+      }
+    } catch (error) {
+      console.error(
+        "Erreur récupération session :",
+        error
+      );
+
+      setCashLoading(false);
+    }
+  }, []);
+
+  // ==============================
+  // INFORMATIONS SESSION
+  // ==============================
+
+  const storeId = session?.storeId || null;
+
+  const userId =
+    session?.uid ||
+    session?.userId ||
+    null;
+
+  const userName =
+    session?.userName ||
+    session?.name ||
+    session?.displayName ||
+    "Utilisateur";
+
+  const userRole =
+    session?.role || "cashier";
+
+  // ==============================
+  // VÉRIFIER LA CAISSE
+  // ==============================
+
+  useEffect(() => {
+    if (!storeId || !userId) {
+      if (session) {
+        setCashLoading(false);
+      }
+
+      return;
+    }
+
+    setCashLoading(true);
+
+    const cashSessionsRef = collection(
+      db,
+      "cashSessions"
+    );
+
+    const cashQuery = query(
+      cashSessionsRef,
+      where("storeId", "==", storeId),
+      where("userId", "==", userId),
+      where("status", "==", "open")
+    );
+
+    const unsubscribe = onSnapshot(
+      cashQuery,
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const cashDoc =
+            snapshot.docs[0];
+
+          setCashSession({
+            id: cashDoc.id,
+            ...cashDoc.data(),
+          });
+        } else {
+          setCashSession(null);
+        }
+
+        setCashLoading(false);
+      },
+      (error) => {
+        console.error(
+          "Erreur vérification caisse :",
+          error
+        );
+
+        setCashSession(null);
+        setCashLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [storeId, userId, session]);
+
+  // ==============================
+  // OUVRIR LA CAISSE
+  // ==============================
+
+  const openCashRegister = async () => {
+    if (!storeId || !userId) {
+      alert(
+        "Impossible d'ouvrir la caisse : session utilisateur introuvable."
+      );
+
+      return;
+    }
+
+    if (cashSession) {
+      alert("La caisse est déjà ouverte.");
+      return;
+    }
+
+    const confirmation = window.confirm(
+      "Voulez-vous ouvrir la caisse maintenant ?"
+    );
+
+    if (!confirmation) {
+      return;
+    }
+
+    try {
+      setOpeningCash(true);
+
+      const cashSessionsRef =
+        collection(db, "cashSessions");
+
+      const newCashSession = {
+        storeId,
+        userId,
+        userName,
+        role: userRole,
+        openedAt: serverTimestamp(),
+        closedAt: null,
+        status: "open",
+        totalSales: 0,
+        numberOfSales: 0,
+        createdAt: serverTimestamp(),
+      };
+
+      const documentReference =
+        await addDoc(
+          cashSessionsRef,
+          newCashSession
+        );
+
+      setCashSession({
+        id: documentReference.id,
+        ...newCashSession,
+        openedAt: new Date(),
+      });
+
+      alert(
+        "La caisse a été ouverte avec succès."
+      );
+    } catch (error) {
+      console.error(
+        "Erreur ouverture caisse :",
+        error
+      );
+
+      alert(
+        "Impossible d'ouvrir la caisse. Vérifiez votre connexion."
+      );
+    } finally {
+      setOpeningCash(false);
+    }
+  };
+
+  // ==============================
+  // FERMER LA CAISSE
+  // ==============================
+
+  const closeCashRegister = async () => {
+    if (!cashSession?.id) {
+      alert("Aucune caisse ouverte.");
+      return;
+    }
+
+    if (ticket.length > 0) {
+      alert(
+        "Veuillez terminer ou vider le ticket avant de fermer la caisse."
+      );
+
+      setShowTicket(true);
+
+      return;
+    }
+
+    const confirmation = window.confirm(
+      "Voulez-vous vraiment fermer la caisse ?"
+    );
+
+    if (!confirmation) {
+      return;
+    }
+
+    try {
+      setClosingCash(true);
+
+      const cashSessionRef = doc(
+        db,
+        "cashSessions",
+        cashSession.id
+      );
+
+      await updateDoc(
+        cashSessionRef,
+        {
+          closedAt: serverTimestamp(),
+          status: "closed",
+          totalSales: 0,
+          numberOfSales: 0,
+        }
+      );
+
+      setCashSession(null);
+      setTicket([]);
+
+      alert(
+        "La caisse a été fermée avec succès."
+      );
+    } catch (error) {
+      console.error(
+        "Erreur fermeture caisse :",
+        error
+      );
+
+      alert(
+        "Impossible de fermer la caisse. Vérifiez votre connexion."
+      );
+    } finally {
+      setClosingCash(false);
+    }
+  };
+
+  // ==============================
+  // FORMAT HEURE
+  // ==============================
+
+  const formatTime = (timestamp) => {
+    if (!timestamp) {
+      return "--:--";
+    }
+
+    let date;
+
+    if (
+      typeof timestamp.toDate ===
+      "function"
+    ) {
+      date = timestamp.toDate();
+    } else if (
+      timestamp instanceof Date
+    ) {
+      date = timestamp;
+    } else {
+      date = new Date(timestamp);
+    }
+
+    if (Number.isNaN(date.getTime())) {
+      return "--:--";
+    }
+
+    return date.toLocaleTimeString(
+      "fr-FR",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
+  };
 
   // ==============================
   // RÉCUPÉRATION DES PRODUITS
   // ==============================
 
   useEffect(() => {
-    const productsRef = collection(db, "products");
+    const productsRef =
+      collection(db, "products");
 
     const unsubscribe = onSnapshot(
       productsRef,
       (snapshot) => {
-        const productsData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const productsData =
+          snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
 
         setProducts(productsData);
         setLoading(false);
       },
       (error) => {
-        console.error("Erreur Firebase :", error);
+        console.error(
+          "Erreur Firebase :",
+          error
+        );
+
         setLoading(false);
       }
     );
@@ -49,11 +391,17 @@ function POS() {
 
   const categories = [
     "Tous les articles",
+
     ...new Set(
       products
+        .filter(
+          (product) =>
+            product.isActive !== false
+        )
         .map(
           (product) =>
-            product.categoryName || product.category
+            product.categoryName ||
+            product.category
         )
         .filter(Boolean)
     ),
@@ -63,39 +411,63 @@ function POS() {
   // FILTRAGE
   // ==============================
 
-  const filteredProducts = products.filter((product) => {
-    const name = product.productName || "";
+  const filteredProducts =
+    products.filter((product) => {
+      const isActive =
+        product.isActive !== false;
 
-    const matchSearch = name
-      .toLowerCase()
-      .includes(search.toLowerCase());
+      if (!isActive) {
+        return false;
+      }
 
-    const productCategory =
-      product.categoryName ||
-      product.category ||
-      "";
+      const name =
+        product.productName || "";
 
-    const matchCategory =
-      category === "Tous les articles" ||
-      productCategory === category;
+      const matchSearch = name
+        .toLowerCase()
+        .includes(
+          search.toLowerCase()
+        );
 
-    return matchSearch && matchCategory;
-  });
+      const productCategory =
+        product.categoryName ||
+        product.category ||
+        "";
+
+      const matchCategory =
+        category ===
+          "Tous les articles" ||
+        productCategory === category;
+
+      return (
+        matchSearch &&
+        matchCategory
+      );
+    });
 
   // ==============================
   // RÉCUPÉRER LES VARIANTES VALIDES
   // ==============================
 
-  const getValidVariants = (product) => {
-    if (!Array.isArray(product?.variants)) {
+  const getValidVariants = (
+    product
+  ) => {
+    if (
+      !Array.isArray(
+        product?.variants
+      )
+    ) {
       return [];
     }
 
     return product.variants.filter(
       (variant) =>
         variant &&
-        variant.type?.trim() !== "" &&
-        Number(variant.quantity || 0) > 0
+        variant.type?.trim() !==
+          "" &&
+        Number(
+          variant.quantity || 0
+        ) > 0
     );
   };
 
@@ -103,27 +475,67 @@ function POS() {
   // CLIQUER SUR UN PRODUIT
   // ==============================
 
-  const handleProductClick = (product) => {
-    const variants = getValidVariants(product);
+  const handleProductClick = (
+    product
+  ) => {
+    if (!cashSession) {
+      alert(
+        "La caisse est fermée. Veuillez d'abord ouvrir la caisse."
+      );
 
-    // Si le produit possède des variantes,
-    // on ouvre la modal.
-    if (variants.length > 0) {
-      setSelectedProduct(product);
       return;
     }
 
-    // Produit sans variante :
-    // ajout direct au ticket.
-    addToTicket(product, null);
+    if (product.isActive === false) {
+      alert(
+        "Ce produit n'est pas disponible à la vente."
+      );
+
+      return;
+    }
+
+    const variants =
+      getValidVariants(product);
+
+    if (variants.length > 0) {
+      setSelectedProduct(product);
+      setSelectedVariant(null);
+      setVariantQuantity(1);
+
+      return;
+    }
+
+    addToTicket(product, null, 1);
   };
 
   // ==============================
   // AJOUT AU TICKET
   // ==============================
 
-  const addToTicket = (product, variant = null) => {
-    const stock = Number(product.stock || 0);
+  const addToTicket = (
+    product,
+    variant = null,
+    quantityToAdd = 1
+  ) => {
+    if (!cashSession) {
+      alert(
+        "La caisse est fermée. Veuillez d'abord ouvrir la caisse."
+      );
+
+      return false;
+    }
+
+    if (product.isActive === false) {
+      alert(
+        "Ce produit n'est pas disponible à la vente."
+      );
+
+      return false;
+    }
+
+    const stock = Number(
+      product.stock || 0
+    );
 
     const variantQuantity = Number(
       variant?.quantity || 1
@@ -141,70 +553,110 @@ function POS() {
       product.stockUnit ||
       "Unité";
 
+    const quantity = Number(
+      quantityToAdd || 0
+    );
+
     // ==============================
-    // VÉRIFICATION STOCK
+    // VÉRIFICATIONS
     // ==============================
 
+    if (quantity <= 0) {
+      alert(
+        "La quantité doit être supérieure à zéro."
+      );
+
+      return false;
+    }
+
     if (stock <= 0) {
-      alert("Ce produit est en rupture de stock.");
-      return;
+      alert(
+        "Ce produit est en rupture de stock."
+      );
+
+      return false;
     }
 
     if (variantQuantity <= 0) {
-      alert("La quantité de la variante est invalide.");
-      return;
+      alert(
+        "La quantité de la variante est invalide."
+      );
+
+      return false;
     }
 
-    if (stock < variantQuantity) {
+    // Stock nécessaire pour la quantité demandée
+    const requiredStock =
+      quantity * variantQuantity;
+
+    if (requiredStock > stock) {
       alert(
         `Stock insuffisant.\n\nStock disponible : ${stock} ${
           product.stockUnit || ""
+        }\nStock nécessaire : ${requiredStock} ${
+          product.stockUnit || ""
         }`
       );
-      return;
+
+      return false;
     }
 
     // ==============================
     // ARTICLE EXISTANT
     // ==============================
 
-    const existingIndex = ticket.findIndex(
-      (item) =>
-        item.productId === product.id &&
-        item.variantType === variantType
-    );
+    const existingIndex =
+      ticket.findIndex(
+        (item) =>
+          item.productId ===
+            product.id &&
+          item.variantType ===
+            variantType
+      );
 
     if (existingIndex !== -1) {
-      const existingItem = ticket[existingIndex];
+      const existingItem =
+        ticket[existingIndex];
 
       const newQuantity =
-        existingItem.quantity + 1;
+        existingItem.quantity +
+        quantity;
 
-      const requiredStock =
+      const newRequiredStock =
         newQuantity *
         existingItem.variantQuantity;
 
-      if (requiredStock > stock) {
+      if (
+        newRequiredStock >
+        stock
+      ) {
         alert(
           `Stock insuffisant.\n\nStock disponible : ${stock} ${
             product.stockUnit || ""
+          }\nStock nécessaire : ${newRequiredStock} ${
+            product.stockUnit || ""
           }`
         );
-        return;
+
+        return false;
       }
 
       setTicket(
-        ticket.map((item, index) =>
-          index === existingIndex
-            ? {
-                ...item,
-                quantity: newQuantity,
-              }
-            : item
+        ticket.map(
+          (item, index) =>
+            index === existingIndex
+              ? {
+                  ...item,
+                  quantity:
+                    newQuantity,
+                  stockAvailable:
+                    stock,
+                }
+              : item
         )
       );
 
-      return;
+      return true;
     }
 
     // ==============================
@@ -214,14 +666,16 @@ function POS() {
     setTicket([
       ...ticket,
       {
-        productId: product.id,
+        productId:
+          product.id,
+
         name:
           product.productName ||
           "Produit",
 
         price,
 
-        quantity: 1,
+        quantity,
 
         variantType,
 
@@ -230,30 +684,158 @@ function POS() {
         stockUnit:
           product.stockUnit || "",
 
-        stockAvailable: stock,
+        stockAvailable:
+          stock,
       },
     ]);
+
+    return true;
   };
 
   // ==============================
-  // CHOIX D'UNE VARIANTE
+  // CHOISIR UNE VARIANTE
   // ==============================
 
   const handleVariantClick = (
     product,
     variant
   ) => {
-    addToTicket(product, variant);
+    const stock = Number(
+      product.stock || 0
+    );
 
-    // Fermer la modal
-    setSelectedProduct(null);
+    const conversionQuantity =
+      Number(
+        variant.quantity || 0
+      );
+
+    if (
+      conversionQuantity <= 0
+    ) {
+      alert(
+        "La quantité de cette variante est invalide."
+      );
+
+      return;
+    }
+
+    if (
+      stock <
+      conversionQuantity
+    ) {
+      alert(
+        `Stock insuffisant.\n\nStock disponible : ${stock} ${
+          product.stockUnit || ""
+        }`
+      );
+
+      return;
+    }
+
+    // On ne ferme plus la modal.
+    // On ouvre maintenant la sélection
+    // de quantité.
+    setSelectedVariant(variant);
+    setVariantQuantity(1);
   };
 
   // ==============================
-  // AUGMENTER QUANTITÉ
+  // AUGMENTER QUANTITÉ VARIANTE
   // ==============================
 
-  const increaseQuantity = (index) => {
+  const increaseVariantQuantity = () => {
+    if (
+      !selectedProduct ||
+      !selectedVariant
+    ) {
+      return;
+    }
+
+    const stock = Number(
+      selectedProduct.stock || 0
+    );
+
+    const conversionQuantity =
+      Number(
+        selectedVariant.quantity || 1
+      );
+
+    const maxQuantity = Math.floor(
+      stock / conversionQuantity
+    );
+
+    if (
+      variantQuantity >=
+      maxQuantity
+    ) {
+      alert(
+        `Stock maximum atteint.\n\nVous pouvez ajouter au maximum ${maxQuantity} ${selectedVariant.type}.`
+      );
+
+      return;
+    }
+
+    setVariantQuantity(
+      (current) => current + 1
+    );
+  };
+
+  // ==============================
+  // DIMINUER QUANTITÉ VARIANTE
+  // ==============================
+
+  const decreaseVariantQuantity = () => {
+    setVariantQuantity(
+      (current) =>
+        current > 1
+          ? current - 1
+          : 1
+    );
+  };
+
+  // ==============================
+  // CONFIRMER VARIANTE
+  // ==============================
+
+  const confirmVariant = () => {
+    if (
+      !selectedProduct ||
+      !selectedVariant
+    ) {
+      return;
+    }
+
+    const added =
+      addToTicket(
+        selectedProduct,
+        selectedVariant,
+        variantQuantity
+      );
+
+    if (added) {
+      setSelectedProduct(null);
+      setSelectedVariant(null);
+      setVariantQuantity(1);
+    }
+  };
+
+  // ==============================
+  // FERMER MODAL VARIANTE
+  // ==============================
+
+  const closeVariantModal = () => {
+    setSelectedProduct(null);
+    setSelectedVariant(null);
+    setVariantQuantity(1);
+  };
+
+  // ==============================
+  // AUGMENTER QUANTITÉ TICKET
+  // ==============================
+
+  const increaseQuantity = (
+    index
+  ) => {
     const item = ticket[index];
 
     const stock = Number(
@@ -267,23 +849,32 @@ function POS() {
       newQuantity *
       item.variantQuantity;
 
-    if (requiredStock > stock) {
+    if (
+      requiredStock >
+      stock
+    ) {
       alert(
         `Stock insuffisant.\n\nStock disponible : ${stock} ${
           item.stockUnit || ""
         }`
       );
+
       return;
     }
 
     setTicket(
-      ticket.map((ticketItem, itemIndex) =>
-        itemIndex === index
-          ? {
-              ...ticketItem,
-              quantity: newQuantity,
-            }
-          : ticketItem
+      ticket.map(
+        (
+          ticketItem,
+          itemIndex
+        ) =>
+          itemIndex === index
+            ? {
+                ...ticketItem,
+                quantity:
+                  newQuantity,
+              }
+            : ticketItem
       )
     );
   };
@@ -292,23 +883,31 @@ function POS() {
   // DIMINUER QUANTITÉ
   // ==============================
 
-  const decreaseQuantity = (index) => {
+  const decreaseQuantity = (
+    index
+  ) => {
     const item = ticket[index];
 
     if (item.quantity <= 1) {
       removeFromTicket(index);
+
       return;
     }
 
     setTicket(
-      ticket.map((ticketItem, itemIndex) =>
-        itemIndex === index
-          ? {
-              ...ticketItem,
-              quantity:
-                ticketItem.quantity - 1,
-            }
-          : ticketItem
+      ticket.map(
+        (
+          ticketItem,
+          itemIndex
+        ) =>
+          itemIndex === index
+            ? {
+                ...ticketItem,
+                quantity:
+                  ticketItem.quantity -
+                  1,
+              }
+            : ticketItem
       )
     );
   };
@@ -317,7 +916,9 @@ function POS() {
   // SUPPRIMER DU TICKET
   // ==============================
 
-  const removeFromTicket = (index) => {
+  const removeFromTicket = (
+    index
+  ) => {
     setTicket(
       ticket.filter(
         (_, itemIndex) =>
@@ -335,9 +936,10 @@ function POS() {
       return;
     }
 
-    const confirmation = window.confirm(
-      "Voulez-vous vraiment vider le ticket ?"
-    );
+    const confirmation =
+      window.confirm(
+        "Voulez-vous vraiment vider le ticket ?"
+      );
 
     if (confirmation) {
       setTicket([]);
@@ -360,17 +962,20 @@ function POS() {
   // NOMBRE ARTICLES
   // ==============================
 
-  const totalItems = ticket.reduce(
-    (sum, item) =>
-      sum + item.quantity,
-    0
-  );
+  const totalItems =
+    ticket.reduce(
+      (sum, item) =>
+        sum + item.quantity,
+      0
+    );
 
   // ==============================
   // QUANTITÉ STOCK DE BASE
   // ==============================
 
-  const getBaseQuantity = (item) => {
+  const getBaseQuantity = (
+    item
+  ) => {
     return (
       item.quantity *
       item.variantQuantity
@@ -381,7 +986,9 @@ function POS() {
   // STOCK
   // ==============================
 
-  const getStockClass = (product) => {
+  const getStockClass = (
+    product
+  ) => {
     const stock = Number(
       product.stock || 0
     );
@@ -408,7 +1015,9 @@ function POS() {
   // PRIX PRODUIT SANS VARIANTE
   // ==============================
 
-  const getProductPrice = (product) => {
+  const getProductPrice = (
+    product
+  ) => {
     return Number(
       product.price ??
         product.sellingPrice ??
@@ -416,15 +1025,189 @@ function POS() {
     );
   };
 
+  // ==============================
+  // INFORMATIONS VARIANTE SÉLECTIONNÉE
+  // ==============================
+
+  const selectedVariantPrice =
+    Number(
+      selectedVariant?.price || 0
+    );
+
+  const selectedVariantConversion =
+    Number(
+      selectedVariant?.quantity || 1
+    );
+
+  const variantTotal =
+    selectedVariantPrice *
+    variantQuantity;
+
+  const variantBaseQuantity =
+    selectedVariantConversion *
+    variantQuantity;
+
+  const variantMaxQuantity =
+    selectedProduct &&
+    selectedVariant
+      ? Math.floor(
+          Number(
+            selectedProduct.stock ||
+              0
+          ) /
+            selectedVariantConversion
+        )
+      : 0;
+
+  // ==============================
+  // ÉCRAN DE CHARGEMENT CAISSE
+  // ==============================
+
+  if (
+    !session ||
+    cashLoading
+  ) {
+    return (
+      <div
+        className={
+          styles.cashAccessScreen
+        }
+      >
+        <div
+          className={
+            styles.cashAccessCard
+          }
+        >
+          <div
+            className={
+              styles.cashLoadingIcon
+            }
+          >
+            🧾
+          </div>
+
+          <h2>
+            Vérification de la caisse
+          </h2>
+
+          <p>
+            Vérification de votre
+            session de caisse...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ==============================
+  // CAISSE FERMÉE
+  // ==============================
+
+  if (!cashSession) {
+    return (
+      <div
+        className={
+          styles.cashAccessScreen
+        }
+      >
+        <div
+          className={
+            styles.cashAccessCard
+          }
+        >
+          <div
+            className={
+              styles.cashClosedIcon
+            }
+          >
+            🧾
+          </div>
+
+          <div
+            className={
+              styles.cashStatusClosed
+            }
+          >
+            CAISSE FERMÉE
+          </div>
+
+          <h1>
+            Ouvrir la caisse
+          </h1>
+
+          <p
+            className={
+              styles.cashDescription
+            }
+          >
+            Bonjour{" "}
+            <strong>
+              {userName}
+            </strong>
+            . Vous devez ouvrir
+            votre caisse avant de
+            commencer les ventes.
+          </p>
+
+          <div
+            className={
+              styles.cashUserInfo
+            }
+          >
+            <div>
+              <span>
+                Utilisateur
+              </span>
+
+              <strong>
+                {userName}
+              </strong>
+            </div>
+
+            <div>
+              <span>
+                Rôle
+              </span>
+
+              <strong>
+                {userRole}
+              </strong>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className={
+              styles.openCashButton
+            }
+            onClick={
+              openCashRegister
+            }
+            disabled={
+              openingCash
+            }
+          >
+            {openingCash
+              ? "Ouverture..."
+              : "Ouvrir la caisse"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ==============================
+  // POS
+  // ==============================
+
   return (
     <div className={styles.pos}>
 
-      {/* =================================
-          HEADER
-      ================================= */}
+      {/* HEADER */}
 
-      <header className={styles.header}>
-
+      <header
+        className={styles.header}
+      >
         <button
           type="button"
           className={styles.menu}
@@ -432,13 +1215,27 @@ function POS() {
           ☰
         </button>
 
-        <div className={styles.title}>
-          <span>Point de vente</span>
+        <div
+          className={styles.title}
+        >
+          <span>
+            Point de vente
+          </span>
+
+          <small
+            className={
+              styles.cashOpenIndicator
+            }
+          >
+            🟢 Caisse ouverte
+          </small>
         </div>
 
         <button
           type="button"
-          className={styles.ticketButtonHeader}
+          className={
+            styles.ticketButtonHeader
+          }
           onClick={() =>
             setShowTicket(true)
           }
@@ -455,24 +1252,76 @@ function POS() {
             </span>
           )}
         </button>
-
       </header>
 
 
-      {/* =================================
-          BARRE TICKET / PAIEMENT
-      ================================= */}
+      {/* INFORMATIONS CAISSE */}
 
-      <section className={styles.paymentBar}>
+      <section
+        className={
+          styles.cashInfoBar
+        }
+      >
+        <div>
+          <span>
+            🟢 Caisse ouverte
+          </span>
+
+          <strong>
+            {userName}
+          </strong>
+        </div>
+
+        <div>
+          <span>
+            Ouverture
+          </span>
+
+          <strong>
+            {formatTime(
+              cashSession.openedAt
+            )}
+          </strong>
+        </div>
 
         <button
           type="button"
-          className={styles.openTickets}
+          className={
+            styles.closeCashButton
+          }
+          onClick={
+            closeCashRegister
+          }
+          disabled={
+            closingCash
+          }
+        >
+          {closingCash
+            ? "Fermeture..."
+            : "Fermer la caisse"}
+        </button>
+      </section>
+
+
+      {/* BARRE TICKET / PAIEMENT */}
+
+      <section
+        className={
+          styles.paymentBar
+        }
+      >
+        <button
+          type="button"
+          className={
+            styles.openTickets
+          }
           onClick={() =>
             setShowTicket(true)
           }
         >
-          <span>TICKET</span>
+          <span>
+            TICKET
+          </span>
 
           <strong>
             {totalItems} article
@@ -484,12 +1333,16 @@ function POS() {
 
         <button
           type="button"
-          className={styles.payment}
+          className={
+            styles.payment
+          }
           onClick={() =>
             setShowTicket(true)
           }
         >
-          <span>TOTAL</span>
+          <span>
+            TOTAL
+          </span>
 
           <strong>
             {total.toLocaleString(
@@ -498,92 +1351,120 @@ function POS() {
             FC
           </strong>
         </button>
-
       </section>
 
 
-      {/* =================================
-          RECHERCHE
-      ================================= */}
+      {/* RECHERCHE */}
 
-      <section className={styles.searchBar}>
-
+      <section
+        className={
+          styles.searchBar
+        }
+      >
         <input
           type="text"
           placeholder="Rechercher un produit..."
           value={search}
           onChange={(e) =>
-            setSearch(e.target.value)
+            setSearch(
+              e.target.value
+            )
           }
         />
 
         <select
           value={category}
           onChange={(e) =>
-            setCategory(e.target.value)
+            setCategory(
+              e.target.value
+            )
           }
-          className={styles.category}
+          className={
+            styles.category
+          }
         >
-          {categories.map((cat) => (
-            <option
-              key={cat}
-              value={cat}
-            >
-              {cat}
-            </option>
-          ))}
+          {categories.map(
+            (cat) => (
+              <option
+                key={cat}
+                value={cat}
+              >
+                {cat}
+              </option>
+            )
+          )}
         </select>
 
         <div
-          className={styles.searchIcon}
+          className={
+            styles.searchIcon
+          }
         >
           🔍
         </div>
-
       </section>
 
 
-      {/* =================================
-          PRODUITS
-      ================================= */}
+      {/* PRODUITS */}
 
-      <main className={styles.productsSection}>
-
-        <div className={styles.sectionTitle}>
-
-          <h2>Produits</h2>
+      <main
+        className={
+          styles.productsSection
+        }
+      >
+        <div
+          className={
+            styles.sectionTitle
+          }
+        >
+          <h2>
+            Produits
+          </h2>
 
           <span>
-            {filteredProducts.length} produit
-            {filteredProducts.length > 1
+            {
+              filteredProducts.length
+            }{" "}
+            produit
+            {filteredProducts.length >
+            1
               ? "s"
               : ""}
           </span>
-
         </div>
 
-
-        <div className={styles.products}>
-
+        <div
+          className={
+            styles.products
+          }
+        >
           {loading && (
-            <div className={styles.message}>
-              Chargement des produits...
+            <div
+              className={
+                styles.message
+              }
+            >
+              Chargement des
+              produits...
             </div>
           )}
 
-
           {!loading &&
-            filteredProducts.length === 0 && (
-              <div className={styles.message}>
-                Aucun produit trouvé
+            filteredProducts.length ===
+              0 && (
+              <div
+                className={
+                  styles.message
+                }
+              >
+                Aucun produit
+                trouvé
               </div>
             )}
-
 
           {!loading &&
             filteredProducts.map(
               (product) => {
-
                 const variants =
                   getValidVariants(
                     product
@@ -595,7 +1476,8 @@ function POS() {
                   );
 
                 const hasVariants =
-                  variants.length > 0;
+                  variants.length >
+                  0;
 
                 const disabled =
                   stock <= 0;
@@ -603,31 +1485,33 @@ function POS() {
                 return (
                   <button
                     type="button"
-                    key={product.id}
+                    key={
+                      product.id
+                    }
                     className={`${styles.product} ${
                       disabled
                         ? styles.productDisabled
                         : ""
                     }`}
-                    disabled={disabled}
+                    disabled={
+                      disabled
+                    }
                     onClick={() =>
                       handleProductClick(
                         product
                       )
                     }
                   >
-
-                    {/* IMAGE */}
-
                     <div
                       className={
                         styles.productImage
                       }
                     >
-
                       {product.image ? (
                         <img
-                          src={product.image}
+                          src={
+                            product.image
+                          }
                           alt={
                             product.productName
                           }
@@ -641,28 +1525,22 @@ function POS() {
                           📦
                         </div>
                       )}
-
                     </div>
-
-
-                    {/* INFORMATIONS */}
 
                     <div
                       className={
                         styles.productInfo
                       }
                     >
-
                       <div
                         className={
                           styles.productName
                         }
                       >
-                        {product.productName}
+                        {
+                          product.productName
+                        }
                       </div>
-
-
-                      {/* PRIX */}
 
                       {!hasVariants && (
                         <div
@@ -679,21 +1557,16 @@ function POS() {
                         </div>
                       )}
 
-
-                      {/* MESSAGE VARIANTE */}
-
                       {hasVariants && (
                         <div
                           className={
                             styles.variantHint
                           }
                         >
-                          Choisir une variante
+                          Choisir une
+                          variante
                         </div>
                       )}
-
-
-                      {/* STOCK */}
 
                       <div
                         className={
@@ -707,16 +1580,12 @@ function POS() {
                         {product.stockUnit ||
                           ""}
                       </div>
-
                     </div>
-
                   </button>
                 );
               }
             )}
-
         </div>
-
       </main>
 
 
@@ -726,143 +1595,388 @@ function POS() {
 
       {selectedProduct && (
         <div
-          className={styles.modalOverlay}
-          onClick={() =>
-            setSelectedProduct(null)
+          className={
+            styles.modalOverlay
+          }
+          onClick={
+            closeVariantModal
           }
         >
-
           <div
-            className={styles.variantModal}
+            className={
+              styles.variantModal
+            }
             onClick={(e) =>
               e.stopPropagation()
             }
           >
 
-            {/* HEADER MODAL */}
+            {/* MODAL CHOIX VARIANTE */}
 
-            <div
-              className={
-                styles.modalHeader
-              }
-            >
-
-              <div>
-
-                <h2>
-                  {
-                    selectedProduct.productName
+            {!selectedVariant && (
+              <>
+                <div
+                  className={
+                    styles.modalHeader
                   }
-                </h2>
+                >
+                  <div>
+                    <h2>
+                      {
+                        selectedProduct.productName
+                      }
+                    </h2>
 
-                <p>
-                  Choisissez une variante
-                </p>
+                    <p>
+                      Choisissez une
+                      variante
+                    </p>
+                  </div>
 
-              </div>
+                  <button
+                    type="button"
+                    className={
+                      styles.closeButton
+                    }
+                    onClick={
+                      closeVariantModal
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
 
-              <button
-                type="button"
-                className={
-                  styles.closeButton
-                }
-                onClick={() =>
-                  setSelectedProduct(null)
-                }
-              >
-                ×
-              </button>
+                <div
+                  className={
+                    styles.variantList
+                  }
+                >
+                  {getValidVariants(
+                    selectedProduct
+                  ).map(
+                    (
+                      variant,
+                      index
+                    ) => {
+                      const price =
+                        Number(
+                          variant.price ||
+                            0
+                        );
 
-            </div>
+                      const quantity =
+                        Number(
+                          variant.quantity ||
+                            0
+                        );
+
+                      const stock =
+                        Number(
+                          selectedProduct.stock ||
+                            0
+                        );
+
+                      const available =
+                        stock >=
+                        quantity;
+
+                      return (
+                        <button
+                          type="button"
+                          key={index}
+                          className={
+                            styles.variantModalButton
+                          }
+                          disabled={
+                            !available
+                          }
+                          onClick={() =>
+                            handleVariantClick(
+                              selectedProduct,
+                              variant
+                            )
+                          }
+                        >
+                          <div
+                            className={
+                              styles.variantModalInfo
+                            }
+                          >
+                            <strong>
+                              {
+                                variant.type
+                              }
+                            </strong>
+
+                            <span>
+                              {
+                                quantity
+                              }{" "}
+                              {
+                                selectedProduct.stockUnit
+                              }
+                            </span>
+                          </div>
+
+                          <div
+                            className={
+                              styles.variantModalPrice
+                            }
+                          >
+                            {price.toLocaleString(
+                              "fr-FR"
+                            )}{" "}
+                            FC
+                          </div>
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+              </>
+            )}
 
 
-            {/* VARIANTES */}
+            {/* MODAL QUANTITÉ VARIANTE */}
 
-            <div
-              className={
-                styles.variantList
-              }
-            >
+            {selectedVariant && (
+              <>
+                <div
+                  className={
+                    styles.modalHeader
+                  }
+                >
+                  <div>
+                    <h2>
+                      {
+                        selectedVariant.type
+                      }
+                    </h2>
 
-              {getValidVariants(
-                selectedProduct
-              ).map(
-                (variant, index) => {
+                    <p>
+                      {
+                        selectedProduct.productName
+                      }
+                    </p>
+                  </div>
 
-                  const price = Number(
-                    variant.price || 0
-                  );
+                  <button
+                    type="button"
+                    className={
+                      styles.closeButton
+                    }
+                    onClick={
+                      closeVariantModal
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
 
-                  const quantity =
-                    Number(
-                      variant.quantity ||
-                        0
-                    );
+                <div
+                  className={
+                    styles.variantQuantityContent
+                  }
+                >
 
-                  const stock =
-                    Number(
-                      selectedProduct.stock ||
-                        0
-                    );
+                  <div
+                    className={
+                      styles.variantQuantityInfo
+                    }
+                  >
+                    <span>
+                      Prix unitaire
+                    </span>
 
-                  const available =
-                    stock >= quantity;
+                    <strong>
+                      {selectedVariantPrice.toLocaleString(
+                        "fr-FR"
+                      )}{" "}
+                      FC
+                    </strong>
+                  </div>
 
-                  return (
+
+                  <div
+                    className={
+                      styles.variantQuantityInfo
+                    }
+                  >
+                    <span>
+                      1{" "}
+                      {
+                        selectedVariant.type
+                      }{" "}
+                      =
+                    </span>
+
+                    <strong>
+                      {
+                        selectedVariantConversion
+                      }{" "}
+                      {
+                        selectedProduct.stockUnit
+                      }
+                    </strong>
+                  </div>
+
+
+                  <div
+                    className={
+                      styles.variantStockInfo
+                    }
+                  >
+                    Stock disponible :{" "}
+                    <strong>
+                      {
+                        selectedProduct.stock
+                      }{" "}
+                      {
+                        selectedProduct.stockUnit
+                      }
+                    </strong>
+                  </div>
+
+
+                  <div
+                    className={
+                      styles.variantQuantityLabel
+                    }
+                  >
+                    Quantité à vendre
+                  </div>
+
+
+                  <div
+                    className={
+                      styles.variantQuantityControls
+                    }
+                  >
                     <button
                       type="button"
-                      key={index}
-                      className={
-                        styles.variantModalButton
-                      }
-                      disabled={!available}
-                      onClick={() =>
-                        handleVariantClick(
-                          selectedProduct,
-                          variant
-                        )
+                      onClick={
+                        decreaseVariantQuantity
                       }
                     >
-
-                      <div
-                        className={
-                          styles.variantModalInfo
-                        }
-                      >
-
-                        <strong>
-                          {variant.type}
-                        </strong>
-
-                        <span>
-                          {quantity}{" "}
-                          {
-                            selectedProduct.stockUnit
-                          }
-                        </span>
-
-                      </div>
-
-                      <div
-                        className={
-                          styles.variantModalPrice
-                        }
-                      >
-                        {price.toLocaleString(
-                          "fr-FR"
-                        )}{" "}
-                        FC
-                      </div>
-
+                      −
                     </button>
-                  );
-                }
-              )}
 
-            </div>
+                    <strong>
+                      {
+                        variantQuantity
+                      }
+                    </strong>
+
+                    <button
+                      type="button"
+                      onClick={
+                        increaseVariantQuantity
+                      }
+                      disabled={
+                        variantQuantity >=
+                        variantMaxQuantity
+                      }
+                    >
+                      +
+                    </button>
+                  </div>
+
+
+                  <div
+                    className={
+                      styles.variantQuantityLimit
+                    }
+                  >
+                    Maximum :{" "}
+                    {
+                      variantMaxQuantity
+                    }{" "}
+                    {
+                      selectedVariant.type
+                    }
+                    {variantMaxQuantity >
+                    1
+                      ? "s"
+                      : ""}
+                  </div>
+
+
+                  <div
+                    className={
+                      styles.variantBaseStock
+                    }
+                  >
+                    Cette vente consommera{" "}
+                    <strong>
+                      {
+                        variantBaseQuantity
+                      }{" "}
+                      {
+                        selectedProduct.stockUnit
+                      }
+                    </strong>{" "}
+                    du stock.
+                  </div>
+
+
+                  <div
+                    className={
+                      styles.variantTotal
+                    }
+                  >
+                    <span>
+                      Total
+                    </span>
+
+                    <strong>
+                      {variantTotal.toLocaleString(
+                        "fr-FR"
+                      )}{" "}
+                      FC
+                    </strong>
+                  </div>
+
+
+                  <div
+                    className={
+                      styles.variantActions
+                    }
+                  >
+                    <button
+                      type="button"
+                      className={
+                        styles.variantCancelButton
+                      }
+                      onClick={() => {
+                        setSelectedVariant(
+                          null
+                        );
+                        setVariantQuantity(
+                          1
+                        );
+                      }}
+                    >
+                      Retour
+                    </button>
+
+                    <button
+                      type="button"
+                      className={
+                        styles.variantAddButton
+                      }
+                      onClick={
+                        confirmVariant
+                      }
+                    >
+                      Ajouter au ticket
+                    </button>
+                  </div>
+
+                </div>
+              </>
+            )}
 
           </div>
-
         </div>
       )}
 
@@ -873,38 +1987,38 @@ function POS() {
 
       {showTicket && (
         <div
-          className={styles.modalOverlay}
+          className={
+            styles.modalOverlay
+          }
           onClick={() =>
             setShowTicket(false)
           }
         >
-
           <div
-            className={styles.ticketModal}
+            className={
+              styles.ticketModal
+            }
             onClick={(e) =>
               e.stopPropagation()
             }
           >
-
-            {/* HEADER */}
-
             <div
               className={
                 styles.ticketModalHeader
               }
             >
-
               <div>
-
-                <h2>Ticket</h2>
+                <h2>
+                  Ticket
+                </h2>
 
                 <span>
                   {totalItems} article
-                  {totalItems > 1
+                  {totalItems >
+                  1
                     ? "s"
                     : ""}
                 </span>
-
               </div>
 
               <button
@@ -913,49 +2027,53 @@ function POS() {
                   styles.closeButton
                 }
                 onClick={() =>
-                  setShowTicket(false)
+                  setShowTicket(
+                    false
+                  )
                 }
               >
                 ×
               </button>
-
             </div>
 
-
-            {/* ARTICLES */}
 
             <div
               className={
                 styles.ticketItems
               }
             >
-
-              {ticket.length === 0 ? (
+              {ticket.length ===
+              0 ? (
                 <div
                   className={
                     styles.emptyTicket
                   }
                 >
-
-                  <div>🛒</div>
+                  <div>
+                    🛒
+                  </div>
 
                   <p>
-                    Le ticket est vide
+                    Le ticket est
+                    vide
                   </p>
 
                   <span>
-                    Cliquez sur un produit
-                    pour commencer
+                    Cliquez sur un
+                    produit pour
+                    commencer
                   </span>
-
                 </div>
               ) : (
                 ticket.map(
-                  (item, index) => {
-
+                  (
+                    item,
+                    index
+                  ) => {
                     const lineTotal =
                       Number(
-                        item.price || 0
+                        item.price ||
+                          0
                       ) *
                       item.quantity;
 
@@ -971,41 +2089,39 @@ function POS() {
                           styles.ticketItem
                         }
                       >
-
-                        {/* INFOS */}
-
                         <div
                           className={
                             styles.ticketItemInfo
                           }
                         >
-
                           <strong>
-                            {item.name}
+                            {
+                              item.name
+                            }
                           </strong>
 
                           <span>
-                            {item.variantType}
+                            {
+                              item.variantType
+                            }
                           </span>
 
                           <small>
-                            {baseQuantity}{" "}
+                            {
+                              baseQuantity
+                            }{" "}
                             {
                               item.stockUnit
                             }
                           </small>
-
                         </div>
 
-
-                        {/* DROITE */}
 
                         <div
                           className={
                             styles.ticketItemRight
                           }
                         >
-
                           <strong>
                             {lineTotal.toLocaleString(
                               "fr-FR"
@@ -1013,13 +2129,11 @@ function POS() {
                             FC
                           </strong>
 
-
                           <div
                             className={
                               styles.quantityControls
                             }
                           >
-
                             <button
                               type="button"
                               onClick={() =>
@@ -1032,7 +2146,9 @@ function POS() {
                             </button>
 
                             <span>
-                              {item.quantity}
+                              {
+                                item.quantity
+                              }
                             </span>
 
                             <button
@@ -1045,13 +2161,9 @@ function POS() {
                             >
                               +
                             </button>
-
                           </div>
-
                         </div>
 
-
-                        {/* SUPPRIMER */}
 
                         <button
                           type="button"
@@ -1066,43 +2178,39 @@ function POS() {
                         >
                           ×
                         </button>
-
                       </div>
                     );
                   }
                 )
               )}
-
             </div>
 
-
-            {/* FOOTER */}
 
             <div
               className={
                 styles.ticketFooter
               }
             >
-
-              {ticket.length > 0 && (
+              {ticket.length >
+                0 && (
                 <button
                   type="button"
                   className={
                     styles.clearButton
                   }
-                  onClick={clearTicket}
+                  onClick={
+                    clearTicket
+                  }
                 >
                   Vider le ticket
                 </button>
               )}
-
 
               <div
                 className={
                   styles.totalRow
                 }
               >
-
                 <span>
                   Total
                 </span>
@@ -1117,9 +2225,7 @@ function POS() {
                   )}{" "}
                   FC
                 </strong>
-
               </div>
-
 
               <button
                 type="button"
@@ -1127,7 +2233,8 @@ function POS() {
                   styles.payButton
                 }
                 disabled={
-                  ticket.length === 0
+                  ticket.length ===
+                  0
                 }
                 onClick={() =>
                   alert(
@@ -1141,14 +2248,10 @@ function POS() {
                 )}{" "}
                 FC
               </button>
-
             </div>
-
           </div>
-
         </div>
       )}
-
     </div>
   );
 }

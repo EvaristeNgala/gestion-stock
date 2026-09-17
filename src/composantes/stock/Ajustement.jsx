@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import {
   collection,
   onSnapshot,
+  query,
+  where,
   writeBatch,
   doc,
   serverTimestamp,
@@ -15,6 +17,17 @@ import styles from "./ajustement.module.css";
 
 function Ajustement() {
   const navigate = useNavigate();
+
+  // ==========================================
+  // SESSION / MAGASIN
+  // ==========================================
+
+  const savedSession = localStorage.getItem("storeSession");
+  const session = savedSession
+    ? JSON.parse(savedSession)
+    : null;
+
+  const storeId = session?.storeId || "";
 
   // ==========================================
   // PRODUITS
@@ -73,8 +86,25 @@ function Ajustement() {
   // ==========================================
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(
+    // Aucun magasin connecté
+    if (!storeId) {
+      console.warn(
+        "Aucun magasin connecté pour charger les produits."
+      );
+
+      setProducts([]);
+      setLoadingProducts(false);
+
+      return;
+    }
+
+    const productsQuery = query(
       collection(db, "products"),
+      where("storeId", "==", storeId)
+    );
+
+    const unsubscribe = onSnapshot(
+      productsQuery,
       (snapshot) => {
         const productsList = snapshot.docs.map(
           (productDoc) => ({
@@ -102,12 +132,13 @@ function Ajustement() {
           error
         );
 
+        setProducts([]);
         setLoadingProducts(false);
       }
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [storeId]);
 
   // ==========================================
   // NOM PRODUIT
@@ -361,10 +392,28 @@ function Ajustement() {
   // ==========================================
 
   const addAdjustment = () => {
+    if (!storeId) {
+      alert(
+        "Aucun magasin connecté."
+      );
+
+      return;
+    }
+
     if (!selectedProduct) {
       alert(
         "Veuillez sélectionner un produit."
       );
+
+      return;
+    }
+
+    // Vérification supplémentaire du magasin
+    if (selectedProduct.storeId !== storeId) {
+      alert(
+        "Ce produit n'appartient pas au magasin connecté."
+      );
+
       return;
     }
 
@@ -375,6 +424,7 @@ function Ajustement() {
       alert(
         "Veuillez sélectionner une variante."
       );
+
       return;
     }
 
@@ -386,6 +436,7 @@ function Ajustement() {
       alert(
         "Veuillez entrer une quantité valide."
       );
+
       return;
     }
 
@@ -393,6 +444,7 @@ function Ajustement() {
       alert(
         "Veuillez indiquer le motif de l'ajustement."
       );
+
       return;
     }
 
@@ -642,6 +694,14 @@ function Ajustement() {
   // ==========================================
 
   const saveAdjustments = async () => {
+    if (!storeId) {
+      alert(
+        "Aucun magasin connecté."
+      );
+
+      return;
+    }
+
     if (adjustments.length === 0) {
       alert(
         "Aucun ajustement à enregistrer."
@@ -734,6 +794,16 @@ function Ajustement() {
         }
 
         // ======================================
+        // VERIFICATION MAGASIN
+        // ======================================
+
+        if (product.storeId !== storeId) {
+          throw new Error(
+            `Le produit ${adjustment.productName} n'appartient pas au magasin connecté.`
+          );
+        }
+
+        // ======================================
         // IMPORTANT :
         //
         // LE STOCK RESTE DANS product.stock
@@ -788,6 +858,10 @@ function Ajustement() {
         batch.set(
           historyRef,
           {
+            // IMPORTANT :
+            // L'historique appartient au magasin
+            storeId,
+
             productId:
               adjustment.productId,
 
@@ -852,6 +926,10 @@ function Ajustement() {
       batch.set(
         sessionRef,
         {
+          // IMPORTANT :
+          // La session appartient au magasin
+          storeId,
+
           numberOfAdjustments:
             adjustments.length,
 
@@ -969,7 +1047,6 @@ function Ajustement() {
             className={styles.searchBox}
           >
 
-
             <input
               type="text"
               placeholder={
@@ -1068,8 +1145,6 @@ function Ajustement() {
                           )
                         }
                       >
-
-                        
 
                         <div
                           className={
@@ -1784,3 +1859,4 @@ function Ajustement() {
 }
 
 export default Ajustement;
+

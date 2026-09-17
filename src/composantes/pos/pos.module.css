@@ -1,22 +1,215 @@
 /* =========================================
-   CONTENEUR PRINCIPAL
+   POS - CONTENEUR PRINCIPAL
 ========================================= */
 
 .pos {
   min-height: 100vh;
-
   background: #f4f7fb;
-
   color: #1f2937;
-
-  font-family:
-    Arial,
-    Helvetica,
-    sans-serif;
-
+  font-family: Arial, Helvetica, sans-serif;
   display: flex;
-
   flex-direction: column;
+  box-sizing: border-box;
+}
+
+.pos *,
+.pos *::before,
+.pos *::after {
+  box-sizing: border-box;
+}
+
+.pos button,
+.pos input,
+.pos select {
+  font-family: inherit;
+}
+
+
+/* =========================================
+   ÉCRAN OUVERTURE / ACCÈS CAISSE
+========================================= */
+
+.cashAccessScreen {
+  min-height: 100vh;
+  background: #f5f8fc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.cashAccessCard {
+  width: 100%;
+  max-width: 430px;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: 0 10px 35px rgba(15, 23, 42, 0.08);
+  box-sizing: border-box;
+}
+
+.cashLoadingIcon,
+.cashClosedIcon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+  border-radius: 16px;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+}
+
+.cashAccessCard h1,
+.cashAccessCard h2 {
+  margin: 0 0 10px;
+  color: #172033;
+}
+
+.cashAccessCard p {
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.cashStatusClosed {
+  display: inline-flex;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.cashDescription {
+  margin-bottom: 24px;
+}
+
+.cashUserInfo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.cashUserInfo div {
+  padding: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  text-align: left;
+  background: #ffffff;
+}
+
+.cashUserInfo span {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.cashUserInfo strong {
+  color: #172033;
+  font-size: 14px;
+}
+
+.openCashButton {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 18px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.openCashButton:hover {
+  background: #1d4ed8;
+}
+
+.openCashButton:active {
+  transform: scale(0.98);
+}
+
+.openCashButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   INDICATEUR CAISSE OUVERTE
+========================================= */
+
+.cashOpenIndicator {
+  display: block;
+  margin-top: 3px;
+  color: #16a34a;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+
+/* =========================================
+   BARRE INFORMATIONS CAISSE
+========================================= */
+
+.cashInfoBar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.cashInfoBar > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cashInfoBar span {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.cashInfoBar strong {
+  font-size: 13px;
+  color: #172033;
+}
+
+.cashInfoBar > div:first-child span {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.closeCashButton {
+  margin-left: auto;
+  border: 1px solid #fecaca;
+  background: #ffffff;
+  color: #dc2626;
+  border-radius: 9px;
+  padding: 8px 13px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.closeCashButton:hover {
+  background: #fef2f2;
+}
+
+.closeCashButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 
@@ -26,45 +219,27 @@
 
 .header {
   height: 64px;
-
   background: #ffffff;
-
   border-bottom: 1px solid #e5e7eb;
-
   display: flex;
-
   align-items: center;
-
   padding: 0 20px;
-
   gap: 15px;
-
   position: sticky;
-
   top: 0;
-
   z-index: 20;
 }
 
 .menu {
   width: 40px;
-
   height: 40px;
-
   border: none;
-
   background: transparent;
-
   border-radius: 8px;
-
   cursor: pointer;
-
   font-size: 22px;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
 }
 
@@ -74,11 +249,9 @@
 
 .title {
   flex: 1;
-
+  min-width: 0;
   font-size: 20px;
-
   font-weight: 700;
-
   color: #111827;
 }
 
@@ -89,28 +262,19 @@
 
 .ticketButtonHeader {
   position: relative;
-
   width: 42px;
-
   height: 42px;
-
+  flex-shrink: 0;
   border: none;
-
   border-radius: 9px;
-
   background: #eff6ff;
-
   color: #1e3a8a;
-
   font-size: 21px;
-
   cursor: pointer;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
+  transition: background 0.2s ease;
 }
 
 .ticketButtonHeader:hover {
@@ -119,31 +283,18 @@
 
 .headerTicketCount {
   position: absolute;
-
   top: -5px;
-
   right: -5px;
-
   min-width: 20px;
-
   height: 20px;
-
   padding: 0 5px;
-
   border-radius: 20px;
-
   background: #dc2626;
-
   color: #ffffff;
-
   font-size: 11px;
-
   font-weight: 700;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
 }
 
@@ -154,31 +305,22 @@
 
 .paymentBar {
   background: #ffffff;
-
   display: flex;
-
   border-bottom: 1px solid #e5e7eb;
 }
 
 .openTickets,
 .payment {
   flex: 1;
-
   min-height: 70px;
-
   border: none;
-
   background: #ffffff;
-
   cursor: pointer;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   gap: 12px;
+  transition: background 0.2s ease;
 }
 
 .openTickets {
@@ -193,21 +335,17 @@
 .openTickets span,
 .payment span {
   font-size: 11px;
-
   font-weight: 700;
-
   color: #6b7280;
 }
 
 .openTickets strong {
   color: #1e3a8a;
-
   font-size: 18px;
 }
 
 .payment strong {
   color: #16a34a;
-
   font-size: 18px;
 }
 
@@ -218,66 +356,49 @@
 
 .searchBar {
   background: #ffffff;
-
   padding: 15px 20px;
-
   display: flex;
-
   align-items: center;
-
   gap: 10px;
-
   border-bottom: 1px solid #e5e7eb;
-
   position: sticky;
-
   top: 64px;
-
   z-index: 10;
 }
 
 .searchBar input {
   flex: 1;
-
+  min-width: 0;
   height: 44px;
-
   border: 1px solid #d1d5db;
-
   border-radius: 8px;
-
   padding: 0 14px;
-
   font-size: 14px;
-
   outline: none;
+  background: #ffffff;
+  color: #111827;
+}
+
+.searchBar input::placeholder {
+  color: #9ca3af;
 }
 
 .searchBar input:focus {
   border-color: #1e3a8a;
-
-  box-shadow:
-    0 0 0 2px
-    rgba(30, 58, 138, 0.08);
+  box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.08);
 }
 
 .category {
   min-width: 190px;
-
   height: 44px;
-
   border: 1px solid #d1d5db;
-
   border-radius: 8px;
-
   background: #ffffff;
-
   padding: 0 12px;
-
   font-size: 14px;
-
   cursor: pointer;
-
   outline: none;
+  color: #111827;
 }
 
 .category:focus {
@@ -286,21 +407,14 @@
 
 .searchIcon {
   width: 44px;
-
   height: 44px;
-
+  flex-shrink: 0;
   border-radius: 8px;
-
   background: #1e3a8a;
-
   color: #ffffff;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   font-size: 18px;
 }
 
@@ -311,37 +425,28 @@
 
 .productsSection {
   width: 100%;
-
   max-width: 1600px;
-
   margin: 0 auto;
-
   padding: 20px;
-
   box-sizing: border-box;
 }
 
 .sectionTitle {
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
-
+  gap: 10px;
   margin-bottom: 15px;
 }
 
 .sectionTitle h2 {
   margin: 0;
-
   font-size: 20px;
-
   color: #111827;
 }
 
 .sectionTitle span {
   color: #6b7280;
-
   font-size: 13px;
 }
 
@@ -352,13 +457,7 @@
 
 .products {
   display: grid;
-
-  grid-template-columns:
-    repeat(
-      auto-fill,
-      minmax(190px, 1fr)
-    );
-
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 15px;
 }
 
@@ -368,40 +467,27 @@
 ========================================= */
 
 .product {
+  width: 100%;
   border: 1px solid #e5e7eb;
-
   border-radius: 12px;
-
   background: #ffffff;
-
   padding: 12px;
-
   text-align: left;
-
   cursor: pointer;
-
   display: flex;
-
   flex-direction: column;
-
   min-width: 0;
-
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
     border-color 0.2s ease;
-
   font-family: inherit;
 }
 
 .product:hover:not(:disabled) {
   transform: translateY(-2px);
-
   border-color: #bfdbfe;
-
-  box-shadow:
-    0 6px 18px
-    rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
 .product:active:not(:disabled) {
@@ -410,103 +496,73 @@
 
 .productDisabled {
   opacity: 0.55;
-
   cursor: not-allowed;
 }
 
 
 /* =========================================
-   IMAGE
+   IMAGE PRODUIT
 ========================================= */
 
 .productImage {
   width: 100%;
-
   height: 150px;
-
   border-radius: 9px;
-
   overflow: hidden;
-
   background: #f8fafc;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   margin-bottom: 10px;
 }
 
 .productImage img {
   width: 100%;
-
   height: 100%;
-
   object-fit: contain;
 }
 
 .noImage {
   width: 100%;
-
   height: 100%;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   font-size: 42px;
 }
 
 
 /* =========================================
-   INFORMATIONS
+   INFORMATIONS PRODUIT
 ========================================= */
 
 .productInfo {
   display: flex;
-
   flex-direction: column;
-
   gap: 5px;
 }
 
 .productName {
   font-size: 15px;
-
   font-weight: 700;
-
   color: #111827;
-
   line-height: 1.3;
-
   min-height: 38px;
 }
 
 .productPrice {
   font-size: 16px;
-
   font-weight: 700;
-
   color: #1e3a8a;
 }
 
 .variantHint {
   font-size: 12px;
-
   color: #1e3a8a;
-
   font-weight: 600;
-
   background: #eff6ff;
-
   border-radius: 6px;
-
   padding: 6px 8px;
-
   text-align: center;
 }
 
@@ -519,9 +575,7 @@
 .lowStock,
 .outOfStock {
   font-size: 12px;
-
   font-weight: 600;
-
   margin-top: 3px;
 }
 
@@ -544,23 +598,14 @@
 
 .message {
   grid-column: 1 / -1;
-
   min-height: 200px;
-
   background: #ffffff;
-
   border: 1px solid #e5e7eb;
-
   border-radius: 10px;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   color: #6b7280;
-
   font-size: 14px;
 }
 
@@ -571,22 +616,13 @@
 
 .modalOverlay {
   position: fixed;
-
   inset: 0;
-
-  background:
-    rgba(15, 23, 42, 0.55);
-
+  background: rgba(15, 23, 42, 0.55);
   z-index: 100;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   padding: 20px;
-
   box-sizing: border-box;
 }
 
@@ -597,38 +633,25 @@
 
 .variantModal {
   width: 90%;
-
   margin-bottom: 80px;
-
   max-width: 480px;
-
   max-height: 85vh;
-
   background: #ffffff;
-
-  box-shadow:
-    0 20px 50px
-    rgba(0, 0, 0, 0.2);
-
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
   overflow: hidden;
-
-  animation:
-    modalOpen 0.2s ease;
+  animation: modalOpen 0.2s ease;
 }
 
 @keyframes modalOpen {
   from {
     opacity: 0;
-
-    transform: translateY(10px)
-      scale(0.98);
+    transform: translateY(10px) scale(0.98);
   }
 
   to {
     opacity: 1;
-
-    transform: translateY(0)
-      scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -639,65 +662,43 @@
 
 .modalHeader {
   padding: 18px;
-
   border-bottom: 1px solid #e5e7eb;
-
   display: flex;
-
   align-items: flex-start;
-
   justify-content: space-between;
-
   gap: 15px;
 }
 
 .modalHeader h2 {
   margin: 0 0 5px 0;
-
   font-size: 19px;
-
   color: #111827;
 }
 
 .modalHeader p {
   margin: 0;
-
   font-size: 13px;
-
   color: #6b7280;
 }
 
 .closeButton {
   width: 34px;
-
   height: 34px;
-
   flex-shrink: 0;
-
   border: none;
-
   border-radius: 50%;
-
   background: #f1f5f9;
-
   color: #374151;
-
   font-size: 23px;
-
   line-height: 1;
-
   cursor: pointer;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
 }
 
 .closeButton:hover {
   background: #e5e7eb;
-
   color: #111827;
 }
 
@@ -708,43 +709,26 @@
 
 .variantList {
   padding: 15px;
-
   display: flex;
-
   flex-direction: column;
-
   gap: 10px;
-
   overflow-y: auto;
-
   max-height: 60vh;
 }
 
 .variantModalButton {
   width: 100%;
-
   min-height: 68px;
-
   border: 1px solid #bfdbfe;
-
   border-radius: 9px;
-
   background: #eff6ff;
-
   padding: 10px 13px;
-
   cursor: pointer;
-
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
-
   gap: 15px;
-
   text-align: left;
-
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
@@ -753,49 +737,38 @@
 
 .variantModalButton:hover:not(:disabled) {
   background: #dbeafe;
-
   border-color: #1e3a8a;
-
   transform: translateY(-1px);
 }
 
 .variantModalButton:disabled {
   opacity: 0.45;
-
   cursor: not-allowed;
-
   background: #f3f4f6;
-
   border-color: #e5e7eb;
 }
 
 .variantModalInfo {
   display: flex;
-
   flex-direction: column;
-
   gap: 4px;
+  min-width: 0;
 }
 
 .variantModalInfo strong {
   color: #1e3a8a;
-
   font-size: 15px;
 }
 
 .variantModalInfo span {
   color: #6b7280;
-
   font-size: 12px;
 }
 
 .variantModalPrice {
   color: #111827;
-
   font-size: 15px;
-
   font-weight: 700;
-
   white-space: nowrap;
 }
 
@@ -806,50 +779,33 @@
 
 .ticketModal {
   width: 100%;
-
   max-width: 520px;
-
   max-height: 90vh;
-
   background: #ffffff;
-
   border-radius: 14px;
-
-  box-shadow:
-    0 20px 50px
-    rgba(0, 0, 0, 0.2);
-
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
   display: flex;
-
   flex-direction: column;
-
   overflow: hidden;
-
-  animation:
-    modalOpen 0.2s ease;
+  animation: modalOpen 0.2s ease;
 }
 
 .ticketModalHeader {
   padding: 17px 18px;
-
   border-bottom: 1px solid #e5e7eb;
-
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
+  gap: 10px;
 }
 
 .ticketModalHeader h2 {
   margin: 0 0 4px 0;
-
   font-size: 19px;
 }
 
 .ticketModalHeader span {
   font-size: 12px;
-
   color: #6b7280;
 }
 
@@ -860,45 +816,31 @@
 
 .ticketItems {
   flex: 1;
-
   overflow-y: auto;
-
   padding: 8px 12px;
-
   min-height: 150px;
-
   max-height: 55vh;
 }
 
 .emptyTicket {
   min-height: 250px;
-
   display: flex;
-
   flex-direction: column;
-
   align-items: center;
-
   justify-content: center;
-
   text-align: center;
-
   color: #6b7280;
 }
 
 .emptyTicket div {
   font-size: 45px;
-
   margin-bottom: 10px;
 }
 
 .emptyTicket p {
   margin: 0 0 5px 0;
-
   color: #374151;
-
   font-size: 15px;
-
   font-weight: 700;
 }
 
@@ -913,17 +855,10 @@
 
 .ticketItem {
   position: relative;
-
   display: grid;
-
-  grid-template-columns:
-    minmax(0, 1fr)
-    auto;
-
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
-
   padding: 13px 28px 13px 6px;
-
   border-bottom: 1px solid #f1f5f9;
 }
 
@@ -933,37 +868,27 @@
 
 .ticketItemInfo {
   min-width: 0;
-
   display: flex;
-
   flex-direction: column;
-
   gap: 3px;
 }
 
 .ticketItemInfo strong {
   font-size: 13px;
-
   color: #111827;
-
   overflow: hidden;
-
   text-overflow: ellipsis;
-
   white-space: nowrap;
 }
 
 .ticketItemInfo span {
   font-size: 12px;
-
   color: #1e3a8a;
-
   font-weight: 600;
 }
 
 .ticketItemInfo small {
   font-size: 11px;
-
   color: #6b7280;
 }
 
@@ -974,19 +899,14 @@
 
 .ticketItemRight {
   display: flex;
-
   flex-direction: column;
-
   align-items: flex-end;
-
   gap: 7px;
 }
 
 .ticketItemRight > strong {
   font-size: 13px;
-
   color: #111827;
-
   white-space: nowrap;
 }
 
@@ -997,29 +917,19 @@
 
 .quantityControls {
   display: flex;
-
   align-items: center;
-
   border: 1px solid #d1d5db;
-
   border-radius: 6px;
-
   overflow: hidden;
 }
 
 .quantityControls button {
   width: 29px;
-
   height: 28px;
-
   border: none;
-
   background: #f8fafc;
-
   color: #1e3a8a;
-
   cursor: pointer;
-
   font-size: 17px;
 }
 
@@ -1029,52 +939,35 @@
 
 .quantityControls span {
   min-width: 30px;
-
   text-align: center;
-
   font-size: 12px;
-
   font-weight: 700;
 }
 
 
 /* =========================================
-   SUPPRESSION
+   SUPPRESSION ARTICLE
 ========================================= */
 
 .removeButton {
   position: absolute;
-
   top: 10px;
-
   right: 4px;
-
   width: 22px;
-
   height: 22px;
-
   border: none;
-
   border-radius: 50%;
-
   background: transparent;
-
   color: #9ca3af;
-
   cursor: pointer;
-
   font-size: 18px;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
 }
 
 .removeButton:hover {
   background: #fee2e2;
-
   color: #dc2626;
 }
 
@@ -1085,31 +978,20 @@
 
 .ticketFooter {
   padding: 13px 15px 15px;
-
   border-top: 1px solid #e5e7eb;
-
   background: #ffffff;
 }
 
 .clearButton {
   width: 100%;
-
   height: 36px;
-
   margin-bottom: 10px;
-
   border: 1px solid #fecaca;
-
   border-radius: 7px;
-
   background: #fff1f2;
-
   color: #dc2626;
-
   cursor: pointer;
-
   font-size: 12px;
-
   font-weight: 600;
 }
 
@@ -1119,13 +1001,10 @@
 
 .totalRow {
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
-
+  gap: 10px;
   margin-bottom: 10px;
-
   font-size: 14px;
 }
 
@@ -1135,7 +1014,6 @@
 
 .totalAmount {
   color: #1e3a8a;
-
   font-size: 21px;
 }
 
@@ -1146,34 +1024,27 @@
 
 .payButton {
   width: 100%;
-
   height: 48px;
-
   border: none;
-
   border-radius: 8px;
-
   background: #16a34a;
-
   color: #ffffff;
-
   font-size: 15px;
-
   font-weight: 700;
-
   cursor: pointer;
-
-  transition:
-    background 0.2s ease;
+  transition: background 0.2s ease, transform 0.15s ease;
 }
 
 .payButton:hover:not(:disabled) {
   background: #15803d;
 }
 
+.payButton:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 .payButton:disabled {
   background: #9ca3af;
-
   cursor: not-allowed;
 }
 
@@ -1183,23 +1054,17 @@
 ========================================= */
 
 @media (max-width: 900px) {
-
   .productsSection {
     padding: 15px;
   }
 
   .products {
-    grid-template-columns:
-      repeat(
-        auto-fill,
-        minmax(170px, 1fr)
-      );
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   }
 
   .productImage {
     height: 135px;
   }
-
 }
 
 
@@ -1209,11 +1074,54 @@
 
 @media (max-width: 600px) {
 
+  /* ---------- CAISSE ---------- */
+
+  .cashAccessScreen {
+    padding: 15px;
+  }
+
+  .cashAccessCard {
+    padding: 26px 18px;
+    border-radius: 16px;
+  }
+
+  .cashLoadingIcon,
+  .cashClosedIcon {
+    width: 58px;
+    height: 58px;
+    font-size: 27px;
+  }
+
+  .cashAccessCard h1,
+  .cashAccessCard h2 {
+    font-size: 20px;
+  }
+
+  .cashUserInfo {
+    grid-template-columns: 1fr;
+  }
+
+  .cashInfoBar {
+    gap: 10px;
+    padding: 9px 12px;
+    flex-wrap: wrap;
+  }
+
+  .cashInfoBar strong {
+    font-size: 12px;
+  }
+
+  .closeCashButton {
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+
+
+  /* ---------- HEADER ---------- */
+
   .header {
     height: 58px;
-
     padding: 0 10px;
-
     gap: 8px;
   }
 
@@ -1223,62 +1131,49 @@
 
   .menu {
     width: 36px;
-
     height: 36px;
-
     font-size: 19px;
   }
 
   .ticketButtonHeader {
     width: 38px;
-
     height: 38px;
-
     font-size: 19px;
   }
 
 
-  /* Recherche */
+  /* ---------- RECHERCHE ---------- */
 
   .searchBar {
     top: 58px;
-
     padding: 10px;
-
     flex-wrap: wrap;
   }
 
   .searchBar input {
     flex: 1 1 100%;
-
     width: 100%;
-
     height: 42px;
   }
 
   .category {
     flex: 1;
-
     min-width: 0;
-
     height: 42px;
   }
 
   .searchIcon {
     width: 42px;
-
     height: 42px;
   }
 
 
-  /* Barre ticket */
+  /* ---------- BARRE TICKET ---------- */
 
   .openTickets,
   .payment {
     min-height: 60px;
-
     gap: 6px;
-
     padding: 8px;
   }
 
@@ -1293,28 +1188,36 @@
   }
 
 
-  /* Produits */
+  /* ---------- PRODUITS ---------- */
 
   .productsSection {
     padding: 10px;
   }
 
-  .products {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+  .sectionTitle {
+    margin-bottom: 10px;
+  }
 
+  .sectionTitle h2 {
+    font-size: 17px;
+  }
+
+  .sectionTitle span {
+    font-size: 11px;
+  }
+
+  .products {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 9px;
   }
 
   .product {
     padding: 8px;
-
     border-radius: 9px;
   }
 
   .productImage {
     height: 105px;
-
     margin-bottom: 8px;
   }
 
@@ -1324,7 +1227,6 @@
 
   .productName {
     font-size: 13px;
-
     min-height: 34px;
   }
 
@@ -1340,25 +1242,23 @@
 
   .variantHint {
     font-size: 10px;
-
     padding: 5px;
   }
 
 
-  /* Modal */
+  /* ---------- MODALES ---------- */
 
   .modalOverlay {
     padding: 10px;
-
     align-items: flex-end;
   }
 
   .variantModal,
   .ticketModal {
+    width: 100%;
     max-width: 100%;
-
+    margin-bottom: 0;
     border-radius: 14px 14px 0 0;
-
     max-height: 90vh;
   }
 
@@ -1372,13 +1272,11 @@
 
   .variantList {
     padding: 12px;
-
     max-height: 55vh;
   }
 
   .variantModalButton {
     min-height: 64px;
-
     padding: 9px 11px;
   }
 
@@ -1391,7 +1289,7 @@
   }
 
 
-  /* Ticket */
+  /* ---------- TICKET ---------- */
 
   .ticketModalHeader {
     padding: 14px 15px;
@@ -1408,7 +1306,6 @@
   .payButton {
     height: 46px;
   }
-
 }
 
 
@@ -1417,6 +1314,10 @@
 ========================================= */
 
 @media (max-width: 380px) {
+
+  .cashAccessCard {
+    padding: 24px 15px;
+  }
 
   .products {
     gap: 7px;
@@ -1437,8 +1338,223 @@
   .openTickets,
   .payment {
     flex-direction: column;
-
     gap: 2px;
   }
 
+  .cashInfoBar {
+    align-items: flex-start;
+  }
+
+  .closeCashButton {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  /* =========================================
+   MODAL QUANTITÉ VARIANTE
+========================================= */
+
+.variantQuantityContent {
+  padding: 18px;
+}
+
+.variantQuantityInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.variantQuantityInfo span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.variantQuantityInfo strong {
+  color: #1e3a8a;
+  font-size: 14px;
+}
+
+.variantStockInfo {
+  padding: 10px 12px;
+  margin: 12px 0 20px;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 12px;
+  text-align: center;
+}
+
+.variantQuantityLabel {
+  text-align: center;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.variantQuantityControls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 5px;
+}
+
+.variantQuantityControls button {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.variantQuantityControls button:hover:not(:disabled) {
+  background: #dbeafe;
+}
+
+.variantQuantityControls button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.variantQuantityControls button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.variantQuantityControls strong {
+  min-width: 55px;
+  text-align: center;
+  color: #111827;
+  font-size: 24px;
+}
+
+.variantQuantityLimit {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 11px;
+  margin-bottom: 18px;
+}
+
+.variantBaseStock {
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  text-align: center;
+}
+
+.variantBaseStock strong {
+  color: #1e3a8a;
+}
+
+.variantTotal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  margin-bottom: 15px;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.variantTotal span {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.variantTotal strong {
+  color: #16a34a;
+  font-size: 20px;
+}
+
+.variantActions {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 10px;
+}
+
+.variantCancelButton,
+.variantAddButton {
+  height: 46px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.variantCancelButton {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+}
+
+.variantCancelButton:hover {
+  background: #f8fafc;
+}
+
+.variantAddButton {
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+  transition: background 0.2s ease;
+}
+
+.variantAddButton:hover {
+  background: #1d4ed8;
+}
+
+
+/* =========================================
+   MOBILE - QUANTITÉ VARIANTE
+========================================= */
+
+@media (max-width: 600px) {
+  .variantQuantityContent {
+    padding: 15px;
+  }
+
+  .variantQuantityInfo {
+    padding: 10px 12px;
+  }
+
+  .variantQuantityControls {
+    gap: 15px;
+  }
+
+  .variantQuantityControls button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .variantQuantityControls strong {
+    font-size: 22px;
+  }
+
+  .variantTotal strong {
+    font-size: 18px;
+  }
+
+  .variantActions {
+    grid-template-columns: 1fr 1.4fr;
+  }
+
+  .variantCancelButton,
+  .variantAddButton {
+    height: 44px;
+    font-size: 12px;
+  }
+} 
 }
