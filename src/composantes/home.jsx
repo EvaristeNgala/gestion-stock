@@ -560,7 +560,7 @@ function Home() {
 
                 <input
                   type="text"
-                  placeholder="Ex : Elva"
+                  placeholder="Ex : Employé"
                   value={storeName}
                   onChange={(e) =>
                     setStoreName(
@@ -581,7 +581,7 @@ function Home() {
                   type="password"
                   inputMode="numeric"
                   maxLength={6}
-                  placeholder="Ex : 050392"
+                  placeholder="Ex : 123456"
                   value={employeeCode}
                   onChange={(e) =>
                     setEmployeeCode(
