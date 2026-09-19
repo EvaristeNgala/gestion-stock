@@ -481,7 +481,6 @@
     transform 0.2s ease,
     box-shadow 0.2s ease,
     border-color 0.2s ease;
-  font-family: inherit;
 }
 
 .product:hover:not(:disabled) {
@@ -774,6 +773,173 @@
 
 
 /* =========================================
+   QUANTITÉ VARIANTE
+========================================= */
+
+.variantQuantityContent {
+  padding: 18px;
+}
+
+.variantQuantityInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.variantQuantityInfo span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.variantQuantityInfo strong {
+  color: #1e3a8a;
+  font-size: 14px;
+}
+
+.variantStockInfo {
+  padding: 10px 12px;
+  margin: 12px 0 20px;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 12px;
+  text-align: center;
+}
+
+.variantQuantityLabel {
+  text-align: center;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.variantQuantityControls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 5px;
+}
+
+.variantQuantityControls button {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.variantQuantityControls button:hover:not(:disabled) {
+  background: #dbeafe;
+}
+
+.variantQuantityControls button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.variantQuantityControls button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.variantQuantityControls strong {
+  min-width: 55px;
+  text-align: center;
+  color: #111827;
+  font-size: 24px;
+}
+
+.variantQuantityLimit {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 11px;
+  margin-bottom: 18px;
+}
+
+.variantBaseStock {
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  text-align: center;
+}
+
+.variantBaseStock strong {
+  color: #1e3a8a;
+}
+
+.variantTotal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  margin-bottom: 15px;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.variantTotal span {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.variantTotal strong {
+  color: #16a34a;
+  font-size: 20px;
+}
+
+.variantActions {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 10px;
+}
+
+.variantCancelButton,
+.variantAddButton {
+  height: 46px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.variantCancelButton {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+}
+
+.variantCancelButton:hover {
+  background: #f8fafc;
+}
+
+.variantAddButton {
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+  transition: background 0.2s ease;
+}
+
+.variantAddButton:hover {
+  background: #1d4ed8;
+}
+
+
+/* =========================================
    MODAL TICKET
 ========================================= */
 
@@ -892,11 +1058,6 @@
   color: #6b7280;
 }
 
-
-/* =========================================
-   DROITE TICKET
-========================================= */
-
 .ticketItemRight {
   display: flex;
   flex-direction: column;
@@ -912,7 +1073,7 @@
 
 
 /* =========================================
-   QUANTITÉ
+   QUANTITÉ TICKET
 ========================================= */
 
 .quantityControls {
@@ -1046,6 +1207,345 @@
 .payButton:disabled {
   background: #9ca3af;
   cursor: not-allowed;
+}
+
+
+/* =========================================
+   ACTIONS : ENREGISTRER / PAYER
+========================================= */
+
+.ticketMainActions {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 10px;
+}
+
+.saveTicketButton {
+  width: 100%;
+  height: 48px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.saveTicketButton:hover:not(:disabled) {
+  background: #dbeafe;
+}
+
+.saveTicketButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   ÉTAPE PAIEMENT
+========================================= */
+
+.paymentStepHeader {
+  min-height: 64px;
+  padding: 0 18px;
+  border-bottom: 1px solid #e5e7eb;
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+}
+
+.paymentStepHeader > strong {
+  text-align: center;
+  color: #111827;
+  font-size: 18px;
+}
+
+.backPaymentButton {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #1e3a8a;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.backPaymentButton:hover {
+  background: #e2e8f0;
+}
+
+.paymentStepContent {
+  padding: 22px 18px 20px;
+  overflow-y: auto;
+}
+
+.paymentTotalBlock {
+  text-align: center;
+  padding: 12px 0 25px;
+}
+
+.paymentTotalBlock strong {
+  display: block;
+  color: #111827;
+  font-size: 32px;
+  line-height: 1.1;
+}
+
+.paymentTotalBlock span {
+  display: block;
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+
+/* =========================================
+   MONTANT REÇU
+========================================= */
+
+.cashReceivedField {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.cashReceivedField > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cashReceivedField input {
+  width: 100%;
+  height: 48px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 13px;
+  outline: none;
+  color: #111827;
+  background: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.cashReceivedField input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.08);
+}
+
+
+/* =========================================
+   APERÇU MONNAIE
+========================================= */
+
+.changePreview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 13px;
+  margin-bottom: 18px;
+  border-radius: 8px;
+  background: #f0fdf4;
+}
+
+.changePreview span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.changePreview strong {
+  color: #16a34a;
+  font-size: 15px;
+}
+
+
+/* =========================================
+   MODES DE PAIEMENT
+========================================= */
+
+.cashMethodButton,
+.cardMethodButton {
+  width: 100%;
+  min-height: 72px;
+  margin-bottom: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+}
+
+.cashMethodButton {
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.cashMethodButton:hover:not(:disabled) {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.cashMethodButton:disabled,
+.cardMethodButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.paymentMethodIcon {
+  font-size: 25px;
+}
+
+.cashMethodButton div,
+.cardMethodButton div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cashMethodButton strong,
+.cardMethodButton strong {
+  color: #172033;
+  font-size: 14px;
+}
+
+.cashMethodButton small,
+.cardMethodButton small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+
+/* =========================================
+   REÇU / VENTE TERMINÉE
+========================================= */
+
+.receiptHeader {
+  padding: 25px 18px 16px;
+  text-align: center;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.receiptSuccess {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.receiptHeader h2 {
+  margin: 0 0 5px;
+  color: #111827;
+  font-size: 20px;
+}
+
+.receiptHeader p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.receiptContent {
+  padding: 18px;
+}
+
+.receiptAmounts {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.receiptAmounts > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.receiptAmounts > div:last-child {
+  border-bottom: none;
+}
+
+.receiptAmounts span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.receiptAmounts strong {
+  color: #111827;
+  font-size: 14px;
+}
+
+.receiptAmounts .changeAmountRow strong {
+  color: #16a34a;
+  font-size: 18px;
+}
+
+
+/* =========================================
+   IMPRIMER REÇU
+========================================= */
+
+.printReceiptButton {
+  width: 100%;
+  height: 46px;
+  margin-top: 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.printReceiptButton:hover {
+  background: #f8fafc;
+}
+
+
+/* =========================================
+   NOUVELLE VENTE
+========================================= */
+
+.receiptFooter {
+  padding: 0 18px 18px;
+}
+
+.newSaleButton {
+  width: 100%;
+  height: 50px;
+  border: none;
+  border-radius: 8px;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.newSaleButton:hover {
+  background: #15803d;
 }
 
 
@@ -1289,6 +1789,44 @@
   }
 
 
+  /* ---------- QUANTITÉ VARIANTE ---------- */
+
+  .variantQuantityContent {
+    padding: 15px;
+  }
+
+  .variantQuantityInfo {
+    padding: 10px 12px;
+  }
+
+  .variantQuantityControls {
+    gap: 15px;
+  }
+
+  .variantQuantityControls button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .variantQuantityControls strong {
+    font-size: 22px;
+  }
+
+  .variantTotal strong {
+    font-size: 18px;
+  }
+
+  .variantActions {
+    grid-template-columns: 1fr 1.4fr;
+  }
+
+  .variantCancelButton,
+  .variantAddButton {
+    height: 44px;
+    font-size: 12px;
+  }
+
+
   /* ---------- TICKET ---------- */
 
   .ticketModalHeader {
@@ -1305,6 +1843,72 @@
 
   .payButton {
     height: 46px;
+  }
+
+
+  /* ---------- ENREGISTRER / PAYER ---------- */
+
+  .ticketMainActions {
+    grid-template-columns: 1fr 1.25fr;
+  }
+
+  .saveTicketButton,
+  .ticketMainActions .payButton {
+    height: 46px;
+    font-size: 11px;
+  }
+
+
+  /* ---------- PAIEMENT ---------- */
+
+  .paymentStepHeader {
+    min-height: 58px;
+    padding: 0 14px;
+  }
+
+  .paymentStepHeader > strong {
+    font-size: 16px;
+  }
+
+  .paymentStepContent {
+    padding: 18px 14px 16px;
+  }
+
+  .paymentTotalBlock {
+    padding: 8px 0 22px;
+  }
+
+  .paymentTotalBlock strong {
+    font-size: 28px;
+  }
+
+  .cashReceivedField input {
+    height: 46px;
+    font-size: 17px;
+  }
+
+  .cashMethodButton,
+  .cardMethodButton {
+    min-height: 66px;
+  }
+
+
+  /* ---------- REÇU ---------- */
+
+  .receiptContent {
+    padding: 15px;
+  }
+
+  .receiptFooter {
+    padding: 0 15px 15px;
+  }
+
+  .receiptHeader {
+    padding: 22px 15px 14px;
+  }
+
+  .newSaleButton {
+    height: 48px;
   }
 }
 
@@ -1350,211 +1954,59 @@
     width: 100%;
   }
 
-  /* =========================================
-   MODAL QUANTITÉ VARIANTE
-========================================= */
+  .ticketMainActions {
+    gap: 7px;
+  }
 
-.variantQuantityContent {
-  padding: 18px;
-}
+  .saveTicketButton,
+  .ticketMainActions .payButton {
+    font-size: 10px;
+  }
 
-.variantQuantityInfo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  padding: 12px 14px;
-  margin-bottom: 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #f8fafc;
-}
+  .paymentTotalBlock strong {
+    font-size: 25px;
+  }
 
-.variantQuantityInfo span {
-  color: #64748b;
-  font-size: 13px;
-}
+  .cashMethodButton,
+  .cardMethodButton {
+    padding: 10px 12px;
+  }
 
-.variantQuantityInfo strong {
-  color: #1e3a8a;
-  font-size: 14px;
-}
-
-.variantStockInfo {
-  padding: 10px 12px;
-  margin: 12px 0 20px;
-  border-radius: 8px;
-  background: #f0fdf4;
-  color: #166534;
-  font-size: 12px;
-  text-align: center;
-}
-
-.variantQuantityLabel {
-  text-align: center;
-  color: #374151;
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 10px;
-}
-
-.variantQuantityControls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  margin-bottom: 5px;
-}
-
-.variantQuantityControls button {
-  width: 42px;
-  height: 42px;
-  border: 1px solid #bfdbfe;
-  border-radius: 10px;
-  background: #eff6ff;
-  color: #1e3a8a;
-  font-size: 22px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.15s ease;
-}
-
-.variantQuantityControls button:hover:not(:disabled) {
-  background: #dbeafe;
-}
-
-.variantQuantityControls button:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-.variantQuantityControls button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.variantQuantityControls strong {
-  min-width: 55px;
-  text-align: center;
-  color: #111827;
-  font-size: 24px;
-}
-
-.variantQuantityLimit {
-  text-align: center;
-  color: #94a3b8;
-  font-size: 11px;
-  margin-bottom: 18px;
-}
-
-.variantBaseStock {
-  padding: 10px;
-  margin-bottom: 15px;
-  border-radius: 8px;
-  background: #f8fafc;
-  color: #64748b;
-  font-size: 12px;
-  text-align: center;
-}
-
-.variantBaseStock strong {
-  color: #1e3a8a;
-}
-
-.variantTotal {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 0;
-  margin-bottom: 15px;
-  border-top: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.variantTotal span {
-  color: #64748b;
-  font-size: 14px;
-}
-
-.variantTotal strong {
-  color: #16a34a;
-  font-size: 20px;
-}
-
-.variantActions {
-  display: grid;
-  grid-template-columns: 1fr 1.5fr;
-  gap: 10px;
-}
-
-.variantCancelButton,
-.variantAddButton {
-  height: 46px;
-  border-radius: 9px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.variantCancelButton {
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  color: #374151;
-}
-
-.variantCancelButton:hover {
-  background: #f8fafc;
-}
-
-.variantAddButton {
-  border: none;
-  background: #2563eb;
-  color: #ffffff;
-  transition: background 0.2s ease;
-}
-
-.variantAddButton:hover {
-  background: #1d4ed8;
+  .variantActions {
+    grid-template-columns: 1fr 1.3fr;
+  }
 }
 
 
 /* =========================================
-   MOBILE - QUANTITÉ VARIANTE
+   IMPRESSION REÇU
 ========================================= */
 
-@media (max-width: 600px) {
-  .variantQuantityContent {
-    padding: 15px;
+@media print {
+
+  .pos > * {
+    display: none !important;
   }
 
-  .variantQuantityInfo {
-    padding: 10px 12px;
+  .modalOverlay {
+    position: static !important;
+    display: block !important;
+    background: #ffffff !important;
+    padding: 0 !important;
   }
 
-  .variantQuantityControls {
-    gap: 15px;
+  .ticketModal {
+    display: flex !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
   }
 
-  .variantQuantityControls button {
-    width: 40px;
-    height: 40px;
+  .printReceiptButton,
+  .newSaleButton,
+  .closeButton,
+  .backPaymentButton {
+    display: none !important;
   }
-
-  .variantQuantityControls strong {
-    font-size: 22px;
-  }
-
-  .variantTotal strong {
-    font-size: 18px;
-  }
-
-  .variantActions {
-    grid-template-columns: 1fr 1.4fr;
-  }
-
-  .variantCancelButton,
-  .variantAddButton {
-    height: 44px;
-    font-size: 12px;
-  }
-} 
 }

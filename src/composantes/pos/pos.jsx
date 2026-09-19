@@ -9,6 +9,7 @@ import {
   updateDoc,
   doc,
   serverTimestamp,
+  runTransaction,
 } from "firebase/firestore";
 
 import { db } from "../../firebase";
@@ -64,6 +65,15 @@ function POS() {
 
   const [closingCash, setClosingCash] =
     useState(false);
+
+  // Paiement en cours
+  const [paying, setPaying] = useState(false);
+
+  // Étapes du ticket : ticket -> paiement -> reçu
+  const [ticketStep, setTicketStep] = useState("ticket");
+  const [cashReceived, setCashReceived] = useState("");
+  const [lastSale, setLastSale] = useState(null);
+  const [savingTicket, setSavingTicket] = useState(false);
 
   // ==============================
   // RÉCUPÉRER LA SESSION
@@ -290,8 +300,6 @@ function POS() {
         {
           closedAt: serverTimestamp(),
           status: "closed",
-          totalSales: 0,
-          numberOfSales: 0,
         }
       );
 
@@ -686,6 +694,22 @@ function POS() {
 
         stockAvailable:
           stock,
+
+        categoryName:
+          product.categoryName ||
+          product.category ||
+          "Non classé",
+
+        // Prix d'achat de l'unité de stock de base.
+        basePurchasePrice: Number(
+          product.purchasePrice || 0
+        ),
+
+        // Coût d'achat réel d'une variante vendue.
+        // Exemple : pack de 12 bouteilles => prix achat bouteille × 12.
+        purchasePrice:
+          Number(product.purchasePrice || 0) *
+          variantQuantity,
       },
     ]);
 
@@ -983,6 +1007,275 @@ function POS() {
   };
 
   // ==============================
+  // PARCOURS TICKET / PAIEMENT
+  // ==============================
+
+  const openTicket = () => {
+    setTicketStep("ticket");
+    setCashReceived("");
+    setLastSale(null);
+    setShowTicket(true);
+  };
+
+  const openPayment = () => {
+    if (ticket.length === 0) {
+      alert("Le ticket est vide.");
+      return;
+    }
+
+    setCashReceived(String(total));
+    setTicketStep("payment");
+  };
+
+  // Enregistre seulement le ticket pour le reprendre plus tard.
+  // Aucun stock n'est retiré et la vente n'entre pas dans le rapport.
+  const savePendingTicket = async () => {
+    if (savingTicket || ticket.length === 0) return;
+
+    if (!cashSession?.id || !storeId || !userId) {
+      alert("Session de caisse introuvable.");
+      return;
+    }
+
+    try {
+      setSavingTicket(true);
+
+      await addDoc(collection(db, "savedTickets"), {
+        storeId,
+        cashSessionId: cashSession.id,
+        userId,
+        userName,
+        userRole,
+        items: ticket,
+        total,
+        totalItems,
+        status: "pending",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      setTicket([]);
+      setShowTicket(false);
+      setTicketStep("ticket");
+      setCashReceived("");
+
+      alert("Ticket enregistré. Vous pourrez le reprendre plus tard.");
+    } catch (error) {
+      console.error("Erreur enregistrement ticket :", error);
+      alert("Impossible d'enregistrer le ticket. Vérifiez votre connexion.");
+    } finally {
+      setSavingTicket(false);
+    }
+  };
+
+  // ==============================
+  // VALIDER LE PAIEMENT ESPÈCES
+  // ==============================
+
+  const handlePayment = async () => {
+    if (paying) return;
+
+    const received = Number(cashReceived || 0);
+
+    if (!cashSession?.id) {
+      alert("Aucune caisse ouverte.");
+      return;
+    }
+
+    if (!storeId || !userId) {
+      alert("Session utilisateur introuvable.");
+      return;
+    }
+
+    if (ticket.length === 0) {
+      alert("Le ticket est vide.");
+      return;
+    }
+
+    if (!Number.isFinite(received) || received < total) {
+      alert(`Montant insuffisant. Le client doit payer au moins ${total.toLocaleString("fr-FR")} FC.`);
+      return;
+    }
+
+    const changeAmount = received - total;
+
+    try {
+      setPaying(true);
+
+      const saleRef = doc(collection(db, "sales"));
+      const cashSessionRef = doc(db, "cashSessions", cashSession.id);
+
+      await runTransaction(db, async (transaction) => {
+        const stockByProduct = {};
+
+        ticket.forEach((item) => {
+          const baseQuantity =
+            Number(item.quantity || 0) *
+            Number(item.variantQuantity || 1);
+
+          if (!stockByProduct[item.productId]) {
+            stockByProduct[item.productId] = 0;
+          }
+
+          stockByProduct[item.productId] += baseQuantity;
+        });
+
+        const productSnapshots = {};
+
+        for (const [productId, quantityToRemove] of Object.entries(stockByProduct)) {
+          const productRef = doc(db, "products", productId);
+          const productSnapshot = await transaction.get(productRef);
+
+          if (!productSnapshot.exists()) {
+            throw new Error("PRODUCT_NOT_FOUND");
+          }
+
+          const currentStock = Number(productSnapshot.data().stock || 0);
+
+          if (currentStock < quantityToRemove) {
+            const productName =
+              productSnapshot.data().productName || "Produit";
+
+            throw new Error(
+              `STOCK_INSUFFICIENT|${productName}|${currentStock}|${quantityToRemove}`
+            );
+          }
+
+          productSnapshots[productId] = {
+            ref: productRef,
+            currentStock,
+            quantityToRemove,
+          };
+        }
+
+        const cashSnapshot = await transaction.get(cashSessionRef);
+
+        if (!cashSnapshot.exists()) {
+          throw new Error("CASH_SESSION_NOT_FOUND");
+        }
+
+        if (cashSnapshot.data().status !== "open") {
+          throw new Error("CASH_SESSION_CLOSED");
+        }
+
+        Object.values(productSnapshots).forEach((productData) => {
+          transaction.update(productData.ref, {
+            stock:
+              productData.currentStock -
+              productData.quantityToRemove,
+            updatedAt: serverTimestamp(),
+          });
+        });
+
+        const saleItems = ticket.map((item) => {
+          const quantity = Number(item.quantity || 0);
+          const sellingPrice = Number(item.price || 0);
+          const conversionQuantity = Number(item.variantQuantity || 1);
+          const purchasePrice = Number(item.purchasePrice || 0);
+
+          return {
+            productId: item.productId,
+            name: item.name,
+            categoryName: item.categoryName || "Non classé",
+            variantType: item.variantType,
+            quantity,
+            price: sellingPrice,
+            sellingPrice,
+            purchasePrice,
+            basePurchasePrice: Number(item.basePurchasePrice || 0),
+            variantQuantity: conversionQuantity,
+            baseQuantity: quantity * conversionQuantity,
+            stockUnit: item.stockUnit || "",
+            lineTotal: sellingPrice * quantity,
+            linePurchaseCost: purchasePrice * quantity,
+            profit: (sellingPrice - purchasePrice) * quantity,
+          };
+        });
+
+        const totalPurchaseCost = saleItems.reduce(
+          (sum, item) => sum + Number(item.linePurchaseCost || 0),
+          0
+        );
+
+        const totalProfit = total - totalPurchaseCost;
+
+        transaction.set(saleRef, {
+          storeId,
+          cashSessionId: cashSession.id,
+          userId,
+          userName,
+          userRole,
+          items: saleItems,
+          total,
+          totalItems,
+          totalPurchaseCost,
+          profit: totalProfit,
+          paymentMethod: "cash",
+          amountReceived: received,
+          changeAmount,
+          status: "completed",
+          createdAt: serverTimestamp(),
+        });
+
+        transaction.update(cashSessionRef, {
+          totalSales:
+            Number(cashSnapshot.data().totalSales || 0) + total,
+          numberOfSales:
+            Number(cashSnapshot.data().numberOfSales || 0) + 1,
+          updatedAt: serverTimestamp(),
+        });
+      });
+
+      setLastSale({
+        total,
+        received,
+        changeAmount,
+        items: [...ticket],
+        totalItems,
+      });
+      setTicketStep("receipt");
+    } catch (error) {
+      console.error("Erreur paiement :", error);
+
+      if (error?.message?.startsWith("STOCK_INSUFFICIENT|")) {
+        const [, productName, available, required] =
+          error.message.split("|");
+
+        alert(
+          `Stock insuffisant pour ${productName}.\n\nStock disponible : ${available}\nStock nécessaire : ${required}`
+        );
+      } else if (error?.message === "PRODUCT_NOT_FOUND") {
+        alert("Un produit du ticket n'existe plus.");
+      } else if (
+        error?.message === "CASH_SESSION_NOT_FOUND" ||
+        error?.message === "CASH_SESSION_CLOSED"
+      ) {
+        alert(
+          "La session de caisse n'est plus disponible. Veuillez rouvrir la caisse."
+        );
+      } else {
+        alert(
+          "Impossible d'enregistrer le paiement. Vérifiez votre connexion et réessayez."
+        );
+      }
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  const startNewSale = () => {
+    setTicket([]);
+    setCashReceived("");
+    setLastSale(null);
+    setTicketStep("ticket");
+    setShowTicket(false);
+  };
+
+  const printReceipt = () => {
+    window.print();
+  };
+
+  // ==============================
   // STOCK
   // ==============================
 
@@ -1236,9 +1529,7 @@ function POS() {
           className={
             styles.ticketButtonHeader
           }
-          onClick={() =>
-            setShowTicket(true)
-          }
+          onClick={openTicket}
         >
           🧾
 
@@ -1315,9 +1606,7 @@ function POS() {
           className={
             styles.openTickets
           }
-          onClick={() =>
-            setShowTicket(true)
-          }
+          onClick={openTicket}
         >
           <span>
             TICKET
@@ -1336,9 +1625,15 @@ function POS() {
           className={
             styles.payment
           }
-          onClick={() =>
-            setShowTicket(true)
-          }
+          onClick={() => {
+            if (ticket.length === 0) {
+              openTicket();
+              return;
+            }
+            setShowTicket(true);
+            setCashReceived(String(total));
+            setTicketStep("payment");
+          }}
         >
           <span>
             TOTAL
@@ -1417,9 +1712,6 @@ function POS() {
             styles.sectionTitle
           }
         >
-          <h2>
-            Produits
-          </h2>
 
           <span>
             {
@@ -1982,273 +2274,263 @@ function POS() {
 
 
       {/* =================================
-          MODAL TICKET
+          MODAL TICKET / PAIEMENT / REÇU
       ================================= */}
 
       {showTicket && (
         <div
-          className={
-            styles.modalOverlay
-          }
-          onClick={() =>
-            setShowTicket(false)
-          }
+          className={styles.modalOverlay}
+          onClick={() => {
+            if (!paying) setShowTicket(false);
+          }}
         >
           <div
-            className={
-              styles.ticketModal
-            }
-            onClick={(e) =>
-              e.stopPropagation()
-            }
+            className={styles.ticketModal}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className={
-                styles.ticketModalHeader
-              }
-            >
-              <div>
-                <h2>
-                  Ticket
-                </h2>
-
-                <span>
-                  {totalItems} article
-                  {totalItems >
-                  1
-                    ? "s"
-                    : ""}
-                </span>
-              </div>
-
-              <button
-                type="button"
-                className={
-                  styles.closeButton
-                }
-                onClick={() =>
-                  setShowTicket(
-                    false
-                  )
-                }
-              >
-                ×
-              </button>
-            </div>
-
-
-            <div
-              className={
-                styles.ticketItems
-              }
-            >
-              {ticket.length ===
-              0 ? (
-                <div
-                  className={
-                    styles.emptyTicket
-                  }
-                >
+            {ticketStep === "ticket" && (
+              <>
+                <div className={styles.ticketModalHeader}>
                   <div>
-                    🛒
+                    <h2>Ticket</h2>
+                    <span>
+                      {totalItems} article{totalItems > 1 ? "s" : ""}
+                    </span>
                   </div>
 
-                  <p>
-                    Le ticket est
-                    vide
-                  </p>
-
-                  <span>
-                    Cliquez sur un
-                    produit pour
-                    commencer
-                  </span>
+                  <button
+                    type="button"
+                    className={styles.closeButton}
+                    onClick={() => setShowTicket(false)}
+                  >
+                    ×
+                  </button>
                 </div>
-              ) : (
-                ticket.map(
-                  (
-                    item,
-                    index
-                  ) => {
-                    const lineTotal =
-                      Number(
-                        item.price ||
-                          0
-                      ) *
-                      item.quantity;
 
-                    const baseQuantity =
-                      getBaseQuantity(
-                        item
-                      );
+                <div className={styles.ticketItems}>
+                  {ticket.length === 0 ? (
+                    <div className={styles.emptyTicket}>
+                      <div>🛒</div>
+                      <p>Le ticket est vide</p>
+                      <span>Cliquez sur un produit pour commencer</span>
+                    </div>
+                  ) : (
+                    ticket.map((item, index) => {
+                      const lineTotal =
+                        Number(item.price || 0) * item.quantity;
+                      const baseQuantity = getBaseQuantity(item);
 
-                    return (
-                      <div
-                        key={`${item.productId}-${item.variantType}`}
-                        className={
-                          styles.ticketItem
-                        }
-                      >
+                      return (
                         <div
-                          className={
-                            styles.ticketItemInfo
-                          }
+                          key={`${item.productId}-${item.variantType}`}
+                          className={styles.ticketItem}
                         >
-                          <strong>
-                            {
-                              item.name
-                            }
-                          </strong>
-
-                          <span>
-                            {
-                              item.variantType
-                            }
-                          </span>
-
-                          <small>
-                            {
-                              baseQuantity
-                            }{" "}
-                            {
-                              item.stockUnit
-                            }
-                          </small>
-                        </div>
-
-
-                        <div
-                          className={
-                            styles.ticketItemRight
-                          }
-                        >
-                          <strong>
-                            {lineTotal.toLocaleString(
-                              "fr-FR"
-                            )}{" "}
-                            FC
-                          </strong>
-
-                          <div
-                            className={
-                              styles.quantityControls
-                            }
-                          >
-                            <button
-                              type="button"
-                              onClick={() =>
-                                decreaseQuantity(
-                                  index
-                                )
-                              }
-                            >
-                              −
-                            </button>
-
-                            <span>
-                              {
-                                item.quantity
-                              }
-                            </span>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                increaseQuantity(
-                                  index
-                                )
-                              }
-                            >
-                              +
-                            </button>
+                          <div className={styles.ticketItemInfo}>
+                            <strong>{item.name}</strong>
+                            <span>{item.variantType}</span>
+                            <small>
+                              {baseQuantity} {item.stockUnit}
+                            </small>
                           </div>
+
+                          <div className={styles.ticketItemRight}>
+                            <strong>
+                              {lineTotal.toLocaleString("fr-FR")} FC
+                            </strong>
+
+                            <div className={styles.quantityControls}>
+                              <button
+                                type="button"
+                                onClick={() => decreaseQuantity(index)}
+                              >
+                                −
+                              </button>
+                              <span>{item.quantity}</span>
+                              <button
+                                type="button"
+                                onClick={() => increaseQuantity(index)}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            className={styles.removeButton}
+                            onClick={() => removeFromTicket(index)}
+                          >
+                            ×
+                          </button>
                         </div>
+                      );
+                    })
+                  )}
+                </div>
 
+                <div className={styles.ticketFooter}>
+                  {ticket.length > 0 && (
+                    <button
+                      type="button"
+                      className={styles.clearButton}
+                      onClick={clearTicket}
+                    >
+                      Vider le ticket
+                    </button>
+                  )}
 
-                        <button
-                          type="button"
-                          className={
-                            styles.removeButton
-                          }
-                          onClick={() =>
-                            removeFromTicket(
-                              index
-                            )
-                          }
-                        >
-                          ×
-                        </button>
-                      </div>
-                    );
-                  }
-                )
-              )}
-            </div>
+                  <div className={styles.totalRow}>
+                    <span>Total</span>
+                    <strong className={styles.totalAmount}>
+                      {total.toLocaleString("fr-FR")} FC
+                    </strong>
+                  </div>
 
+                  <div className={styles.ticketMainActions}>
+                    <button
+                      type="button"
+                      className={styles.saveTicketButton}
+                      disabled={ticket.length === 0 || savingTicket}
+                      onClick={savePendingTicket}
+                    >
+                      {savingTicket ? "ENREGISTREMENT..." : "ENREGISTRER"}
+                    </button>
 
-            <div
-              className={
-                styles.ticketFooter
-              }
-            >
-              {ticket.length >
-                0 && (
-                <button
-                  type="button"
-                  className={
-                    styles.clearButton
-                  }
-                  onClick={
-                    clearTicket
-                  }
-                >
-                  Vider le ticket
-                </button>
-              )}
+                    <button
+                      type="button"
+                      className={styles.payButton}
+                      disabled={ticket.length === 0}
+                      onClick={openPayment}
+                    >
+                      PAYER {total.toLocaleString("fr-FR")} FC
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
 
-              <div
-                className={
-                  styles.totalRow
-                }
-              >
-                <span>
-                  Total
-                </span>
+            {ticketStep === "payment" && (
+              <>
+                <div className={styles.paymentStepHeader}>
+                  <button
+                    type="button"
+                    className={styles.backPaymentButton}
+                    onClick={() => setTicketStep("ticket")}
+                  >
+                    ←
+                  </button>
+                  <strong>Paiement</strong>
+                  <span />
+                </div>
 
-                <strong
-                  className={
-                    styles.totalAmount
-                  }
-                >
-                  {total.toLocaleString(
-                    "fr-FR"
-                  )}{" "}
-                  FC
-                </strong>
-              </div>
+                <div className={styles.paymentStepContent}>
+                  <div className={styles.paymentTotalBlock}>
+                    <strong>{total.toLocaleString("fr-FR")} FC</strong>
+                    <span>Montant total</span>
+                  </div>
 
-              <button
-                type="button"
-                className={
-                  styles.payButton
-                }
-                disabled={
-                  ticket.length ===
-                  0
-                }
-                onClick={() =>
-                  alert(
-                    "Le paiement sera ajouté dans la prochaine étape."
-                  )
-                }
-              >
-                PAYER{" "}
-                {total.toLocaleString(
-                  "fr-FR"
-                )}{" "}
-                FC
-              </button>
-            </div>
+                  <label className={styles.cashReceivedField}>
+                    <span>Espèces reçues</span>
+                    <input
+                      type="number"
+                      min="0"
+                      inputMode="numeric"
+                      value={cashReceived}
+                      onChange={(e) => setCashReceived(e.target.value)}
+                      placeholder="Saisir le montant reçu"
+                      autoFocus
+                    />
+                  </label>
+
+                  <div className={styles.changePreview}>
+                    <span>Monnaie à rendre</span>
+                    <strong>
+                      {Math.max(0, Number(cashReceived || 0) - total).toLocaleString("fr-FR")} FC
+                    </strong>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={styles.cashMethodButton}
+                    disabled={
+                      paying ||
+                      !cashReceived ||
+                      Number(cashReceived) < total
+                    }
+                    onClick={handlePayment}
+                  >
+                    <span className={styles.paymentMethodIcon}>💵</span>
+                    <div>
+                      <strong>{paying ? "PAIEMENT..." : "ESPÈCES"}</strong>
+                      <small>Valider le paiement en espèces</small>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.cardMethodButton}
+                    disabled
+                  >
+                    <span className={styles.paymentMethodIcon}>💳</span>
+                    <div>
+                      <strong>CARTE</strong>
+                      <small>Bientôt disponible</small>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
+
+            {ticketStep === "receipt" && lastSale && (
+              <>
+                <div className={styles.receiptHeader}>
+                  <div className={styles.receiptSuccess}>✓</div>
+                  <h2>Paiement effectué</h2>
+                  <p>La vente a été enregistrée avec succès.</p>
+                </div>
+
+                <div className={styles.receiptContent}>
+                  <div className={styles.receiptAmounts}>
+                    <div>
+                      <span>Montant de la vente</span>
+                      <strong>
+                        {lastSale.total.toLocaleString("fr-FR")} FC
+                      </strong>
+                    </div>
+                    <div>
+                      <span>Espèces reçues</span>
+                      <strong>
+                        {lastSale.received.toLocaleString("fr-FR")} FC
+                      </strong>
+                    </div>
+                    <div className={styles.changeAmountRow}>
+                      <span>Monnaie à rendre</span>
+                      <strong>
+                        {lastSale.changeAmount.toLocaleString("fr-FR")} FC
+                      </strong>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={styles.printReceiptButton}
+                    onClick={printReceipt}
+                  >
+                    🖨 Imprimer le reçu
+                  </button>
+                </div>
+
+                <div className={styles.receiptFooter}>
+                  <button
+                    type="button"
+                    className={styles.newSaleButton}
+                    onClick={startNewSale}
+                  >
+                    ✓ NOUVELLE VENTE
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
