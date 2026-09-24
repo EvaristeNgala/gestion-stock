@@ -513,7 +513,8 @@ function CreateStore() {
 
             </div>
 
-            {/* BOUTON */}
+           {/* BOUTON */}
+           {/*
             <button
               type="submit"
               className="create-store-submit"
@@ -524,6 +525,7 @@ function CreateStore() {
                 : "Créer mon magasin"}
             </button>
 
+            */}
           </form>
 
           {/* INFORMATION */}

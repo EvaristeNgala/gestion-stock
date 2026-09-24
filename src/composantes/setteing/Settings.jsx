@@ -1,7 +1,5 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import {
   collection,
   doc,
@@ -14,27 +12,14 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../../firebase";
-
 import styles from "./settings.module.css";
 
 function Settings() {
   const navigate = useNavigate();
 
-  // ==============================
-  // SESSION / MAGASIN
-  // ==============================
-
   const savedSession = localStorage.getItem("storeSession");
-
-  const session = savedSession
-    ? JSON.parse(savedSession)
-    : null;
-
+  const session = savedSession ? JSON.parse(savedSession) : null;
   const storeId = session?.storeId || "";
-
-  // ==============================
-  // ÉTAT
-  // ==============================
 
   const [settings, setSettings] = useState({
     storeName: "",
@@ -45,24 +30,18 @@ function Settings() {
     adminEmail: "",
     defaultAlertStock: 10,
     lowStockAlerts: true,
+    adminPosCode: "",
   });
 
+  const [confirmAdminPosCode, setConfirmAdminPosCode] = useState("");
+  const [showAdminPosCode, setShowAdminPosCode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  // ==============================
-  // CHARGER PARAMÈTRES + ADMIN
-  // ==============================
-
   useEffect(() => {
     const loadSettings = async () => {
-      // ============================
-      // VERIFICATION MAGASIN
-      // ============================
-
       if (!storeId) {
         setError("Aucun magasin connecté.");
         setLoading(false);
@@ -70,10 +49,6 @@ function Settings() {
       }
 
       try {
-        // =====================================================
-        // 1. CHERCHER L'ADMINISTRATEUR DU MAGASIN
-        // =====================================================
-
         const usersQuery = query(
           collection(db, "users"),
           where("storeId", "==", storeId),
@@ -81,87 +56,48 @@ function Settings() {
         );
 
         const usersSnapshot = await getDocs(usersQuery);
-
         let adminData = null;
 
         if (!usersSnapshot.empty) {
-          // On prend le premier administrateur trouvé
           adminData = usersSnapshot.docs[0].data();
         }
 
-        // =====================================================
-        // 2. CHARGER LES PARAMÈTRES DU MAGASIN
-        // =====================================================
-
-        const settingsRef = doc(
-          db,
-          "settings",
-          storeId
-        );
-
-        const settingsSnapshot =
-          await getDoc(settingsRef);
-
-        // =====================================================
-        // 3. INFORMATIONS DE BASE VENANT DE L'ADMIN
-        // =====================================================
-
-        const adminDefaults = {
-          storeName:
-            adminData?.storeName || "",
-
-          adminName:
-            adminData?.name || "",
-
-          adminEmail:
-            adminData?.email || "",
-        };
-
-        // =====================================================
-        // 4. SI DES PARAMÈTRES EXISTENT DÉJÀ
-        //    ON LES GARDE
-        // =====================================================
+        const settingsRef = doc(db, "settings", storeId);
+        const settingsSnapshot = await getDoc(settingsRef);
 
         if (settingsSnapshot.exists()) {
-          const savedSettings =
-            settingsSnapshot.data();
+          const savedSettings = settingsSnapshot.data();
 
           setSettings((prev) => ({
             ...prev,
-
-            ...adminDefaults,
-
             ...savedSettings,
-
-            // L'email vient toujours
-            // de la fiche administrateur
+            storeName:
+              savedSettings.storeName ||
+              adminData?.storeName ||
+              "",
+            adminName:
+              savedSettings.adminName ||
+              adminData?.name ||
+              "",
             adminEmail:
               adminData?.email ||
               savedSettings.adminEmail ||
               "",
+            adminPosCode: savedSettings.adminPosCode || "",
           }));
 
+          setConfirmAdminPosCode(savedSettings.adminPosCode || "");
         } else {
-          // ===================================================
-          // 5. AUCUN PARAMÈTRE ENCORE ENREGISTRÉ
-          //    ON UTILISE LES INFOS DE L'ADMIN
-          // ===================================================
-
           setSettings((prev) => ({
             ...prev,
-            ...adminDefaults,
+            storeName: adminData?.storeName || "",
+            adminName: adminData?.name || "",
+            adminEmail: adminData?.email || "",
           }));
         }
-
       } catch (err) {
-        console.error(
-          "Erreur chargement paramètres :",
-          err
-        );
-
-        setError(
-          "Impossible de charger les informations du magasin."
-        );
+        console.error("Erreur chargement paramètres :", err);
+        setError("Impossible de charger les informations du magasin.");
       } finally {
         setLoading(false);
       }
@@ -170,33 +106,39 @@ function Settings() {
     loadSettings();
   }, [storeId]);
 
-  // ==============================
-  // MODIFIER UN CHAMP
-  // ==============================
-
   const handleChange = (e) => {
-    const {
-      name,
-      value,
-      type,
-      checked,
-    } = e.target;
+    const { name, value, type, checked } = e.target;
 
     setSettings((prev) => ({
       ...prev,
-      [name]:
-        type === "checkbox"
-          ? checked
-          : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
 
     setMessage("");
     setError("");
   };
 
-  // ==============================
-  // SAUVEGARDER
-  // ==============================
+  const handleAdminPosCodeChange = (e) => {
+    const value = e.target.value.replace(/\D/g, "");
+    if (value.length > 6) return;
+
+    setSettings((prev) => ({
+      ...prev,
+      adminPosCode: value,
+    }));
+
+    setMessage("");
+    setError("");
+  };
+
+  const handleConfirmCodeChange = (e) => {
+    const value = e.target.value.replace(/\D/g, "");
+    if (value.length > 6) return;
+
+    setConfirmAdminPosCode(value);
+    setMessage("");
+    setError("");
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -204,142 +146,77 @@ function Settings() {
     setMessage("");
     setError("");
 
-    // ============================
-    // VERIFICATION MAGASIN
-    // ============================
-
     if (!storeId) {
-      setError(
-        "Aucun magasin connecté."
-      );
-
+      setError("Aucun magasin connecté.");
       return;
     }
-
-    // ============================
-    // VERIFICATION NOM MAGASIN
-    // ============================
 
     if (!settings.storeName.trim()) {
-      setError(
-        "Le nom du magasin est obligatoire."
-      );
-
+      setError("Le nom du magasin est obligatoire.");
       return;
     }
-
-    // ============================
-    // VERIFICATION ADMIN
-    // ============================
 
     if (!settings.adminName.trim()) {
-      setError(
-        "Le nom de l'administrateur est obligatoire."
-      );
-
+      setError("Le nom de l'administrateur est obligatoire.");
       return;
     }
-
-    // ============================
-    // VERIFICATION STOCK
-    // ============================
 
     if (
       settings.defaultAlertStock === "" ||
       Number(settings.defaultAlertStock) < 0
     ) {
-      setError(
-        "Le seuil d'alerte du stock est invalide."
-      );
+      setError("Le seuil d'alerte du stock est invalide.");
+      return;
+    }
 
+    if (
+      settings.adminPosCode &&
+      !/^\d{4,6}$/.test(settings.adminPosCode)
+    ) {
+      setError(
+        "Le code administrateur POS doit contenir entre 4 et 6 chiffres."
+      );
+      return;
+    }
+
+    if (settings.adminPosCode !== confirmAdminPosCode) {
+      setError(
+        "La confirmation du code administrateur POS ne correspond pas."
+      );
       return;
     }
 
     try {
       setSaving(true);
 
-      // ============================
-      // DOCUMENT SETTINGS
-      // ============================
-
-      const settingsRef = doc(
-        db,
-        "settings",
-        storeId
-      );
+      const settingsRef = doc(db, "settings", storeId);
 
       await setDoc(
         settingsRef,
         {
           storeId,
-
-          storeName:
-            settings.storeName.trim(),
-
-          phone:
-            settings.phone.trim(),
-
-          address:
-            settings.address.trim(),
-
-          currency:
-            settings.currency,
-
-          adminName:
-            settings.adminName.trim(),
-
-          adminEmail:
-            settings.adminEmail.trim(),
-
-          defaultAlertStock:
-            Number(
-              settings.defaultAlertStock
-            ),
-
-          lowStockAlerts:
-            settings.lowStockAlerts,
-
-          updatedAt:
-            serverTimestamp(),
+          storeName: settings.storeName.trim(),
+          phone: settings.phone.trim(),
+          address: settings.address.trim(),
+          currency: settings.currency,
+          adminName: settings.adminName.trim(),
+          adminEmail: settings.adminEmail.trim(),
+          defaultAlertStock: Number(settings.defaultAlertStock),
+          lowStockAlerts: settings.lowStockAlerts,
+          adminPosCode: settings.adminPosCode,
+          updatedAt: serverTimestamp(),
         },
-        {
-          merge: true,
-        }
+        { merge: true }
       );
 
-      setMessage(
-        "Les paramètres ont été enregistrés avec succès."
-      );
-
-      setTimeout(() => {
-        setMessage("");
-      }, 3000);
-
+      setMessage("Les paramètres ont été enregistrés avec succès.");
     } catch (err) {
-      console.error(
-        "Erreur sauvegarde paramètres :",
-        err
-      );
-
-      setError(
-        "Une erreur est survenue pendant l'enregistrement."
-      );
+      console.error("Erreur sauvegarde paramètres :", err);
+      setError("Une erreur est survenue pendant l'enregistrement.");
     } finally {
       setSaving(false);
     }
   };
-
-  // ==============================
-  // OUVRIR GESTION EMPLOYÉS
-  // ==============================
-
-  const handleManageEmployees = () => {
-    navigate("/settings/employees");
-  };
-
-  // ==============================
-  // CHARGEMENT
-  // ==============================
 
   if (loading) {
     return (
@@ -351,618 +228,271 @@ function Settings() {
     );
   }
 
-  // ==============================
-  // AFFICHAGE
-  // ==============================
-
   return (
     <div className={styles.settings}>
-
-      {/* ==========================
-          EN-TÊTE
-      ========================== */}
-
       <header className={styles.header}>
-        <div>
-          <h1>
-            Paramètres
-          </h1>
-
-          <p>
-            Configurez les informations et
-            le fonctionnement de votre magasin.
-          </p>
-        </div>
+        <h1>Paramètres</h1>
+        <p>Configurez les informations et le fonctionnement de votre magasin.</p>
       </header>
 
-      {/* ==========================
-          MESSAGES
-      ========================== */}
-
       {message && (
-        <div
-          className={
-            styles.successMessage
-          }
-        >
-          ✓ {message}
-        </div>
+        <div className={styles.successMessage}>✓ {message}</div>
       )}
 
       {error && (
-        <div
-          className={
-            styles.errorMessage
-          }
-        >
-          ⚠ {error}
-        </div>
+        <div className={styles.errorMessage}>⚠ {error}</div>
       )}
 
       <form onSubmit={handleSave}>
-
         <div className={styles.settingsGrid}>
-
-          {/* ==========================
-              MAGASIN
-          ========================== */}
-
-          <section
-            className={
-              styles.settingsCard
-            }
-          >
-
-            <div
-              className={
-                styles.cardHeader
-              }
-            >
-
-              <div
-                className={
-                  styles.cardIcon
-                }
-              >
-                🏪
-              </div>
-
+          <section className={styles.settingsCard}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardIcon}>🏪</div>
               <div>
-                <h2>
-                  Magasin
-                </h2>
-
-                <p>
-                  Informations générales
-                  du magasin
-                </p>
+                <h2>Magasin</h2>
+                <p>Informations générales du magasin</p>
               </div>
-
             </div>
 
-            <div
-              className={
-                styles.formGrid
-              }
-            >
-
-              {/* NOM MAGASIN */}
-
-              <div
-                className={
-                  styles.field
-                }
-              >
-
-                <label htmlFor="storeName">
-                  Nom du magasin
-                </label>
-
+            <div className={styles.formGrid}>
+              <div className={styles.field}>
+                <label>Nom du magasin</label>
                 <input
-                  id="storeName"
-                  type="text"
                   name="storeName"
-                  value={
-                    settings.storeName
-                  }
-                  onChange={
-                    handleChange
-                  }
-                  placeholder="Ex : Elva"
+                  value={settings.storeName}
+                  onChange={handleChange}
+                  placeholder="Nom du magasin"
                 />
-
-                <small>
-                  Récupéré automatiquement
-                  depuis le compte administrateur.
-                </small>
-
               </div>
 
-              {/* TELEPHONE */}
-
-              <div
-                className={
-                  styles.field
-                }
-              >
-
-                <label htmlFor="phone">
-                  Téléphone
-                </label>
-
+              <div className={styles.field}>
+                <label>Téléphone</label>
                 <input
-                  id="phone"
-                  type="text"
                   name="phone"
-                  value={
-                    settings.phone
-                  }
-                  onChange={
-                    handleChange
-                  }
-                  placeholder="Ex : +243 ..."
+                  value={settings.phone}
+                  onChange={handleChange}
+                  placeholder="+243..."
                 />
-
               </div>
 
-              {/* ADRESSE */}
-
-              <div
-                className={`${styles.field} ${styles.fullWidth}`}
-              >
-
-                <label htmlFor="address">
-                  Adresse
-                </label>
-
+              <div className={`${styles.field} ${styles.fullWidth}`}>
+                <label>Adresse</label>
                 <input
-                  id="address"
-                  type="text"
                   name="address"
-                  value={
-                    settings.address
-                  }
-                  onChange={
-                    handleChange
-                  }
+                  value={settings.address}
+                  onChange={handleChange}
                   placeholder="Adresse du magasin"
                 />
-
               </div>
 
-              {/* DEVISE */}
-
-              <div
-                className={
-                  styles.field
-                }
-              >
-
-                <label htmlFor="currency">
-                  Devise
-                </label>
-
+              <div className={styles.field}>
+                <label>Devise</label>
                 <select
-                  id="currency"
                   name="currency"
-                  value={
-                    settings.currency
-                  }
-                  onChange={
-                    handleChange
-                  }
+                  value={settings.currency}
+                  onChange={handleChange}
                 >
-
-                  <option value="FC">
-                    FC
-                  </option>
-
-                  <option value="$">
-                    Dollar ($)
-                  </option>
-
-                  <option value="€">
-                    Euro (€)
-                  </option>
-
+                  <option value="FC">FC</option>
+                  <option value="$">Dollar ($)</option>
+                  <option value="€">Euro (€)</option>
                 </select>
-
               </div>
-
             </div>
-
           </section>
 
-          {/* ==========================
-              ADMINISTRATEUR
-          ========================== */}
-
-          <section
-            className={
-              styles.settingsCard
-            }
-          >
-
-            <div
-              className={
-                styles.cardHeader
-              }
-            >
-
-              <div
-                className={
-                  styles.cardIcon
-                }
-              >
-                👤
-              </div>
-
+          <section className={styles.settingsCard}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardIcon}>👤</div>
               <div>
-                <h2>
-                  Administrateur
-                </h2>
-
-                <p>
-                  Informations du responsable
-                  du magasin
-                </p>
+                <h2>Administrateur</h2>
+                <p>Informations du responsable du magasin</p>
               </div>
-
             </div>
 
-            <div
-              className={
-                styles.formGrid
-              }
-            >
-
-              {/* NOM ADMIN */}
-
-              <div
-                className={`${styles.field} ${styles.fullWidth}`}
-              >
-
-                <label htmlFor="adminName">
-                  Nom de l'administrateur
-                </label>
-
+            <div className={styles.formGrid}>
+              <div className={`${styles.field} ${styles.fullWidth}`}>
+                <label>Nom de l'administrateur</label>
                 <input
-                  id="adminName"
-                  type="text"
                   name="adminName"
-                  value={
-                    settings.adminName
-                  }
-                  onChange={
-                    handleChange
-                  }
-                  placeholder="Nom de l'administrateur"
+                  value={settings.adminName}
+                  onChange={handleChange}
                 />
-
               </div>
 
-              {/* EMAIL ADMIN */}
-
-              <div
-                className={`${styles.field} ${styles.fullWidth}`}
-              >
-
-                <label htmlFor="adminEmail">
-                  Adresse email
-                </label>
-
+              <div className={`${styles.field} ${styles.fullWidth}`}>
+                <label>Adresse email</label>
                 <input
-                  id="adminEmail"
                   type="email"
                   name="adminEmail"
-                  value={
-                    settings.adminEmail
-                  }
+                  value={settings.adminEmail}
                   readOnly
                   disabled
                 />
-
-                <small>
-                  Cette adresse provient du
-                  compte administrateur.
-                </small>
-
               </div>
-
             </div>
-
           </section>
 
-          {/* ==========================
-              SÉCURITÉ
-          ========================== */}
-
-          <section
-            className={
-              styles.settingsCard
-            }
-          >
-
-            <div
-              className={
-                styles.cardHeader
-              }
-            >
-
-              
-
+          <section className={styles.settingsCard}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardIcon}>🔐</div>
               <div>
-                <h2>
-                  Sécurité et accès
-                </h2>
-
-                <p>
-                  Gestion des accès au système
-                </p>
+                <h2>Sécurité et accès</h2>
+                <p>Code administrateur et accès employés</p>
               </div>
-
             </div>
 
-            <div
-              className={
-                styles.securityInfo
-              }
-            >
-
-              <div>
-                <strong>
-                  Accès des employés
-                </strong>
-
-                <p>
-                  Chaque employé possède
-                  maintenant son propre code
-                  d'accès et ses propres
-                  permissions.
-                </p>
-              </div>
-
-              <div>
-                <strong>
-                  Administrateur
-                </strong>
-
-                <p>
-                  L'administrateur possède
-                  les droits de gestion du
-                  magasin et des employés.
-                </p>
-              </div>
-
-            </div>
-
-          </section>
-
-          {/* ==========================
-              STOCK
-          ========================== */}
-
-          <section
-            className={
-              styles.settingsCard
-            }
-          >
-
-            <div
-              className={
-                styles.cardHeader
-              }
-            >
-
-
-
-              <div>
-                <h2>
-                  Stock
-                </h2>
-
-                <p>
-                  Configuration des alertes
-                  de stock
-                </p>
-              </div>
-
-            </div>
-
-            <div
-              className={
-                styles.formGrid
-              }
-            >
-
-              {/* SEUIL */}
-
-              <div
-                className={
-                  styles.field
-                }
-              >
-
-                <label htmlFor="defaultAlertStock">
-                  Seuil d'alerte
-                </label>
-
-                <input
-                  id="defaultAlertStock"
-                  type="number"
-                  name="defaultAlertStock"
-                  value={
-                    settings.defaultAlertStock
-                  }
-                  onChange={
-                    handleChange
-                  }
-                  min="0"
-                />
-
-                <small>
-                  Niveau à partir duquel
-                  un produit est considéré
-                  comme ayant un stock faible.
-                </small>
-
-              </div>
-
-              {/* SWITCH */}
-
-              <div
-                className={
-                  styles.toggleField
-                }
-              >
-
+            <div className={styles.adminCodeBox}>
+              <div className={styles.adminCodeTitle}>
                 <div>
-                  <strong>
-                    Alertes de stock faible
-                  </strong>
-
+                  <strong>Code administrateur POS</strong>
                   <p>
-                    Activer les alertes
-                    lorsque le stock devient
-                    faible.
+                    Ce code permettra à l'administrateur d'accéder au POS et
+                    d'autoriser les opérations sensibles, comme l'annulation
+                    d'une vente depuis le compte d'un caissier.
                   </p>
                 </div>
+                <span className={styles.adminBadge}>ADMIN</span>
+              </div>
 
-                <label
-                  className={
-                    styles.switch
-                  }
-                >
+              <div className={styles.adminCodeFields}>
+                <div className={styles.field}>
+                  <label>Code administrateur</label>
+                  <div className={styles.passwordField}>
+                    <input
+                      type={showAdminPosCode ? "text" : "password"}
+                      inputMode="numeric"
+                      value={settings.adminPosCode}
+                      onChange={handleAdminPosCodeChange}
+                      placeholder="4 à 6 chiffres"
+                      maxLength={6}
+                    />
+                    <button
+                      type="button"
+                      className={styles.showCodeButton}
+                      onClick={() =>
+                        setShowAdminPosCode((current) => !current)
+                      }
+                    >
+                      {showAdminPosCode ? "Masquer" : "Voir"}
+                    </button>
+                  </div>
+                </div>
 
+                <div className={styles.field}>
+                  <label>Confirmer le code</label>
+                  <input
+                    type={showAdminPosCode ? "text" : "password"}
+                    inputMode="numeric"
+                    value={confirmAdminPosCode}
+                    onChange={handleConfirmCodeChange}
+                    placeholder="Répétez le code"
+                    maxLength={6}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.codeUsageInfo}>
+                <strong>Ce code sera utilisé pour :</strong>
+                <ul>
+                  <li>l'accès administrateur au POS ;</li>
+                  <li>confirmer l'annulation d'une vente ;</li>
+                  <li>autoriser les futures opérations sensibles.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className={styles.securityInfo}>
+              <strong>Accès des employés</strong>
+              <p>
+                Chaque employé garde son propre code et ses propres permissions.
+                L'administrateur conserve tous les droits du magasin.
+              </p>
+            </div>
+          </section>
+
+          <section className={styles.settingsCard}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardIcon}>📦</div>
+              <div>
+                <h2>Stock</h2>
+                <p>Configuration des alertes de stock</p>
+              </div>
+            </div>
+
+            <div className={styles.formGrid}>
+              <div className={styles.field}>
+                <label>Seuil d'alerte</label>
+                <input
+                  type="number"
+                  name="defaultAlertStock"
+                  value={settings.defaultAlertStock}
+                  onChange={handleChange}
+                  min="0"
+                />
+              </div>
+
+              <div className={styles.toggleField}>
+                <div>
+                  <strong>Alertes de stock faible</strong>
+                  <p>Activer les alertes de stock.</p>
+                </div>
+
+                <label className={styles.switch}>
                   <input
                     type="checkbox"
                     name="lowStockAlerts"
-                    checked={
-                      settings.lowStockAlerts
-                    }
-                    onChange={
-                      handleChange
-                    }
+                    checked={settings.lowStockAlerts}
+                    onChange={handleChange}
                   />
-
-                  <span
-                    className={
-                      styles.slider
-                    }
-                  ></span>
-
+                  <span className={styles.slider}></span>
                 </label>
-
               </div>
-
             </div>
-
           </section>
-
-          {/* ==========================
-              EMPLOYÉS
-          ========================== */}
 
           <section
             className={`${styles.settingsCard} ${styles.employeeCard}`}
           >
-
-            <div
-              className={
-                styles.cardHeader
-              }
-            >
-
-             
-
+            <div className={styles.cardHeader}>
+              <div className={styles.cardIcon}>👥</div>
               <div>
-                <h2>
-                  Employés
-                </h2>
-
-                <p>
-                  Gestion des utilisateurs
-                  et de leurs permissions
-                </p>
+                <h2>Employés</h2>
+                <p>Gestion des utilisateurs et permissions</p>
               </div>
-
             </div>
 
-            <div
-              className={
-                styles.employeeContent
-              }
-            >
-
+            <div className={styles.employeeContent}>
               <div>
-
-                <strong>
-                  Gérer les employés
-                </strong>
-
+                <strong>Gérer les employés</strong>
                 <p>
-                  Créez les comptes de vos
-                  employés et définissez leur
-                  rôle et leurs limites d'accès.
+                  Créez les comptes des caissiers et managers et choisissez
+                  leurs permissions.
                 </p>
-
-                <p>
-                  Par exemple, un caissier
-                  peut avoir uniquement accès
-                  au POS, tandis qu'un manager
-                  peut avoir accès au stock,
-                  aux produits et aux rapports.
-                </p>
-
               </div>
 
               <button
                 type="button"
-                className={
-                  styles.secondaryButton
-                }
-                onClick={
-                  handleManageEmployees
-                }
+                className={styles.secondaryButton}
+                onClick={() => navigate("/settings/employees")}
               >
                 Gérer les employés →
               </button>
-
             </div>
-
           </section>
-
         </div>
 
-        {/* ==========================
-            BOUTON ENREGISTRER
-        ========================== */}
-
-        <div
-          className={
-            styles.saveContainer
-          }
-        >
-
+        <div className={styles.saveContainer}>
           <button
             type="submit"
-            className={
-              styles.saveButton
-            }
+            className={styles.saveButton}
             disabled={saving}
           >
-            {saving
-              ? "Enregistrement..."
-              : "Enregistrer les paramètres"}
+            {saving ? "Enregistrement..." : "Enregistrer les paramètres"}
           </button>
-
         </div>
-
       </form>
-
     </div>
   );
 }
 
 export default Settings;
-

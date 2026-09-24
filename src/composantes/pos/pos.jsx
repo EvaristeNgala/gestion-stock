@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   collection,
@@ -19,7 +20,8 @@ function POS() {
   // ==============================
   // PRODUITS / TICKET
   // ==============================
-
+  const navigate = useNavigate();
+  const [showPosMenu, setShowPosMenu] = useState(false);
   const [products, setProducts] = useState([]);
   const [ticket, setTicket] = useState([]);
   const [search, setSearch] = useState("");
@@ -1501,12 +1503,60 @@ function POS() {
       <header
         className={styles.header}
       >
-        <button
-          type="button"
-          className={styles.menu}
-        >
-          ☰
-        </button>
+        <div className={styles.posMenuWrapper}>
+  <button
+    type="button"
+    className={styles.menu}
+    onClick={() =>
+      setShowPosMenu((current) => !current)
+    }
+  >
+    ☰
+  </button>
+
+  {showPosMenu && (
+    <div className={styles.posDropdownMenu}>
+      <button
+        type="button"
+        onClick={() =>
+          navigate("/sales-history")
+        }
+      >
+
+        <div>
+          <strong>Historique des ventes</strong>
+          <small>Consulter les ventes effectuées</small>
+        </div>
+      </button>
+
+      <button
+        type="button"
+        onClick={() =>
+          navigate("/expenses")
+        }
+      >
+
+        <div>
+          <strong>Dépenses</strong>
+          <small>Ajouter et consulter les dépenses</small>
+        </div>
+      </button>
+
+      <button
+        type="button"
+        onClick={() =>
+          navigate("/cash-closing")
+        }
+      >
+
+        <div>
+          <strong>Clôture de caisse</strong>
+          <small>Voir le résumé et fermer la caisse</small>
+        </div>
+      </button>
+    </div>
+  )}
+</div>
 
         <div
           className={styles.title}
@@ -1576,25 +1626,20 @@ function POS() {
         </div>
 
         <button
-          type="button"
-          className={
+	className={
             styles.closeCashButton
           }
-          onClick={
-            closeCashRegister
-          }
-          disabled={
-            closingCash
-          }
-        >
-          {closingCash
-            ? "Fermeture..."
-            : "Fermer la caisse"}
-        </button>
+        type="button"
+        onClick={() =>
+          navigate("/cash-closing")
+        }
+      >
+Clôture de caisse
+</button>
       </section>
 
 
-      {/* BARRE TICKET / PAIEMENT */}
+      {/* BAR RE TICKET / PAIEMENT */}
 
       <section
         className={
@@ -1690,13 +1735,7 @@ function POS() {
           )}
         </select>
 
-        <div
-          className={
-            styles.searchIcon
-          }
-        >
-          🔍
-        </div>
+       
       </section>
 
 
@@ -1713,16 +1752,6 @@ function POS() {
           }
         >
 
-          <span>
-            {
-              filteredProducts.length
-            }{" "}
-            produit
-            {filteredProducts.length >
-            1
-              ? "s"
-              : ""}
-          </span>
         </div>
 
         <div

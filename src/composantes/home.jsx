@@ -289,7 +289,96 @@ function Home() {
       }
 
       // ==========================================
-      // 2. RECHERCHER L'EMPLOYÉ
+      // 2. VÉRIFIER D'ABORD LE CODE ADMIN POS
+      // ==========================================
+
+      const settingsRef = doc(db, "settings", storeId);
+      const settingsSnapshot = await getDoc(settingsRef);
+
+      if (settingsSnapshot.exists()) {
+        const storeSettings = settingsSnapshot.data();
+        const adminPosCode = String(
+          storeSettings.adminPosCode || ""
+        ).trim();
+
+        if (
+          adminPosCode &&
+          adminPosCode === enteredEmployeeCode
+        ) {
+          // Retrouver l'administrateur du magasin
+          // pour conserver son identité dans la session.
+          const adminQuery = query(
+            collection(db, "users"),
+            where("storeId", "==", storeId),
+            where("role", "==", "admin")
+          );
+
+          const adminSnapshot = await getDocs(adminQuery);
+
+          if (adminSnapshot.empty) {
+            setError(
+              "Le code administrateur est correct, mais aucun administrateur n'est associé à ce magasin."
+            );
+            return;
+          }
+
+          const adminDoc = adminSnapshot.docs[0];
+          const adminData = adminDoc.data();
+
+          if (adminData.status === "inactive") {
+            setError(
+              "Ce compte administrateur est désactivé."
+            );
+            return;
+          }
+
+          const adminSession = {
+            uid: adminDoc.id,
+            userId: adminDoc.id,
+            name:
+              adminData.name ||
+              storeSettings.adminName ||
+              "Administrateur",
+            role: "admin",
+            storeId,
+            storeName:
+              storeData.storeName ||
+              adminData.storeName ||
+              "",
+            storeCode:
+              storeData.storeCode ||
+              adminData.storeCode ||
+              "",
+            email:
+              adminData.email ||
+              storeSettings.adminEmail ||
+              "",
+            loginMode: "posCode",
+            permissions: {
+              pos: true,
+              products: true,
+              stock: true,
+              sales: true,
+              expenses: true,
+              reports: true,
+              settings: true,
+            },
+          };
+
+          localStorage.setItem(
+            "storeSession",
+            JSON.stringify(adminSession)
+          );
+
+          // L'administrateur s'est connecté depuis
+          // l'espace employé pour travailler au POS.
+          navigate("/pos");
+          return;
+        }
+      }
+
+      // ==========================================
+      // 3. SINON, RECHERCHER L'EMPLOYÉ
       // ==========================================
 
       const employeeQuery = query(
@@ -303,12 +392,11 @@ function Home() {
 
       if (employeeSnapshot.empty) {
         setError(
-          "Code personnel incorrect pour ce magasin."
+          "Code personnel ou code administrateur incorrect pour ce magasin."
         );
         return;
       }
 
-      // On prend le premier employé correspondant
       const employeeDoc =
         employeeSnapshot.docs[0];
 
@@ -319,7 +407,7 @@ function Home() {
         employeeDoc.id;
 
       // ==========================================
-      // 3. VÉRIFIER LE RÔLE
+      // 4. VÉRIFIER LE RÔLE
       // ==========================================
 
       if (
@@ -333,21 +421,15 @@ function Home() {
       }
 
       // ==========================================
-      // 4. VÉRIFIER LE STATUT
+      // 5. VÉRIFIER LE STATUT
       // ==========================================
 
-      if (
-        employeeData.status === "inactive"
-      ) {
+      if (employeeData.status === "inactive") {
         setError(
           "Ce compte employé est désactivé."
         );
         return;
       }
-
-      // ==========================================
-      // 5. VÉRIFIER LE STORE ID
-      // ==========================================
 
       if (!employeeData.storeId) {
         setError(
@@ -356,67 +438,38 @@ function Home() {
         return;
       }
 
-      // ==========================================
-      // 6. PERMISSIONS
-      // ==========================================
-
       const permissions =
         employeeData.permissions || {};
 
       // ==========================================
-      // 7. CRÉER LA SESSION EMPLOYÉ
+      // 6. CRÉER LA SESSION EMPLOYÉ
       // ==========================================
 
       const session = {
         uid: employeeId,
-
         userId: employeeId,
-
         name: employeeData.name || "",
-
         role: employeeData.role,
-
         storeId: employeeData.storeId,
-
         storeName:
           storeData.storeName ||
           employeeData.storeName ||
           "",
-
-        // Conservé uniquement pour
-        // compatibilité avec l'ancien système
         storeCode:
           storeData.storeCode ||
           employeeData.storeCode ||
           "",
-
+        loginMode: "employeeCode",
         permissions: {
-          pos:
-            permissions.pos === true,
-
-          products:
-            permissions.products === true,
-
-          stock:
-            permissions.stock === true,
-
-          sales:
-            permissions.sales === true,
-
-          expenses:
-            permissions.expenses === true,
-
-          reports:
-            permissions.reports === true,
-
-          settings:
-            permissions.settings === true,
+          pos: permissions.pos === true,
+          products: permissions.products === true,
+          stock: permissions.stock === true,
+          sales: permissions.sales === true,
+          expenses: permissions.expenses === true,
+          reports: permissions.reports === true,
+          settings: permissions.settings === true,
         },
       };
-
-      // ==========================================
-      // 8. ENREGISTRER LA SESSION
-      // ==========================================
 
       localStorage.setItem(
         "storeSession",
@@ -424,18 +477,12 @@ function Home() {
       );
 
       // ==========================================
-      // 9. REDIRECTION SELON LE RÔLE
+      // 7. REDIRECTION SELON LE RÔLE
       // ==========================================
 
-      if (
-        employeeData.role === "cashier"
-      ) {
-        // Caissier → directement POS
+      if (employeeData.role === "cashier") {
         navigate("/pos");
-      } else if (
-        employeeData.role === "manager"
-      ) {
-        // Manager → Dashboard
+      } else if (employeeData.role === "manager") {
         navigate("/dashboard");
       }
     } catch (error) {
@@ -549,7 +596,7 @@ function Home() {
 
               <p className="formDescription">
                 Entrez le nom de votre magasin
-                et votre code personnel.
+                et votre code d'accès.
               </p>
 
               <div className="formGroup">
@@ -574,7 +621,7 @@ function Home() {
               <div className="formGroup">
 
                 <label>
-                  Code personnel
+                  Code d'accès
                 </label>
 
                 <input

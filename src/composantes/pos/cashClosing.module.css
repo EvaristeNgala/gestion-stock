@@ -1,0 +1,984 @@
+/* =========================================
+   PAGE PRINCIPALE
+========================================= */
+
+.page {
+  width: 100%;
+  min-height: 100vh;
+  background: #f4f7fb;
+  color: #1f2937;
+  font-family: Arial, Helvetica, sans-serif;
+  box-sizing: border-box;
+}
+
+.page *,
+.page *::before,
+.page *::after {
+  box-sizing: border-box;
+}
+
+.page button {
+  font-family: inherit;
+}
+
+
+/* =========================================
+   HEADER
+========================================= */
+
+.header {
+  width: 100%;
+  min-height: 72px;
+
+  padding: 14px 24px;
+
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.header > div {
+  min-width: 0;
+}
+
+.header h1 {
+  margin: 0;
+
+  color: #172033;
+  font-size: 23px;
+  font-weight: 700;
+}
+
+.header p {
+  margin: 4px 0 0;
+
+  color: #64748b;
+  font-size: 12px;
+}
+
+.backButton {
+  width: 40px;
+  height: 40px;
+
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 9px;
+
+  background: #eff6ff;
+  color: #1e3a8a;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 22px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+.backButton:hover {
+  background: #dbeafe;
+}
+
+.backButton:active {
+  transform: scale(0.96);
+}
+
+
+/* =========================================
+   CONTENU
+========================================= */
+
+.content {
+  width: 100%;
+  max-width: 1050px;
+
+  margin: 0 auto;
+  padding: 24px;
+}
+
+
+/* =========================================
+   CARTE CAISSE
+========================================= */
+
+.cashCard {
+  width: 100%;
+
+  margin-bottom: 20px;
+  padding: 20px 22px;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+}
+
+.cashCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.cashCardHeader h2 {
+  margin: 9px 0 3px;
+
+  color: #172033;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.cashCardHeader p {
+  margin: 0;
+
+  color: #64748b;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.cashIcon {
+  width: 48px;
+  height: 48px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 11px;
+
+  background: #eff6ff;
+
+  font-size: 23px;
+}
+
+
+/* =========================================
+   BADGE CAISSE OUVERTE
+========================================= */
+
+.openBadge {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 5px 9px;
+
+  border-radius: 20px;
+
+  background: #f0fdf4;
+  color: #15803d;
+
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+
+/* =========================================
+   DÉTAILS CAISSE
+========================================= */
+
+.cashDetails {
+  margin-top: 18px;
+  padding-top: 16px;
+
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+
+  border-top: 1px solid #f1f5f9;
+}
+
+.cashDetails > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cashDetails span {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.cashDetails strong {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+
+/* =========================================
+   SECTION RÉSUMÉ
+========================================= */
+
+.summarySection {
+  width: 100%;
+
+  margin-bottom: 20px;
+
+  padding: 22px;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+}
+
+.summaryTitle {
+  margin-bottom: 18px;
+}
+
+.summaryTitle h2 {
+  margin: 0;
+
+  color: #172033;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.summaryTitle p {
+  margin: 5px 0 0;
+
+  color: #64748b;
+  font-size: 11px;
+}
+
+
+/* =========================================
+   GRILLE RÉSUMÉ
+========================================= */
+
+.summaryGrid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 13px;
+}
+
+
+/* =========================================
+   CARTES RÉSUMÉ
+========================================= */
+
+.summaryCard {
+  min-width: 0;
+  min-height: 125px;
+
+  padding: 16px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  background: #f8fafc;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 11px;
+}
+
+.summaryIcon {
+  width: 38px;
+  height: 38px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  font-size: 18px;
+
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.summaryCard > div:last-child {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.summaryCard span {
+  margin-bottom: 6px;
+
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.summaryCard strong {
+  color: #172033;
+
+  font-size: 17px;
+  font-weight: 800;
+
+  line-height: 1.25;
+
+  overflow-wrap: anywhere;
+}
+
+.summaryCard small {
+  margin-top: 5px;
+
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+
+/* =========================================
+   COULEURS MONTANTS
+========================================= */
+
+.expenseAmount {
+  color: #dc2626 !important;
+}
+
+.cancelledAmount {
+  color: #d97706 !important;
+}
+
+
+/* =========================================
+   MONTANT NET
+========================================= */
+
+.netCard {
+  width: 100%;
+
+  margin-bottom: 20px;
+  padding: 21px 23px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  background: #eff6ff;
+
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+}
+
+.netCard > div {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.netCard span {
+  color: #1e3a8a;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.netCard small {
+  margin-top: 4px;
+
+  color: #64748b;
+  font-size: 10px;
+}
+
+.netCard > strong {
+  flex-shrink: 0;
+
+  color: #1d4ed8;
+
+  font-size: 26px;
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================
+   DÉTAIL DU CALCUL
+========================================= */
+
+.calculationCard {
+  width: 100%;
+
+  margin-bottom: 20px;
+  padding: 20px 22px;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+}
+
+.calculationCard h3 {
+  margin: 0 0 14px;
+
+  color: #172033;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.calculationRow {
+  min-height: 43px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.calculationRow span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.calculationRow strong {
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+.negativeAmount {
+  color: #dc2626 !important;
+}
+
+.calculationTotal {
+  min-height: 50px;
+
+  margin-top: 3px;
+
+  border-bottom: none;
+}
+
+.calculationTotal span {
+  color: #172033;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.calculationTotal strong {
+  color: #2563eb;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+
+/* =========================================
+   INFORMATION VENTES ANNULÉES
+========================================= */
+
+.cancelInfo {
+  width: 100%;
+
+  margin-bottom: 20px;
+  padding: 14px 16px;
+
+  background: #fffbeb;
+
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+}
+
+.cancelInfo > strong {
+  color: #b45309;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cancelInfo p {
+  margin: 6px 0 0;
+
+  color: #78716c;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.cancelInfo p strong {
+  color: #b45309;
+}
+
+
+/* =========================================
+   MESSAGE ERREUR
+========================================= */
+
+.errorMessage {
+  width: 100%;
+
+  margin-bottom: 18px;
+  padding: 12px 14px;
+
+  background: #fef2f2;
+
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+
+  color: #dc2626;
+
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+
+/* =========================================
+   ACTIONS
+========================================= */
+
+.actions {
+  width: 100%;
+
+  padding: 18px 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 11px;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+}
+
+.cancelButton,
+.closeCashButton {
+  min-width: 165px;
+  height: 44px;
+
+  padding: 0 18px;
+
+  border-radius: 9px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+.cancelButton {
+  border: 1px solid #d1d5db;
+
+  background: #ffffff;
+  color: #374151;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.closeCashButton {
+  border: none;
+
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.closeCashButton:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.cancelButton:active:not(:disabled),
+.closeCashButton:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.cancelButton:disabled,
+.closeCashButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   CHARGEMENT
+========================================= */
+
+.loadingCard,
+.noCashCard {
+  width: calc(100% - 30px);
+  max-width: 430px;
+
+  min-height: 300px;
+
+  margin: 80px auto;
+  padding: 30px 25px;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+
+  box-shadow:
+    0 10px 30px rgba(15, 23, 42, 0.06);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+}
+
+.loadingIcon,
+.noCashIcon {
+  width: 62px;
+  height: 62px;
+
+  margin-bottom: 15px;
+
+  border-radius: 15px;
+
+  background: #eff6ff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 28px;
+}
+
+.loadingCard h2,
+.noCashCard h2 {
+  margin: 0 0 7px;
+
+  color: #172033;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.loadingCard p,
+.noCashCard p {
+  max-width: 330px;
+
+  margin: 0;
+
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+
+/* =========================================
+   BOUTON RETOUR POS
+========================================= */
+
+.backPosButton {
+  width: 100%;
+  height: 44px;
+
+  margin-top: 22px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: #2563eb;
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: background 0.2s ease;
+}
+
+.backPosButton:hover {
+  background: #1d4ed8;
+}
+
+
+/* =========================================
+   TABLETTE
+========================================= */
+
+@media (max-width: 850px) {
+  .content {
+    padding: 18px;
+  }
+
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryCard {
+    min-height: 95px;
+  }
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+
+  /* ---------- HEADER ---------- */
+
+  .header {
+    min-height: 64px;
+
+    padding: 11px 13px;
+    gap: 11px;
+  }
+
+  .header h1 {
+    font-size: 19px;
+  }
+
+  .header p {
+    font-size: 10px;
+  }
+
+  .backButton {
+    width: 37px;
+    height: 37px;
+
+    font-size: 20px;
+  }
+
+
+  /* ---------- CONTENU ---------- */
+
+  .content {
+    padding: 12px;
+  }
+
+
+  /* ---------- CAISSE ---------- */
+
+  .cashCard {
+    margin-bottom: 12px;
+
+    padding: 16px;
+
+    border-radius: 11px;
+  }
+
+  .cashCardHeader h2 {
+    font-size: 17px;
+  }
+
+  .cashIcon {
+    width: 41px;
+    height: 41px;
+
+    font-size: 19px;
+  }
+
+  .cashDetails {
+    margin-top: 14px;
+    padding-top: 13px;
+
+    gap: 12px;
+  }
+
+  .cashDetails span {
+    font-size: 9px;
+  }
+
+  .cashDetails strong {
+    font-size: 11px;
+  }
+
+
+  /* ---------- RÉSUMÉ ---------- */
+
+  .summarySection {
+    margin-bottom: 12px;
+
+    padding: 16px;
+
+    border-radius: 11px;
+  }
+
+  .summaryTitle {
+    margin-bottom: 14px;
+  }
+
+  .summaryTitle h2 {
+    font-size: 16px;
+  }
+
+  .summaryTitle p {
+    font-size: 10px;
+  }
+
+  .summaryGrid {
+    gap: 9px;
+  }
+
+  .summaryCard {
+    min-height: 84px;
+
+    padding: 12px;
+  }
+
+  .summaryIcon {
+    width: 35px;
+    height: 35px;
+
+    font-size: 16px;
+  }
+
+  .summaryCard strong {
+    font-size: 15px;
+  }
+
+
+  /* ---------- NET ---------- */
+
+  .netCard {
+    margin-bottom: 12px;
+
+    padding: 17px;
+
+    border-radius: 11px;
+
+    align-items: flex-end;
+  }
+
+  .netCard span {
+    font-size: 11px;
+  }
+
+  .netCard > strong {
+    font-size: 20px;
+  }
+
+
+  /* ---------- CALCUL ---------- */
+
+  .calculationCard {
+    margin-bottom: 12px;
+
+    padding: 16px;
+
+    border-radius: 11px;
+  }
+
+  .calculationCard h3 {
+    font-size: 14px;
+  }
+
+  .calculationRow {
+    gap: 10px;
+  }
+
+
+  /* ---------- ANNULATIONS ---------- */
+
+  .cancelInfo {
+    margin-bottom: 12px;
+  }
+
+
+  /* ---------- ACTIONS ---------- */
+
+  .actions {
+    padding: 13px;
+
+    border-radius: 11px;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cancelButton,
+  .closeCashButton {
+    width: 100%;
+    min-width: 0;
+
+    padding: 0 10px;
+
+    font-size: 11px;
+  }
+}
+
+
+/* =========================================
+   PETIT MOBILE
+========================================= */
+
+@media (max-width: 400px) {
+  .content {
+    padding: 9px;
+  }
+
+  .header {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+
+  .cashCard {
+    padding: 14px;
+  }
+
+  .cashDetails {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .summarySection {
+    padding: 14px;
+  }
+
+  .netCard {
+    padding: 15px;
+
+    flex-direction: column;
+    align-items: flex-start;
+
+    gap: 9px;
+  }
+
+  .netCard > strong {
+    font-size: 22px;
+  }
+
+  .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .cancelButton,
+  .closeCashButton {
+    height: 43px;
+  }
+}

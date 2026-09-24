@@ -13,6 +13,9 @@ import CreateStore from "./composantes/CreateStore";
 import Employees from "./composantes/employe/Employees";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import SalesHistory from "./composantes/pos/SalesHistory";
+import Expenses from "./composantes/pos/Expenses";
+import CashClosing from "./composantes/pos/CashClosing";
 
 function App() {
   return (
@@ -141,6 +144,33 @@ function App() {
         element={
           <ProtectedRoute permission="settings">
             <Employees />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/sales-history"
+        element={
+          <ProtectedRoute permission="pos">
+            <SalesHistory />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/expenses"
+        element={
+          <ProtectedRoute permission="pos">
+            <Expenses />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/cash-closing"
+        element={
+          <ProtectedRoute permission="pos">
+            <CashClosing />
           </ProtectedRoute>
         }
       />

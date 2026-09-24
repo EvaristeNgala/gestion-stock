@@ -1,0 +1,1033 @@
+/* =========================================
+   PAGE PRINCIPALE
+========================================= */
+
+.page {
+  width: 100%;
+  min-height: 100vh;
+  background: #f4f7fb;
+  color: #1f2937;
+  font-family: Arial, Helvetica, sans-serif;
+  box-sizing: border-box;
+}
+
+.page *,
+.page *::before,
+.page *::after {
+  box-sizing: border-box;
+}
+
+.page button,
+.page input,
+.page textarea {
+  font-family: inherit;
+}
+
+
+/* =========================================
+   HEADER
+========================================= */
+
+.header {
+  width: 100%;
+  min-height: 72px;
+  padding: 14px 24px;
+
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.header > div {
+  min-width: 0;
+}
+
+.header h1 {
+  margin: 0;
+  color: #172033;
+  font-size: 23px;
+  font-weight: 700;
+}
+
+.header p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.backButton {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 9px;
+
+  background: #eff6ff;
+  color: #1e3a8a;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 22px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+.backButton:hover {
+  background: #dbeafe;
+}
+
+.backButton:active {
+  transform: scale(0.96);
+}
+
+
+/* =========================================
+   INFORMATIONS CAISSE
+========================================= */
+
+.cashInfo {
+  width: 100%;
+
+  padding: 11px 24px;
+
+  display: flex;
+  align-items: center;
+  gap: 35px;
+
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cashInfo > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cashInfo span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.cashInfo strong {
+  color: #172033;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cashInfo .openStatus {
+  color: #16a34a;
+}
+
+
+/* =========================================
+   CONTENU
+========================================= */
+
+.content {
+  width: 100%;
+  max-width: 1200px;
+
+  margin: 0 auto;
+  padding: 24px;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+
+  align-items: start;
+}
+
+
+/* =========================================
+   CARTE FORMULAIRE
+========================================= */
+
+.formCard {
+  min-width: 0;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+
+  padding: 22px;
+
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+
+  margin-bottom: 22px;
+}
+
+.cardHeader h2 {
+  margin: 0;
+
+  color: #172033;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.cardHeader p {
+  margin: 5px 0 0;
+
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.cardIcon {
+  width: 45px;
+  height: 45px;
+  flex-shrink: 0;
+
+  border-radius: 11px;
+
+  background: #eff6ff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 22px;
+}
+
+
+/* =========================================
+   MESSAGES
+========================================= */
+
+.successMessage,
+.errorMessage {
+  width: 100%;
+
+  margin-bottom: 18px;
+  padding: 11px 13px;
+
+  border-radius: 8px;
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.successMessage {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+.errorMessage {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+
+/* =========================================
+   FORMULAIRE
+========================================= */
+
+.form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.55fr);
+  gap: 18px;
+}
+
+.field {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.field label {
+  margin-bottom: 7px;
+
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.field label small {
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+
+  background: #ffffff;
+  color: #111827;
+
+  outline: none;
+
+  font-size: 13px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.field input {
+  height: 45px;
+  padding: 0 13px;
+}
+
+.field textarea {
+  min-height: 95px;
+  padding: 12px 13px;
+
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: #9ca3af;
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.field input:disabled,
+.field textarea:disabled {
+  background: #f8fafc;
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   CHAMP MONTANT
+========================================= */
+
+.amountField {
+  width: 100%;
+  position: relative;
+}
+
+.amountField input {
+  padding-right: 52px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.amountField span {
+  position: absolute;
+  top: 50%;
+  right: 13px;
+
+  transform: translateY(-50%);
+
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+
+  pointer-events: none;
+}
+
+
+/* =========================================
+   ACTION FORMULAIRE
+========================================= */
+
+.formActions {
+  grid-column: 1 / -1;
+
+  display: flex;
+  justify-content: flex-end;
+
+  margin-top: 2px;
+}
+
+.saveButton {
+  min-width: 210px;
+  height: 45px;
+
+  padding: 0 20px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: #2563eb;
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.saveButton:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   CARTE TOTAL
+========================================= */
+
+.summaryCard {
+  min-height: 160px;
+
+  padding: 22px;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.summaryCard > span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.summaryCard > strong {
+  margin: 8px 0 5px;
+
+  color: #dc2626;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.summaryCard > small {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+
+/* =========================================
+   LISTE DES DÉPENSES
+========================================= */
+
+.listCard {
+  grid-column: 1 / -1;
+
+  min-width: 0;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+
+  overflow: hidden;
+
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+}
+
+.listHeader {
+  padding: 18px 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.listHeader h2 {
+  margin: 0;
+
+  color: #172033;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.listHeader p {
+  margin: 4px 0 0;
+
+  color: #64748b;
+  font-size: 11px;
+}
+
+.listHeader > span {
+  min-width: 32px;
+  height: 32px;
+
+  padding: 0 9px;
+
+  border-radius: 20px;
+
+  background: #eff6ff;
+  color: #1e3a8a;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+
+/* =========================================
+   LISTE
+========================================= */
+
+.expensesList {
+  width: 100%;
+}
+
+.expenseItem {
+  width: 100%;
+
+  padding: 15px 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  border-bottom: 1px solid #f1f5f9;
+
+  transition: background 0.2s ease;
+}
+
+.expenseItem:last-child {
+  border-bottom: none;
+}
+
+.expenseItem:hover {
+  background: #fafcff;
+}
+
+
+/* =========================================
+   PARTIE GAUCHE DÉPENSE
+========================================= */
+
+.expenseMain {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.expenseIcon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+
+  border-radius: 9px;
+
+  background: #fef2f2;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 18px;
+}
+
+.expenseInfo {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.expenseInfo > strong {
+  color: #172033;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.expenseInfo p {
+  max-width: 650px;
+
+  margin: 0;
+
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.45;
+
+  overflow-wrap: anywhere;
+}
+
+.expenseInfo small {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+
+/* =========================================
+   PARTIE DROITE DÉPENSE
+========================================= */
+
+.expenseRight {
+  flex-shrink: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.expenseRight > strong {
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+
+/* =========================================
+   STATUTS
+========================================= */
+
+.activeBadge,
+.cancelledBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 22px;
+  padding: 3px 8px;
+
+  border-radius: 20px;
+
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.activeBadge {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.cancelledBadge {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+
+/* =========================================
+   DÉPENSE ANNULÉE
+========================================= */
+
+.cancelledExpense {
+  background: #fafafa;
+  opacity: 0.7;
+}
+
+.cancelledExpense .expenseInfo > strong,
+.cancelledExpense .expenseRight > strong {
+  text-decoration: line-through;
+}
+
+
+/* =========================================
+   AUCUNE DÉPENSE
+========================================= */
+
+.emptyExpenses {
+  min-height: 230px;
+
+  padding: 30px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+}
+
+.emptyExpenses > div {
+  margin-bottom: 10px;
+  font-size: 42px;
+}
+
+.emptyExpenses strong {
+  color: #374151;
+  font-size: 14px;
+}
+
+.emptyExpenses p {
+  max-width: 350px;
+
+  margin: 6px 0 0;
+
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.emptyMessage {
+  min-height: 160px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  color: #64748b;
+  font-size: 13px;
+}
+
+
+/* =========================================
+   CHARGEMENT / CAISSE FERMÉE
+========================================= */
+
+.loadingScreen,
+.emptyCashCard {
+  width: calc(100% - 30px);
+  max-width: 430px;
+
+  min-height: 300px;
+
+  margin: 80px auto;
+  padding: 30px 25px;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+}
+
+.loadingIcon,
+.emptyCashIcon {
+  width: 62px;
+  height: 62px;
+
+  margin-bottom: 15px;
+
+  border-radius: 15px;
+
+  background: #eff6ff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 28px;
+}
+
+.loadingScreen h2,
+.emptyCashCard h2 {
+  margin: 0 0 7px;
+
+  color: #172033;
+  font-size: 20px;
+}
+
+.loadingScreen p,
+.emptyCashCard p {
+  max-width: 330px;
+
+  margin: 0;
+
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.backPosButton {
+  width: 100%;
+  height: 44px;
+
+  margin-top: 22px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: #2563eb;
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.backPosButton:hover {
+  background: #1d4ed8;
+}
+
+
+/* =========================================
+   TABLETTE
+========================================= */
+
+@media (max-width: 900px) {
+  .content {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .summaryCard {
+    min-height: 130px;
+  }
+
+  .cashInfo {
+    gap: 22px;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+  .header {
+    min-height: 64px;
+    padding: 11px 13px;
+    gap: 11px;
+  }
+
+  .header h1 {
+    font-size: 19px;
+  }
+
+  .header p {
+    font-size: 10px;
+  }
+
+  .backButton {
+    width: 37px;
+    height: 37px;
+    font-size: 20px;
+  }
+
+
+  /* ---------- INFO CAISSE ---------- */
+
+  .cashInfo {
+    padding: 10px 13px;
+
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 15px;
+  }
+
+  .cashInfo span {
+    font-size: 9px;
+  }
+
+  .cashInfo strong {
+    font-size: 11px;
+  }
+
+
+  /* ---------- CONTENU ---------- */
+
+  .content {
+    padding: 12px;
+    gap: 12px;
+  }
+
+
+  /* ---------- FORMULAIRE ---------- */
+
+  .formCard {
+    padding: 16px;
+    border-radius: 11px;
+  }
+
+  .cardHeader {
+    margin-bottom: 18px;
+  }
+
+  .cardHeader h2 {
+    font-size: 16px;
+  }
+
+  .cardHeader p {
+    font-size: 10px;
+  }
+
+  .cardIcon {
+    width: 40px;
+    height: 40px;
+    font-size: 19px;
+  }
+
+  .form {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .fullWidth {
+    grid-column: auto;
+  }
+
+  .formActions {
+    grid-column: auto;
+  }
+
+  .saveButton {
+    width: 100%;
+    min-width: 0;
+  }
+
+
+  /* ---------- TOTAL ---------- */
+
+  .summaryCard {
+    min-height: 115px;
+    padding: 17px;
+    border-radius: 11px;
+  }
+
+  .summaryCard > strong {
+    font-size: 24px;
+  }
+
+
+  /* ---------- LISTE ---------- */
+
+  .listCard {
+    border-radius: 11px;
+  }
+
+  .listHeader {
+    padding: 14px;
+  }
+
+  .listHeader h2 {
+    font-size: 15px;
+  }
+
+  .listHeader p {
+    font-size: 10px;
+  }
+
+  .expenseItem {
+    padding: 13px 14px;
+    gap: 10px;
+  }
+
+  .expenseMain {
+    gap: 9px;
+  }
+
+  .expenseIcon {
+    width: 35px;
+    height: 35px;
+    font-size: 16px;
+  }
+
+  .expenseInfo > strong {
+    font-size: 12px;
+  }
+
+  .expenseInfo p {
+    font-size: 10px;
+  }
+
+  .expenseInfo small {
+    font-size: 9px;
+  }
+
+  .expenseRight > strong {
+    font-size: 12px;
+  }
+
+  .activeBadge,
+  .cancelledBadge {
+    font-size: 8px;
+  }
+}
+
+
+/* =========================================
+   TRÈS PETIT MOBILE
+========================================= */
+
+@media (max-width: 380px) {
+  .content {
+    padding: 9px;
+  }
+
+  .header {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+
+  .cashInfo {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .formCard {
+    padding: 14px;
+  }
+
+  .expenseItem {
+    align-items: flex-start;
+  }
+
+  .expenseIcon {
+    display: none;
+  }
+
+  .expenseRight > strong {
+    font-size: 11px;
+  }
+}
