@@ -331,34 +331,7 @@ function Produit() {
           TITRE
       =========================== */}
 
-      <div
-        className={
-          styles.titleSection
-        }
-      >
-
-        <div>
-
-          <h2>
-            Liste des produits
-          </h2>
-
-          <p>
-            Gérez vos produits et votre stock
-          </p>
-
-        </div>
-
-        <span>
-
-          {filteredProducts.length} produit
-          {filteredProducts.length > 1
-            ? "s"
-            : ""}
-
-        </span>
-
-      </div>
+      
 
       {/* ==========================
           CHARGEMENT
@@ -496,6 +469,10 @@ function Produit() {
                           ? styles.inactiveRow
                           : ""
                       }
+                      onClick={() =>
+                                navigate(`/products/${product.id}`)
+                              }
+                              
                     >
 
                       {/* ==================
@@ -564,11 +541,9 @@ function Produit() {
                               styles.productName
                             }
                           >
-
-                            <strong>
-                              {product.productName ||
-                                "Sans nom"}
-                            </strong>
+                              <div>
+                                {product.productName || "Sans nom"}
+                              </div>
 
                           </div>
 
@@ -692,21 +667,6 @@ function Produit() {
                             styles.actions
                           }
                         >
-
-                          <button
-                            className={
-                              styles.editButton
-                            }
-                            onClick={() =>
-                              editProduct(
-                                product
-                              )
-                            }
-                            title="Modifier"
-                          >
-                            ✏️
-                          </button>
-
                           <button
                             className={
                               styles.deleteButton
@@ -719,7 +679,7 @@ function Produit() {
                             }
                             title="Supprimer"
                           >
-                            🗑️
+                            supprimer
                           </button>
 
                         </div>

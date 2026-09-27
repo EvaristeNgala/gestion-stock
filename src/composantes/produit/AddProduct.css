@@ -1,73 +1,49 @@
-/* ==============================
-   CONTAINER PRINCIPAL
-============================== */
+* {
+  box-sizing: border-box;
+}
 
 .add-product-container {
   min-height: 100vh;
   width: 100%;
-
   background: #f5f8fc;
-
   padding: 20px;
-
-  box-sizing: border-box;
 }
-
-
-/* ==============================
-   OVERLAY
-============================== */
 
 .add-product-overlay {
   min-height: 100vh;
-
   background: transparent;
-
   padding: 0;
-
   display: flex;
   justify-content: center;
 }
 
-
-/* ==============================
-   WRAPPER
-============================== */
-
 .add-product-wrapper {
   width: 100%;
   max-width: 900px;
-
   margin: 0 auto;
 }
 
-
-/* ==============================
-   BOUTON RETOUR
-============================== */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 25px;
+}
 
 .backButton {
   width: 42px;
   height: 42px;
   min-width: 42px;
-
   border: none;
   border-radius: 12px;
-
   cursor: pointer;
-
   font-size: 22px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   background: #ffffff;
   color: #172033;
-
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.06);
-
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   transition: 0.2s ease;
 }
 
@@ -76,125 +52,60 @@
   transform: translateX(-2px);
 }
 
-
-/* ==============================
-   HEADER
-============================== */
-
-.page-header {
-  display: flex;
-  align-items: center;
-
-  margin-bottom: 25px;
-}
-
-
-/* ==============================
-   TITRE
-============================== */
-
 .add-product-title {
-  margin-left: auto;
-
-  font-size: 22px;
+  margin: 0;
+  flex: 1;
+  text-align: center;
+  font-size: 24px;
   font-weight: 700;
-
   color: #233d75;
+  padding-right: 42px;
 }
-
-
-/* ==============================
-   CARTE FORMULAIRE
-============================== */
 
 .product-form-card {
   width: 100%;
-
   background: #ffffff;
-
-  padding: 20px;
-
+  padding: 24px;
   border-radius: 16px;
-
   border: 1px solid #e8edf3;
-
-  box-sizing: border-box;
-
   margin-bottom: 30px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
 }
-
-
-/* ==============================
-   GROUPE FORMULAIRE
-============================== */
 
 .form-group {
   width: 100%;
-
   margin-top: 15px;
 }
 
-
-/* ==============================
-   LABEL
-============================== */
-
 .form-label {
   display: block;
-
   margin-bottom: 7px;
-
   font-size: 13px;
-
   font-weight: 600;
-
   color: #344054;
 }
 
-
-/* ==============================
-   INPUTS
-============================== */
-
 .product-input {
   width: 100%;
-
   height: 48px;
-
   padding: 0 14px;
-
   border-radius: 12px;
-
   border: 1px solid #e6ebf2;
-
   background: #ffffff;
-
   color: #172033;
-
   font-size: 14px;
-
   outline: none;
-
-  box-sizing: border-box;
-
   transition: 0.2s;
 }
 
 .product-input:focus {
   border-color: #2563eb;
-
-  box-shadow:
-    0 0 0 3px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
 }
 
 .product-input::placeholder {
   color: #9aa4b2;
 }
-
-
-/* ==============================
-   INPUT NUMBER
-============================== */
 
 .product-input[type="number"] {
   appearance: textfield;
@@ -205,122 +116,66 @@
   margin: 0;
 }
 
-
-/* ==============================
-   INPUT FILE
-============================== */
-
 .file-input {
   cursor: pointer;
-
   padding: 6px;
 }
 
 .file-input::file-selector-button {
   background: #eff6ff;
-
   color: #2563eb;
-
   border: none;
-
   padding: 8px 12px;
-
   border-radius: 8px;
-
   margin-right: 10px;
-
   cursor: pointer;
-
   font-weight: 600;
 }
 
-
-/* ==============================
-   PREVIEW IMAGE
-============================== */
-
 .preview-image {
   width: 100%;
-
-  height: 200px;
-
+  height: 220px;
   object-fit: cover;
-
   border-radius: 14px;
-
   margin-top: 15px;
-
   display: block;
-
   border: 1px solid #e8edf3;
 }
-
-
-/* ==============================
-   CATEGORIE
-============================== */
 
 .category-group {
   margin-top: 18px;
 }
 
-
-/* ==============================
-   SELECT + BOUTON
-============================== */
-
 .category-select-row {
   width: 100%;
-
   display: flex;
-
   gap: 8px;
-
   align-items: center;
 }
 
 .category-select {
   flex: 1;
-
   cursor: pointer;
-
   appearance: auto;
 }
 
 .category-select:disabled {
   cursor: not-allowed;
-
   background: #f8fafc;
-
   color: #98a2b3;
 }
 
-
-/* ==============================
-   BOUTON CREER CATEGORIE
-============================== */
-
 .create-category-button {
   height: 48px;
-
   padding: 0 14px;
-
   border: none;
-
   border-radius: 12px;
-
   background: #eff6ff;
-
   color: #2563eb;
-
   cursor: pointer;
-
   font-size: 13px;
-
   font-weight: 700;
-
   white-space: nowrap;
-
   transition: 0.2s;
 }
 
@@ -330,115 +185,59 @@
 
 .create-category-button:disabled {
   opacity: 0.6;
-
   cursor: not-allowed;
 }
 
-
-/* ==============================
-   NOUVELLE CATEGORIE
-============================== */
-
 .new-category-box {
   margin-top: 12px;
-
   padding: 15px;
-
   background: #f8fafc;
-
   border: 1px solid #e8edf3;
-
   border-radius: 12px;
-
-  box-sizing: border-box;
 }
-
-
-/* ==============================
-   ACTIONS CATEGORIE
-============================== */
 
 .new-category-actions {
   display: flex;
-
   gap: 8px;
-
   margin-top: 10px;
 }
-
-
-/* ==============================
-   BOUTONS CATEGORIE
-============================== */
 
 .cancel-category-button,
 .confirm-category-button {
   min-height: 42px;
-
   padding: 0 14px;
-
   border: none;
-
   border-radius: 10px;
-
   cursor: pointer;
-
   font-size: 13px;
-
   font-weight: 600;
-
   transition: 0.2s;
+  flex: 1;
 }
 
 .cancel-category-button {
   background: #eef1f5;
-
   color: #475467;
-
-  flex: 1;
-}
-
-.cancel-category-button:hover {
-  background: #e4e7ec;
 }
 
 .confirm-category-button {
   background: #2563eb;
-
   color: #ffffff;
-
-  flex: 1;
-}
-
-.confirm-category-button:hover {
-  background: #1d4ed8;
 }
 
 .cancel-category-button:disabled,
 .confirm-category-button:disabled {
   opacity: 0.6;
-
   cursor: not-allowed;
 }
 
-
-/* ==============================
-   CATEGORIE SELECTIONNEE
-============================== */
-
 .selected-category {
   margin-top: 10px;
-
   padding: 9px 12px;
-
   border-radius: 9px;
-
   background: #eff6ff;
-
   color: #2563eb;
-
   font-size: 12px;
-
   border: 1px solid #dbeafe;
 }
 
@@ -446,137 +245,173 @@
   color: #1d4ed8;
 }
 
+.field-help,
+.purchase-field small {
+  display: block;
+  margin-top: 6px;
+  color: #7b8798;
+  font-size: 11px;
+  line-height: 1.5;
+}
 
-/* ==================================================
-   VARIANTES
-================================================== */
+.purchase-header {
+  margin-top: 30px;
+  margin-bottom: 10px;
+}
+
+.purchase-header h3 {
+  margin: 0;
+  color: #172033;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.purchase-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.purchase-toggle {
+  width: 100%;
+  min-height: 62px;
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.purchase-toggle strong {
+  display: block;
+  color: #334155;
+  font-size: 14px;
+}
+
+.purchase-toggle small {
+  display: block;
+  margin-top: 4px;
+  color: #7b8798;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.automatic-purchase-box {
+  margin-top: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.purchase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.purchase-field {
+  min-width: 0;
+}
+
+.purchase-result {
+  margin-top: 15px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  background: #ecfdf3;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+}
+
+.purchase-result span {
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.purchase-result strong {
+  color: #15803d;
+  font-size: 14px;
+  text-align: right;
+}
 
 .variant-header {
   margin-top: 28px;
-
   margin-bottom: 10px;
 }
 
 .variant-header h3 {
   margin: 0;
-
   font-size: 17px;
-
   font-weight: 700;
-
   color: #172033;
 }
 
 .variant-header p {
   margin: 6px 0 0;
-
   font-size: 12px;
-
   line-height: 1.5;
-
   color: #64748b;
 }
 
-
-/* ==================================================
-   ACTIVATION DES VARIANTES
-================================================== */
-
 .variant-toggle {
   width: 100%;
-
   min-height: 52px;
-
   padding: 10px 14px;
-
-  box-sizing: border-box;
-
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
-
   gap: 15px;
-
   border: 1px solid #e2e8f0;
-
   border-radius: 12px;
-
   background: #f8fafc;
-
   color: #334155;
-
   font-size: 14px;
-
   font-weight: 600;
-
   transition: 0.2s ease;
 }
 
-.variant-toggle:hover {
-  border-color: #bfdbfe;
-
-  background: #f8fbff;
-}
-
-
-/* ==================================================
-   SWITCH CHECKBOX
-================================================== */
-
 .variant-switch {
   position: relative;
-
   width: 44px;
   height: 24px;
-
   flex-shrink: 0;
-
   display: block;
-
   cursor: pointer;
 }
 
 .variant-switch input {
   opacity: 0;
-
   width: 0;
   height: 0;
-
   position: absolute;
 }
 
 .variant-slider {
   position: absolute;
-
   inset: 0;
-
   background: #cbd5e1;
-
   border-radius: 30px;
-
   transition: 0.25s;
 }
 
 .variant-slider::before {
   content: "";
-
   position: absolute;
-
   width: 18px;
   height: 18px;
-
   left: 3px;
   top: 3px;
-
   border-radius: 50%;
-
   background: #ffffff;
-
-  box-shadow:
-    0 1px 4px rgba(0, 0, 0, 0.18);
-
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
   transition: 0.25s;
 }
 
@@ -588,291 +423,128 @@
   transform: translateX(20px);
 }
 
-
-/* ==================================================
-   SECTION VARIANTES
-================================================== */
-
 .variant-section {
   width: 100%;
-
   margin-top: 12px;
 }
-
-
-/* ==================================================
-   CARTE AJOUT VARIANTE
-================================================== */
 
 .variant-card {
   width: 100%;
-
   padding: 15px;
-
   margin-top: 12px;
-
   border-radius: 14px;
-
   background: #f8fafc;
-
   border: 1px solid #e8edf3;
-
-  box-sizing: border-box;
-
   display: grid;
-
   grid-template-columns: 1.3fr 0.8fr 1fr auto;
-
   gap: 12px;
-
   align-items: end;
 }
-
-
-/* ==================================================
-   CHAMPS VARIANTE
-================================================== */
 
 .variant-field {
   min-width: 0;
 }
 
-.variant-field .form-label {
-  margin-top: 0;
-}
-
-
-/* ==================================================
-   ZONE BOUTON AJOUT
-================================================== */
-
 .variant-add-area {
   display: flex;
-
   align-items: flex-end;
 }
 
-.variant-add-area .variant-button {
-  margin: 0;
-}
-
-
-/* ==================================================
-   BOUTON AJOUTER VARIANTE
-================================================== */
-
 .variant-button {
   min-height: 48px;
-
   padding: 0 18px;
-
   border: none;
-
   border-radius: 10px;
-
   background: #eff6ff;
-
   color: #2563eb;
-
   cursor: pointer;
-
   font-weight: 700;
-
   font-size: 13px;
-
   white-space: nowrap;
-
   transition: 0.2s ease;
 }
 
 .variant-button:hover {
   background: #dbeafe;
-
   transform: translateY(-1px);
 }
 
-.variant-button:active {
-  transform: translateY(0);
-}
-
-
-/* ==================================================
-   VARIANTES AJOUTEES
-================================================== */
-
 .saved-variants {
   width: 100%;
-
   margin-top: 20px;
 }
 
 .saved-variants-title {
   margin-bottom: 10px;
-
   font-size: 14px;
-
   font-weight: 700;
-
   color: #334155;
 }
 
 .saved-variants-list {
   width: 100%;
-
   display: flex;
-
   flex-direction: column;
-
   gap: 8px;
 }
 
-
-/* ==================================================
-   UNE VARIANTE AJOUTEE
-================================================== */
-
 .saved-variant-item {
   width: 100%;
-
   min-height: 48px;
-
   padding: 9px 12px;
-
-  box-sizing: border-box;
-
   display: flex;
-
   align-items: center;
-
   justify-content: space-between;
-
   gap: 15px;
-
   background: #ffffff;
-
   border: 1px solid #e2e8f0;
-
   border-radius: 10px;
-
-  transition: 0.2s ease;
 }
-
-.saved-variant-item:hover {
-  border-color: #bfdbfe;
-
-  background: #f8fbff;
-}
-
-
-/* ==================================================
-   INFORMATIONS VARIANTE
-================================================== */
 
 .variant-info {
   flex: 1;
-
   min-width: 0;
-
   display: grid;
-
-  grid-template-columns:
-    minmax(90px, 1.2fr)
-    minmax(100px, 1fr)
-    minmax(90px, 1fr);
-
+  grid-template-columns: minmax(90px, 1.2fr) minmax(100px, 1fr) minmax(90px, 1fr);
   align-items: center;
-
   gap: 15px;
 }
 
 .variant-name {
   font-size: 14px;
-
   font-weight: 700;
-
   color: #1e3a8a;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  white-space: nowrap;
 }
 
 .variant-quantity {
   font-size: 13px;
-
   color: #64748b;
-
-  white-space: nowrap;
 }
 
 .variant-price {
   font-size: 13px;
-
   font-weight: 700;
-
   color: #334155;
-
-  white-space: nowrap;
 }
-
-
-/* ==================================================
-   BOUTON SUPPRIMER
-================================================== */
 
 .remove-variant-button {
   min-height: 34px;
-
   padding: 0 11px;
-
   border: none;
-
   border-radius: 8px;
-
   background: #fff1f2;
-
   color: #e11d48;
-
   font-size: 12px;
-
   font-weight: 600;
-
   cursor: pointer;
-
   white-space: nowrap;
-
-  flex-shrink: 0;
-
-  transition: 0.2s ease;
 }
-
-.remove-variant-button:hover {
-  background: #ffe4e6;
-
-  color: #be123c;
-}
-
-
-/* ==================================================
-   BOUTONS GENERAUX
-================================================== */
 
 .button-row {
   width: 100%;
-
   margin-top: 20px;
-
   display: flex;
-
-  justify-content: flex-start;
 }
-
-
-/* ==================================================
-   ENREGISTRER
-================================================== */
 
 .save-row {
   margin-top: 25px;
@@ -880,104 +552,59 @@
 
 .save-button {
   width: 100%;
-
   min-height: 48px;
-
   padding: 0 22px;
-
   border: none;
-
   border-radius: 12px;
-
   background: #2563eb;
-
   color: #ffffff;
-
   cursor: pointer;
-
   font-weight: 700;
-
   font-size: 14px;
-
   transition: 0.2s;
-
-  box-shadow:
-    0 5px 15px rgba(37, 99, 235, 0.20);
+  box-shadow: 0 5px 15px rgba(37, 99, 235, 0.2);
 }
 
-.save-button:hover {
+.save-button:hover:not(:disabled) {
   background: #1d4ed8;
-
   transform: translateY(-1px);
 }
 
-.save-button:active {
-  transform: translateY(0);
+.save-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
-
-/* ==================================================
-   TABLETTE
-================================================== */
-
-@media (min-width: 600px) {
-
-  .add-product-container {
-    padding: 25px;
-  }
-
-  .product-form-card {
-    padding: 25px;
-  }
-
-  .preview-image {
-    height: 240px;
-  }
-
+.product-loading {
+  max-width: 900px;
+  margin: 80px auto;
+  padding: 30px;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 14px;
+  color: #64748b;
 }
-
-
-/* ==================================================
-   PC
-================================================== */
-
-@media (min-width: 768px) {
-
-  .add-product-container {
-    padding: 30px;
-  }
-
-  .add-product-title {
-    font-size: 26px;
-  }
-
-  .product-form-card {
-    padding: 30px;
-  }
-
-  .preview-image {
-    height: 280px;
-  }
-
-}
-
-
-/* ==================================================
-   PETITS ECRANS
-================================================== */
 
 @media (max-width: 767px) {
+  .purchase-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-result {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .purchase-result strong {
+    text-align: left;
+  }
 
   .variant-card {
     grid-template-columns: 1fr 1fr;
-
-    gap: 12px;
   }
 
-  .variant-field:first-child {
-    grid-column: 1 / -1;
-  }
-
+  .variant-field:first-child,
   .variant-add-area {
     grid-column: 1 / -1;
   }
@@ -985,177 +612,164 @@
   .variant-button {
     width: 100%;
   }
-
-  .variant-info {
-    grid-template-columns:
-      1fr 1fr 1fr;
-
-    gap: 8px;
-  }
-
 }
-
-
-/* ==================================================
-   ECRANS < 600
-================================================== */
 
 @media (max-width: 599px) {
-
-  .saved-variant-item {
-    gap: 10px;
-  }
-
-  .variant-info {
-    grid-template-columns:
-      minmax(70px, 1fr)
-      minmax(70px, 1fr)
-      minmax(70px, 1fr);
-  }
-
-  .variant-name,
-  .variant-quantity,
-  .variant-price {
-    font-size: 12px;
-  }
-
-  .remove-variant-button {
-    padding: 0 8px;
-
-    font-size: 11px;
-  }
-
-}
-
-
-/* ==================================================
-   MOBILE
-================================================== */
-
-@media (max-width: 420px) {
-
   .add-product-container {
     padding: 15px;
   }
 
   .product-form-card {
-    padding: 15px;
+    padding: 17px;
   }
 
   .add-product-title {
     font-size: 20px;
   }
 
-  .category-select-row {
-    flex-direction: column;
+  .purchase-toggle {
+    align-items: flex-start;
+  }
 
+  .category-select-row,
+  .new-category-actions {
+    flex-direction: column;
     align-items: stretch;
   }
 
-  .category-select {
-    width: 100%;
-  }
-
-  .create-category-button {
-    width: 100%;
-  }
-
-  .new-category-actions {
-    flex-direction: column;
-  }
-
+  .create-category-button,
   .cancel-category-button,
   .confirm-category-button {
     width: 100%;
+  }
+
+  .variant-info {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .saved-variant-item {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 420px) {
+  .add-product-container {
+    padding: 12px;
+  }
+
+  .product-form-card {
+    padding: 14px;
   }
 
   .preview-image {
     height: 170px;
   }
 
+  .automatic-purchase-box {
+    padding: 12px;
+  }
+
   .variant-card {
     padding: 12px;
-
     grid-template-columns: 1fr;
   }
 
-  .variant-field:first-child {
-    grid-column: auto;
-  }
-
+  .variant-field:first-child,
   .variant-add-area {
     grid-column: auto;
   }
 
-  .variant-button {
+  .saved-variant-item {
+    flex-direction: column;
+  }
+
+  .remove-variant-button {
     width: 100%;
   }
-
-  /*
-     Sur très petit écran, les informations
-     restent compactes mais le bouton supprimer
-     reste visible.
-  */
-
-  .saved-variant-item {
-    padding: 9px;
-  }
-
-  .variant-info {
-    grid-template-columns: 1fr;
-
-    gap: 3px;
-  }
-
-  .variant-name,
-  .variant-quantity,
-  .variant-price {
-    white-space: normal;
-  }
-
 }
 
+.stock-add-toggle {
+  width: 100%;
+  min-height: 62px;
+  margin-top: 15px;
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #ffffff;
+}
 
-/* ==================================================
-   TRES PETITS ECRANS
-================================================== */
+.stock-add-toggle strong {
+  display: block;
+  color: #334155;
+  font-size: 14px;
+}
 
-@media (max-width: 360px) {
+.stock-add-toggle small {
+  display: block;
+  margin-top: 4px;
+  color: #7b8798;
+  font-size: 11px;
+  line-height: 1.4;
+}
 
-  .add-product-container {
-    padding: 12px;
+.stock-calculation-preview {
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.stock-calculation-preview > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 13px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.stock-calculation-preview > div:last-child {
+  border-bottom: none;
+}
+
+.stock-calculation-preview span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.stock-calculation-preview strong {
+  color: #334155;
+  font-size: 13px;
+  text-align: right;
+}
+
+.stock-calculation-preview .stock-preview-total {
+  background: #eff6ff;
+}
+
+.stock-calculation-preview .stock-preview-total strong {
+  color: #1d4ed8;
+  font-size: 14px;
+}
+
+@media (max-width: 599px) {
+  .stock-add-toggle {
+    align-items: flex-start;
   }
 
-  .product-form-card {
-    padding: 12px;
+  .stock-calculation-preview > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
 
-  .product-input {
-    font-size: 13px;
+  .stock-calculation-preview strong {
+    text-align: left;
   }
-
-  .save-button {
-    font-size: 13px;
-  }
-
-  .variant-toggle {
-    padding: 10px 12px;
-
-    font-size: 13px;
-  }
-
-  .variant-switch {
-    width: 40px;
-    height: 22px;
-  }
-
-  .variant-slider::before {
-    width: 16px;
-    height: 16px;
-  }
-
-  .variant-switch input:checked + .variant-slider::before {
-    transform: translateX(18px);
-  }
-
 }

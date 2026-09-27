@@ -1,0 +1,678 @@
+/* =========================================
+   PAGE
+========================================= */
+
+.page {
+  width: 100%;
+  min-height: 100vh;
+  background: #f5f7fb;
+  color: #172033;
+  box-sizing: border-box;
+}
+
+.page *,
+.page *::before,
+.page *::after {
+  box-sizing: border-box;
+}
+
+/* =========================================
+   HEADER
+========================================= */
+
+.header {
+  width: 100%;
+  min-height: 72px;
+  padding: 14px 24px;
+
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.backButton {
+  width: 40px;
+  height: 40px;
+
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 9px;
+
+  background: #eff6ff;
+  color: #1e40af;
+
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.backButton:hover {
+  background: #dbeafe;
+}
+
+.headerTitle {
+  min-width: 0;
+  flex: 1;
+}
+
+.headerTitle h1 {
+  margin: 0;
+  color: #172033;
+  font-size: 21px;
+}
+
+.headerTitle p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.editTopButton {
+  height: 40px;
+  padding: 0 13px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #2563eb;
+  color: #ffffff;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.editTopButton:hover {
+  background: #1d4ed8;
+}
+
+/* =========================================
+   CONTENU
+========================================= */
+
+.content {
+  width: 100%;
+  max-width: 1050px;
+
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* =========================================
+   CARTE PRODUIT
+========================================= */
+
+.productCard,
+.infoCard,
+.variantsCard,
+.actions {
+  width: 100%;
+
+  margin-bottom: 18px;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+}
+
+.productCard {
+  padding: 22px;
+}
+
+.productMain {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* =========================================
+   IMAGE
+========================================= */
+
+.imageContainer {
+  width: 105px;
+  height: 105px;
+
+  flex-shrink: 0;
+
+  border-radius: 13px;
+  overflow: hidden;
+
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+}
+
+.productImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imageFallback {
+  width: 100%;
+  height: 100%;
+
+  align-items: center;
+  justify-content: center;
+
+  font-size: 38px;
+}
+
+/* =========================================
+   TITRE PRODUIT
+========================================= */
+
+.productHeading {
+  min-width: 0;
+}
+
+.productHeading h2 {
+  margin: 9px 0 5px;
+
+  color: #172033;
+  font-size: 25px;
+  font-weight: 750;
+}
+
+.productHeading p {
+  margin: 0;
+
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* =========================================
+   BADGES
+========================================= */
+
+.badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.activeBadge,
+.inactiveBadge,
+.lowStockBadge {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 5px 9px;
+
+  border-radius: 20px;
+
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.activeBadge {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.inactiveBadge {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.lowStockBadge {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* =========================================
+   INFORMATIONS
+========================================= */
+
+.infoCard,
+.variantsCard {
+  padding: 22px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+
+  margin-bottom: 18px;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+
+  color: #172033;
+  font-size: 17px;
+}
+
+.sectionHeader p {
+  margin: 4px 0 0;
+
+  color: #64748b;
+  font-size: 11px;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+.infoItem {
+  min-width: 0;
+  min-height: 85px;
+
+  padding: 14px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  background: #f8fafc;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.infoItem span {
+  margin-bottom: 7px;
+
+  color: #64748b;
+  font-size: 10px;
+}
+
+.infoItem strong {
+  color: #172033;
+
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.stockDanger {
+  color: #dc2626 !important;
+}
+
+/* =========================================
+   VARIANTES
+========================================= */
+
+.variantCount {
+  min-width: 31px;
+  height: 31px;
+
+  padding: 0 9px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 20px;
+
+  background: #eff6ff;
+  color: #1d4ed8;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.variantTableWrapper {
+  width: 100%;
+  overflow-x: auto;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.variantTable {
+  width: 100%;
+  min-width: 520px;
+
+  border-collapse: collapse;
+}
+
+.variantTable th {
+  padding: 12px 14px;
+
+  background: #f8fafc;
+
+  color: #64748b;
+
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.variantTable td {
+  padding: 14px;
+
+  color: #374151;
+  font-size: 12px;
+
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.variantTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.variantPrice {
+  color: #15803d;
+}
+
+/* =========================================
+   AUCUNE VARIANTE
+========================================= */
+
+.noVariants {
+  min-height: 160px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.noVariants > div {
+  margin-bottom: 8px;
+  font-size: 30px;
+}
+
+.noVariants strong {
+  color: #374151;
+  font-size: 13px;
+}
+
+.noVariants p {
+  max-width: 340px;
+
+  margin: 5px 0 0;
+
+  color: #94a3b8;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+/* =========================================
+   ACTIONS
+========================================= */
+
+.actions {
+  padding: 16px 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 10px;
+}
+
+.cancelButton,
+.editButton {
+  min-width: 160px;
+  height: 43px;
+
+  padding: 0 16px;
+
+  border-radius: 8px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.cancelButton {
+  background: #ffffff;
+  color: #374151;
+
+  border: 1px solid #d1d5db;
+}
+
+.cancelButton:hover {
+  background: #f8fafc;
+}
+
+.editButton {
+  border: none;
+
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.editButton:hover {
+  background: #1d4ed8;
+}
+
+/* =========================================
+   CHARGEMENT / ERREUR
+========================================= */
+
+.loading,
+.errorCard {
+  width: calc(100% - 30px);
+  max-width: 430px;
+
+  min-height: 300px;
+
+  margin: 80px auto;
+  padding: 30px;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 15px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  box-shadow: 0 8px 25px rgba(15, 23, 42, 0.06);
+}
+
+.loadingIcon,
+.errorIcon {
+  width: 60px;
+  height: 60px;
+
+  margin-bottom: 13px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 14px;
+
+  background: #eff6ff;
+
+  font-size: 28px;
+}
+
+.loading h2,
+.errorCard h2 {
+  margin: 0 0 6px;
+
+  color: #172033;
+  font-size: 19px;
+}
+
+.loading p,
+.errorCard p {
+  margin: 0;
+
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.errorCard button {
+  width: 100%;
+  height: 43px;
+
+  margin-top: 20px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #2563eb;
+  color: #ffffff;
+
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* =========================================
+   TABLETTE
+========================================= */
+
+@media (max-width: 800px) {
+  .infoGrid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+  .header {
+    min-height: 64px;
+    padding: 11px 13px;
+  }
+
+  .headerTitle h1 {
+    font-size: 17px;
+  }
+
+  .headerTitle p {
+    display: none;
+  }
+
+  .editTopButton {
+    padding: 0 11px;
+    font-size: 10px;
+  }
+
+  .content {
+    padding: 12px;
+  }
+
+  .productCard,
+  .infoCard,
+  .variantsCard {
+    margin-bottom: 12px;
+    padding: 15px;
+    border-radius: 11px;
+  }
+
+  .productMain {
+    align-items: flex-start;
+    gap: 13px;
+  }
+
+  .imageContainer {
+    width: 75px;
+    height: 75px;
+  }
+
+  .imageFallback {
+    font-size: 28px;
+  }
+
+  .productHeading h2 {
+    margin-top: 7px;
+    font-size: 19px;
+  }
+
+  .productHeading p {
+    font-size: 11px;
+  }
+
+  .infoGrid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 8px;
+  }
+
+  .infoItem {
+    min-height: 75px;
+    padding: 11px;
+  }
+
+  .infoItem strong {
+    font-size: 12px;
+  }
+
+  .sectionHeader h2 {
+    font-size: 15px;
+  }
+
+  .actions {
+    margin-bottom: 12px;
+    padding: 12px;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cancelButton,
+  .editButton {
+    width: 100%;
+    min-width: 0;
+
+    padding: 0 8px;
+    font-size: 10px;
+  }
+}
+
+/* =========================================
+   PETIT MOBILE
+========================================= */
+
+@media (max-width: 380px) {
+  .content {
+    padding: 9px;
+  }
+
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .productMain {
+    flex-direction: column;
+  }
+
+  .imageContainer {
+    width: 90px;
+    height: 90px;
+  }
+
+  .actions {
+    grid-template-columns: 1fr;
+  }
+}

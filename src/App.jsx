@@ -16,6 +16,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import SalesHistory from "./composantes/pos/SalesHistory";
 import Expenses from "./composantes/pos/Expenses";
 import CashClosing from "./composantes/pos/CashClosing";
+import ProductDetails from "./composantes/produit/ProductDetails";
 
 function App() {
   return (
@@ -69,6 +70,14 @@ function App() {
         }
       />
 
+      <Route
+        path="/products/:productId/edit"
+        element={
+          <ProtectedRoute permission="products">
+            <AddProduct />
+          </ProtectedRoute>
+        }
+      />
 
       {/* ==========================================
           STOCK
@@ -171,6 +180,15 @@ function App() {
         element={
           <ProtectedRoute permission="pos">
             <CashClosing />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/products/:productId"
+        element={
+          <ProtectedRoute permission="products">
+            <ProductDetails />
           </ProtectedRoute>
         }
       />
