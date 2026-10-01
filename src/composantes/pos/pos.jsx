@@ -1850,198 +1850,20 @@ useEffect(() => {
 
     const received = Number(cashReceived || 0);
 
-    // ==============================
-// PAIEMENT HORS CONNEXION
-// ==============================
+    // Toujours enregistrer la vente localement en premier.
+    // Le paiement reste donc utilisable même sans accès réel à Firebase.
+    const savedLocally = await handleOfflinePayment(received);
 
-if (!isOnline) {
-  await handleOfflinePayment(received);
-  return;
-}
-
-    if (!cashSession?.id) {
-      alert("Aucune caisse ouverte.");
+    if (!savedLocally) {
       return;
     }
 
-    if (!storeId || !userId) {
-      alert("Session utilisateur introuvable.");
-      return;
-    }
-
-    if (ticket.length === 0) {
-      alert("Le ticket est vide.");
-      return;
-    }
-
-    if (!Number.isFinite(received) || received < total) {
-      alert(`Montant insuffisant. Le client doit payer au moins ${total.toLocaleString("fr-FR")} FC.`);
-      return;
-    }
-
-    const changeAmount = received - total;
-
-    try {
-      setPaying(true);
-
-      const saleRef = doc(collection(db, "sales"));
-      const cashSessionRef = doc(db, "cashSessions", cashSession.id);
-
-      await runTransaction(db, async (transaction) => {
-        const stockByProduct = {};
-
-        ticket.forEach((item) => {
-          const baseQuantity =
-            Number(item.quantity || 0) *
-            Number(item.variantQuantity || 1);
-
-          if (!stockByProduct[item.productId]) {
-            stockByProduct[item.productId] = 0;
-          }
-
-          stockByProduct[item.productId] += baseQuantity;
-        });
-
-        const productSnapshots = {};
-
-        for (const [productId, quantityToRemove] of Object.entries(stockByProduct)) {
-          const productRef = doc(db, "products", productId);
-          const productSnapshot = await transaction.get(productRef);
-
-          if (!productSnapshot.exists()) {
-            throw new Error("PRODUCT_NOT_FOUND");
-          }
-
-          const currentStock = Number(productSnapshot.data().stock || 0);
-
-          if (currentStock < quantityToRemove) {
-            const productName =
-              productSnapshot.data().productName || "Produit";
-
-            throw new Error(
-              `STOCK_INSUFFICIENT|${productName}|${currentStock}|${quantityToRemove}`
-            );
-          }
-
-          productSnapshots[productId] = {
-            ref: productRef,
-            currentStock,
-            quantityToRemove,
-          };
-        }
-
-        const cashSnapshot = await transaction.get(cashSessionRef);
-
-        if (!cashSnapshot.exists()) {
-          throw new Error("CASH_SESSION_NOT_FOUND");
-        }
-
-        if (cashSnapshot.data().status !== "open") {
-          throw new Error("CASH_SESSION_CLOSED");
-        }
-
-        Object.values(productSnapshots).forEach((productData) => {
-          transaction.update(productData.ref, {
-            stock:
-              productData.currentStock -
-              productData.quantityToRemove,
-            updatedAt: serverTimestamp(),
-          });
-        });
-
-        const saleItems = ticket.map((item) => {
-          const quantity = Number(item.quantity || 0);
-          const sellingPrice = Number(item.price || 0);
-          const conversionQuantity = Number(item.variantQuantity || 1);
-          const purchasePrice = Number(item.purchasePrice || 0);
-
-          return {
-            productId: item.productId,
-            name: item.name,
-            categoryName: item.categoryName || "Non classé",
-            variantType: item.variantType,
-            quantity,
-            price: sellingPrice,
-            sellingPrice,
-            purchasePrice,
-            basePurchasePrice: Number(item.basePurchasePrice || 0),
-            variantQuantity: conversionQuantity,
-            baseQuantity: quantity * conversionQuantity,
-            stockUnit: item.stockUnit || "",
-            lineTotal: sellingPrice * quantity,
-            linePurchaseCost: purchasePrice * quantity,
-            profit: (sellingPrice - purchasePrice) * quantity,
-          };
-        });
-
-        const totalPurchaseCost = saleItems.reduce(
-          (sum, item) => sum + Number(item.linePurchaseCost || 0),
-          0
-        );
-
-        const totalProfit = total - totalPurchaseCost;
-
-        transaction.set(saleRef, {
-          storeId,
-          cashSessionId: cashSession.id,
-          userId,
-          userName,
-          userRole,
-          items: saleItems,
-          total,
-          totalItems,
-          totalPurchaseCost,
-          profit: totalProfit,
-          paymentMethod: "cash",
-          amountReceived: received,
-          changeAmount,
-          status: "completed",
-          createdAt: serverTimestamp(),
-        });
-
-        transaction.update(cashSessionRef, {
-          totalSales:
-            Number(cashSnapshot.data().totalSales || 0) + total,
-          numberOfSales:
-            Number(cashSnapshot.data().numberOfSales || 0) + 1,
-          updatedAt: serverTimestamp(),
-        });
-      });
-
-      setLastSale({
-        total,
-        received,
-        changeAmount,
-        items: [...ticket],
-        totalItems,
-      });
-      setTicketStep("receipt");
-    } catch (error) {
-      console.error("Erreur paiement :", error);
-
-      if (error?.message?.startsWith("STOCK_INSUFFICIENT|")) {
-        const [, productName, available, required] =
-          error.message.split("|");
-
-        alert(
-          `Stock insuffisant pour ${productName}.\n\nStock disponible : ${available}\nStock nécessaire : ${required}`
-        );
-      } else if (error?.message === "PRODUCT_NOT_FOUND") {
-        alert("Un produit du ticket n'existe plus.");
-      } else if (
-        error?.message === "CASH_SESSION_NOT_FOUND" ||
-        error?.message === "CASH_SESSION_CLOSED"
-      ) {
-        alert(
-          "La session de caisse n'est plus disponible. Veuillez rouvrir la caisse."
-        );
-      } else {
-        alert(
-          "Impossible d'enregistrer le paiement. Vérifiez votre connexion et réessayez."
-        );
-      }
-    } finally {
-      setPaying(false);
+    // Si un réseau est disponible, tenter la synchronisation après
+    // l'enregistrement local. En cas d'échec, la vente reste en attente.
+    if (navigator.onLine) {
+      setTimeout(() => {
+        syncOfflineSales();
+      }, 0);
     }
   };
 
