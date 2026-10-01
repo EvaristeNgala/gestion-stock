@@ -1,12 +1,12 @@
-
 import { initializeApp } from "firebase/app";
 
-import { getAnalytics } from "firebase/analytics";
-
-import { getFirestore } from "firebase/firestore";
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 
 import { getStorage } from "firebase/storage";
-
 import { getAuth } from "firebase/auth";
 
 
@@ -15,7 +15,6 @@ import { getAuth } from "firebase/auth";
 // ==============================
 
 const firebaseConfig = {
-
   apiKey: "AIzaSyAgjR7oYPqmJ6vTWxVnPJHVy7m7sLnGTMY",
 
   authDomain: "magasin-dashboard-50b37.firebaseapp.com",
@@ -28,8 +27,7 @@ const firebaseConfig = {
 
   appId: "1:952488740971:web:7fa29b32df8798ecaa492e",
 
-  measurementId: "G-J5EMV8ZPYV"
-
+  measurementId: "G-J5EMV8ZPYV",
 };
 
 
@@ -41,17 +39,14 @@ const app = initializeApp(firebaseConfig);
 
 
 // ==============================
-// ANALYTICS
+// FIRESTORE + MODE HORS CONNEXION
 // ==============================
 
-const analytics = getAnalytics(app);
-
-
-// ==============================
-// FIRESTORE
-// ==============================
-
-const db = getFirestore(app);
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+});
 
 
 // ==============================
@@ -74,8 +69,7 @@ const auth = getAuth(app);
 
 export {
   app,
-  analytics,
   db,
   storage,
-  auth
+  auth,
 };

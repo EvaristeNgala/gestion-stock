@@ -367,33 +367,67 @@ function POS() {
   // ==============================
 
   useEffect(() => {
-    const productsRef =
-      collection(db, "products");
+  // Attendre que la session utilisateur soit disponible
+  if (!storeId) {
+    setProducts([]);
+    setLoading(false);
+    return;
+  }
 
-    const unsubscribe = onSnapshot(
-      productsRef,
-      (snapshot) => {
-        const productsData =
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
+  setLoading(true);
 
-        setProducts(productsData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error(
-          "Erreur Firebase :",
-          error
+  // Charger uniquement les produits
+  // appartenant au magasin connecté
+  const productsQuery = query(
+    collection(db, "products"),
+    where("storeId", "==", storeId)
+  );
+
+  const unsubscribe = onSnapshot(
+    productsQuery,
+
+    // ==============================
+    // DONNÉES REÇUES
+    // ==============================
+    (snapshot) => {
+      const productsData = snapshot.docs.map(
+        (productDoc) => ({
+          id: productDoc.id,
+          ...productDoc.data(),
+        })
+      );
+
+      setProducts(productsData);
+      setLoading(false);
+
+      // Permet de savoir si les données
+      // proviennent du cache local
+      if (snapshot.metadata.fromCache) {
+        console.log(
+          "📦 Produits chargés depuis le cache local"
         );
-
-        setLoading(false);
+      } else {
+        console.log(
+          "☁️ Produits chargés depuis Firebase"
+        );
       }
-    );
+    },
 
-    return () => unsubscribe();
-  }, []);
+    // ==============================
+    // ERREUR
+    // ==============================
+    (error) => {
+      console.error(
+        "Erreur chargement produits :",
+        error
+      );
+
+      setLoading(false);
+    }
+  );
+
+  return () => unsubscribe();
+}, [storeId]);
 
   // ==============================
   // CATÉGORIES
