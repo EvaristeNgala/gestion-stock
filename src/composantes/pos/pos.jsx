@@ -1191,8 +1191,295 @@ useEffect(() => {
 // ==============================
 
 const handleOfflinePayment = async (received) => {
+if (!cashSession?.id) {
+    alert("Aucune caisse ouverte.");
+    return false;
+  }
 
-  // ==============================
+  if (!storeId || !userId) {
+    alert("Session utilisateur introuvable.");
+    return false;
+  }
+
+  if (ticket.length === 0) {
+    alert("Le ticket est vide.");
+    return false;
+  }
+
+  if (!Number.isFinite(received) || received < total) {
+    alert(
+      `Montant insuffisant. Le client doit payer au moins ${total.toLocaleString(
+        "fr-FR"
+      )} FC.`
+    );
+
+    return false;
+  }
+
+  try {
+    setPaying(true);
+
+    // ==============================
+    // QUANTITÉ À RETIRER PAR PRODUIT
+    // ==============================
+
+    const stockByProduct = {};
+
+    ticket.forEach((item) => {
+      const baseQuantity =
+        Number(item.quantity || 0) *
+        Number(item.variantQuantity || 1);
+
+      if (!stockByProduct[item.productId]) {
+        stockByProduct[item.productId] = 0;
+      }
+
+      stockByProduct[item.productId] += baseQuantity;
+    });
+
+    // ==============================
+    // VÉRIFIER LE STOCK LOCAL
+    // ==============================
+
+    for (const [productId, quantityToRemove] of Object.entries(
+      stockByProduct
+    )) {
+      const product = products.find(
+        (currentProduct) =>
+          currentProduct.id === productId
+      );
+
+      if (!product) {
+        alert(
+          "Un produit du ticket n'est plus disponible localement."
+        );
+
+        return false;
+      }
+
+      const currentStock =
+        Number(product.stock || 0);
+
+      if (currentStock < quantityToRemove) {
+        alert(
+          `Stock insuffisant pour ${
+            product.productName || "Produit"
+          }.\n\nStock disponible : ${currentStock}\nStock nécessaire : ${quantityToRemove}`
+        );
+
+        return false;
+      }
+    }
+
+    // ==============================
+    // CONSTRUIRE LES ARTICLES
+    // ==============================
+
+    const saleItems = ticket.map((item) => {
+      const quantity =
+        Number(item.quantity || 0);
+
+      const sellingPrice =
+        Number(item.price || 0);
+
+      const conversionQuantity =
+        Number(item.variantQuantity || 1);
+
+      const purchasePrice =
+        Number(item.purchasePrice || 0);
+
+      return {
+        productId: item.productId,
+        name: item.name,
+
+        categoryName:
+          item.categoryName || "Non classé",
+
+        variantType: item.variantType,
+
+        quantity,
+
+        price: sellingPrice,
+        sellingPrice,
+
+        purchasePrice,
+
+        basePurchasePrice:
+          Number(item.basePurchasePrice || 0),
+
+        variantQuantity:
+          conversionQuantity,
+
+        baseQuantity:
+          quantity * conversionQuantity,
+
+        stockUnit:
+          item.stockUnit || "",
+
+        lineTotal:
+          sellingPrice * quantity,
+
+        linePurchaseCost:
+          purchasePrice * quantity,
+
+        profit:
+          (sellingPrice - purchasePrice) *
+          quantity,
+      };
+    });
+
+    // ==============================
+    // TOTAUX
+    // ==============================
+
+    const totalPurchaseCost =
+      saleItems.reduce(
+        (sum, item) =>
+          sum +
+          Number(
+            item.linePurchaseCost || 0
+          ),
+        0
+      );
+
+    const totalProfit =
+      total - totalPurchaseCost;
+
+    const changeAmount =
+      received - total;
+
+    // ==============================
+    // IDENTIFIANT LOCAL UNIQUE
+    // ==============================
+
+    const offlineSaleId =
+      typeof crypto !== "undefined" &&
+      crypto.randomUUID
+        ? crypto.randomUUID()
+        : `offline-${Date.now()}-${Math.random()
+            .toString(36)
+            .slice(2)}`;
+
+    // ==============================
+    // CRÉER LA VENTE LOCALE
+    // ==============================
+
+    const offlineSale = {
+      offlineSaleId,
+
+      storeId,
+
+      cashSessionId:
+        cashSession.id,
+
+      userId,
+      userName,
+      userRole,
+
+      items: saleItems,
+
+      stockByProduct,
+
+      total,
+      totalItems,
+      totalPurchaseCost,
+      profit: totalProfit,
+
+      paymentMethod: "cash",
+
+      amountReceived: received,
+
+      changeAmount,
+
+      status: "pending_sync",
+
+      createdAt:
+        new Date().toISOString(),
+    };
+
+    // ==============================
+    // ENREGISTRER LOCALEMENT
+    // ==============================
+
+    const currentOfflineSales =
+      getOfflineSales();
+
+    const updatedOfflineSales = [
+      ...currentOfflineSales,
+      offlineSale,
+    ];
+
+    saveOfflineSales(
+      updatedOfflineSales
+    );
+
+    // ==============================
+    // DIMINUER LE STOCK À L'ÉCRAN
+    // ==============================
+
+    setProducts((currentProducts) =>
+      currentProducts.map((product) => {
+        const quantityToRemove =
+          stockByProduct[product.id];
+
+        if (!quantityToRemove) {
+          return product;
+        }
+
+        return {
+          ...product,
+
+          stock:
+            Number(product.stock || 0) -
+            quantityToRemove,
+        };
+      })
+    );
+
+    // ==============================
+    // AFFICHER LE REÇU
+    // ==============================
+
+    setLastSale({
+      total,
+      received,
+      changeAmount,
+
+      items: [...ticket],
+
+      totalItems,
+
+      offline: true,
+
+      offlineSaleId,
+    });
+
+    setTicketStep("receipt");
+
+    console.log(
+      "🟠 Vente enregistrée hors connexion :",
+      offlineSaleId
+    );
+
+    return true;
+  } catch (error) {
+    console.error(
+      "Erreur vente hors connexion :",
+      error
+    );
+
+    alert(
+      "Impossible d'enregistrer la vente hors connexion."
+    );
+
+    return false;
+  } finally {
+    setPaying(false);
+  }
+};
+
+
+// ==============================
 // SYNCHRONISER LES VENTES HORS LIGNE
 // ==============================
 
@@ -1553,293 +1840,6 @@ useEffect(() => {
 
   syncOfflineSales();
 }, [isOnline]);
-
-  if (!cashSession?.id) {
-    alert("Aucune caisse ouverte.");
-    return false;
-  }
-
-  if (!storeId || !userId) {
-    alert("Session utilisateur introuvable.");
-    return false;
-  }
-
-  if (ticket.length === 0) {
-    alert("Le ticket est vide.");
-    return false;
-  }
-
-  if (!Number.isFinite(received) || received < total) {
-    alert(
-      `Montant insuffisant. Le client doit payer au moins ${total.toLocaleString(
-        "fr-FR"
-      )} FC.`
-    );
-
-    return false;
-  }
-
-  try {
-    setPaying(true);
-
-    // ==============================
-    // QUANTITÉ À RETIRER PAR PRODUIT
-    // ==============================
-
-    const stockByProduct = {};
-
-    ticket.forEach((item) => {
-      const baseQuantity =
-        Number(item.quantity || 0) *
-        Number(item.variantQuantity || 1);
-
-      if (!stockByProduct[item.productId]) {
-        stockByProduct[item.productId] = 0;
-      }
-
-      stockByProduct[item.productId] += baseQuantity;
-    });
-
-    // ==============================
-    // VÉRIFIER LE STOCK LOCAL
-    // ==============================
-
-    for (const [productId, quantityToRemove] of Object.entries(
-      stockByProduct
-    )) {
-      const product = products.find(
-        (currentProduct) =>
-          currentProduct.id === productId
-      );
-
-      if (!product) {
-        alert(
-          "Un produit du ticket n'est plus disponible localement."
-        );
-
-        return false;
-      }
-
-      const currentStock =
-        Number(product.stock || 0);
-
-      if (currentStock < quantityToRemove) {
-        alert(
-          `Stock insuffisant pour ${
-            product.productName || "Produit"
-          }.\n\nStock disponible : ${currentStock}\nStock nécessaire : ${quantityToRemove}`
-        );
-
-        return false;
-      }
-    }
-
-    // ==============================
-    // CONSTRUIRE LES ARTICLES
-    // ==============================
-
-    const saleItems = ticket.map((item) => {
-      const quantity =
-        Number(item.quantity || 0);
-
-      const sellingPrice =
-        Number(item.price || 0);
-
-      const conversionQuantity =
-        Number(item.variantQuantity || 1);
-
-      const purchasePrice =
-        Number(item.purchasePrice || 0);
-
-      return {
-        productId: item.productId,
-        name: item.name,
-
-        categoryName:
-          item.categoryName || "Non classé",
-
-        variantType: item.variantType,
-
-        quantity,
-
-        price: sellingPrice,
-        sellingPrice,
-
-        purchasePrice,
-
-        basePurchasePrice:
-          Number(item.basePurchasePrice || 0),
-
-        variantQuantity:
-          conversionQuantity,
-
-        baseQuantity:
-          quantity * conversionQuantity,
-
-        stockUnit:
-          item.stockUnit || "",
-
-        lineTotal:
-          sellingPrice * quantity,
-
-        linePurchaseCost:
-          purchasePrice * quantity,
-
-        profit:
-          (sellingPrice - purchasePrice) *
-          quantity,
-      };
-    });
-
-    // ==============================
-    // TOTAUX
-    // ==============================
-
-    const totalPurchaseCost =
-      saleItems.reduce(
-        (sum, item) =>
-          sum +
-          Number(
-            item.linePurchaseCost || 0
-          ),
-        0
-      );
-
-    const totalProfit =
-      total - totalPurchaseCost;
-
-    const changeAmount =
-      received - total;
-
-    // ==============================
-    // IDENTIFIANT LOCAL UNIQUE
-    // ==============================
-
-    const offlineSaleId =
-      typeof crypto !== "undefined" &&
-      crypto.randomUUID
-        ? crypto.randomUUID()
-        : `offline-${Date.now()}-${Math.random()
-            .toString(36)
-            .slice(2)}`;
-
-    // ==============================
-    // CRÉER LA VENTE LOCALE
-    // ==============================
-
-    const offlineSale = {
-      offlineSaleId,
-
-      storeId,
-
-      cashSessionId:
-        cashSession.id,
-
-      userId,
-      userName,
-      userRole,
-
-      items: saleItems,
-
-      stockByProduct,
-
-      total,
-      totalItems,
-      totalPurchaseCost,
-      profit: totalProfit,
-
-      paymentMethod: "cash",
-
-      amountReceived: received,
-
-      changeAmount,
-
-      status: "pending_sync",
-
-      createdAt:
-        new Date().toISOString(),
-    };
-
-    // ==============================
-    // ENREGISTRER LOCALEMENT
-    // ==============================
-
-    const currentOfflineSales =
-      getOfflineSales();
-
-    const updatedOfflineSales = [
-      ...currentOfflineSales,
-      offlineSale,
-    ];
-
-    saveOfflineSales(
-      updatedOfflineSales
-    );
-
-    // ==============================
-    // DIMINUER LE STOCK À L'ÉCRAN
-    // ==============================
-
-    setProducts((currentProducts) =>
-      currentProducts.map((product) => {
-        const quantityToRemove =
-          stockByProduct[product.id];
-
-        if (!quantityToRemove) {
-          return product;
-        }
-
-        return {
-          ...product,
-
-          stock:
-            Number(product.stock || 0) -
-            quantityToRemove,
-        };
-      })
-    );
-
-    // ==============================
-    // AFFICHER LE REÇU
-    // ==============================
-
-    setLastSale({
-      total,
-      received,
-      changeAmount,
-
-      items: [...ticket],
-
-      totalItems,
-
-      offline: true,
-
-      offlineSaleId,
-    });
-
-    setTicketStep("receipt");
-
-    console.log(
-      "🟠 Vente enregistrée hors connexion :",
-      offlineSaleId
-    );
-
-    return true;
-  } catch (error) {
-    console.error(
-      "Erreur vente hors connexion :",
-      error
-    );
-
-    alert(
-      "Impossible d'enregistrer la vente hors connexion."
-    );
-
-    return false;
-  } finally {
-    setPaying(false);
-  }
-};
 
   // ==============================
   // VALIDER LE PAIEMENT ESPÈCES
