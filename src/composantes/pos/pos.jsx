@@ -78,6 +78,88 @@ function POS() {
   const [savingTicket, setSavingTicket] = useState(false);
 
   // ==============================
+// ÉTAT DE LA CONNEXION
+// ==============================
+
+const [isOnline, setIsOnline] = useState(
+  navigator.onLine
+);
+
+// ==============================
+// VENTES EN ATTENTE DE SYNCHRO
+// ==============================
+
+const [pendingSalesCount, setPendingSalesCount] =
+  useState(0);
+
+const [syncingSales, setSyncingSales] =
+  useState(false);
+
+useEffect(() => {
+  const handleOnline = () => {
+    console.log("🟢 Connexion Internet rétablie");
+    setIsOnline(true);
+  };
+
+  const handleOffline = () => {
+    console.log("🟠 Connexion Internet perdue");
+    setIsOnline(false);
+  };
+
+  window.addEventListener("online", handleOnline);
+  window.addEventListener("offline", handleOffline);
+
+  return () => {
+    window.removeEventListener("online", handleOnline);
+    window.removeEventListener("offline", handleOffline);
+  };
+}, []);
+
+
+// ==============================
+// VENTES HORS CONNEXION
+// ==============================
+
+const OFFLINE_SALES_KEY = "stockManagerOfflineSales";
+
+const getOfflineSales = () => {
+  try {
+    const saved =
+      localStorage.getItem(OFFLINE_SALES_KEY);
+
+    return saved ? JSON.parse(saved) : [];
+  } catch (error) {
+    console.error(
+      "Erreur lecture ventes hors ligne :",
+      error
+    );
+
+    return [];
+  }
+};
+
+const saveOfflineSales = (sales) => {
+  localStorage.setItem(
+    OFFLINE_SALES_KEY,
+    JSON.stringify(sales)
+  );
+
+  setPendingSalesCount(sales.length);
+};
+
+
+// ==============================
+// CHARGER LES VENTES EN ATTENTE
+// ==============================
+
+useEffect(() => {
+  const offlineSales = getOfflineSales();
+
+  setPendingSalesCount(offlineSales.length);
+}, []);
+
+
+  // ==============================
   // RÉCUPÉRER LA SESSION
   // ==============================
 
@@ -1105,6 +1187,661 @@ function POS() {
   };
 
   // ==============================
+// VALIDER UNE VENTE HORS CONNEXION
+// ==============================
+
+const handleOfflinePayment = async (received) => {
+
+  // ==============================
+// SYNCHRONISER LES VENTES HORS LIGNE
+// ==============================
+
+const syncOfflineSales = async () => {
+  // Pas de réseau ou synchronisation déjà en cours
+  if (!navigator.onLine || syncingSales) {
+    return;
+  }
+
+  const offlineSales = getOfflineSales();
+
+  if (offlineSales.length === 0) {
+    setPendingSalesCount(0);
+    return;
+  }
+
+  console.log(
+    `🔄 Synchronisation de ${offlineSales.length} vente(s)...`
+  );
+
+  setSyncingSales(true);
+
+  // On garde ici les ventes qui n'ont pas pu être synchronisées
+  const remainingSales = [];
+
+  try {
+    for (const sale of offlineSales) {
+      try {
+        // ==============================
+        // IDENTIFIANT UNIQUE
+        // ==============================
+
+        if (!sale.offlineSaleId) {
+          console.error(
+            "Vente hors ligne sans identifiant :",
+            sale
+          );
+
+          remainingSales.push(sale);
+          continue;
+        }
+
+        const saleRef = doc(
+          db,
+          "sales",
+          sale.offlineSaleId
+        );
+
+        const cashSessionRef = doc(
+          db,
+          "cashSessions",
+          sale.cashSessionId
+        );
+
+        // ==============================
+        // TRANSACTION FIRESTORE
+        // ==============================
+
+        await runTransaction(
+          db,
+          async (transaction) => {
+            // --------------------------
+            // Vérifier si déjà synchronisée
+            // --------------------------
+
+            const existingSaleSnapshot =
+              await transaction.get(saleRef);
+
+            if (existingSaleSnapshot.exists()) {
+              console.log(
+                "ℹ️ Vente déjà synchronisée :",
+                sale.offlineSaleId
+              );
+
+              return;
+            }
+
+            // --------------------------
+            // Vérifier les produits
+            // --------------------------
+
+            const productSnapshots = {};
+
+            for (
+              const [
+                productId,
+                quantityToRemove,
+              ] of Object.entries(
+                sale.stockByProduct || {}
+              )
+            ) {
+              const productRef = doc(
+                db,
+                "products",
+                productId
+              );
+
+              const productSnapshot =
+                await transaction.get(
+                  productRef
+                );
+
+              if (!productSnapshot.exists()) {
+                throw new Error(
+                  `SYNC_PRODUCT_NOT_FOUND|${productId}`
+                );
+              }
+
+              const currentStock =
+                Number(
+                  productSnapshot.data()
+                    .stock || 0
+                );
+
+              if (
+                currentStock <
+                Number(quantityToRemove)
+              ) {
+                throw new Error(
+                  `SYNC_STOCK_INSUFFICIENT|${productId}|${currentStock}|${quantityToRemove}`
+                );
+              }
+
+              productSnapshots[
+                productId
+              ] = {
+                ref: productRef,
+                currentStock,
+                quantityToRemove:
+                  Number(quantityToRemove),
+              };
+            }
+
+            // --------------------------
+            // Vérifier la caisse
+            // --------------------------
+
+            const cashSnapshot =
+              await transaction.get(
+                cashSessionRef
+              );
+
+            if (!cashSnapshot.exists()) {
+              throw new Error(
+                "SYNC_CASH_SESSION_NOT_FOUND"
+              );
+            }
+
+            /*
+             * Important :
+             * une vente a pu être faite hors connexion
+             * juste avant la fermeture de caisse.
+             *
+             * On autorise donc la synchronisation
+             * même si la caisse est maintenant fermée,
+             * tant que son document existe.
+             */
+
+            // --------------------------
+            // Diminuer le stock
+            // --------------------------
+
+            Object.values(
+              productSnapshots
+            ).forEach((productData) => {
+              transaction.update(
+                productData.ref,
+                {
+                  stock:
+                    productData.currentStock -
+                    productData.quantityToRemove,
+
+                  updatedAt:
+                    serverTimestamp(),
+                }
+              );
+            });
+
+            // --------------------------
+            // Créer la vente
+            // --------------------------
+
+            transaction.set(
+              saleRef,
+              {
+                storeId:
+                  sale.storeId,
+
+                cashSessionId:
+                  sale.cashSessionId,
+
+                userId:
+                  sale.userId,
+
+                userName:
+                  sale.userName,
+
+                userRole:
+                  sale.userRole,
+
+                items:
+                  sale.items || [],
+
+                total:
+                  Number(sale.total || 0),
+
+                totalItems:
+                  Number(
+                    sale.totalItems || 0
+                  ),
+
+                totalPurchaseCost:
+                  Number(
+                    sale.totalPurchaseCost ||
+                      0
+                  ),
+
+                profit:
+                  Number(
+                    sale.profit || 0
+                  ),
+
+                paymentMethod:
+                  sale.paymentMethod ||
+                  "cash",
+
+                amountReceived:
+                  Number(
+                    sale.amountReceived ||
+                      0
+                  ),
+
+                changeAmount:
+                  Number(
+                    sale.changeAmount || 0
+                  ),
+
+                status: "completed",
+
+                // Permet de savoir que
+                // cette vente vient du mode offline
+                wasOffline: true,
+
+                offlineSaleId:
+                  sale.offlineSaleId,
+
+                // Heure réelle de la vente
+                offlineCreatedAt:
+                  sale.createdAt,
+
+                // Heure de synchronisation Firebase
+                createdAt:
+                  serverTimestamp(),
+
+                syncedAt:
+                  serverTimestamp(),
+              }
+            );
+
+            // --------------------------
+            // Mettre à jour la caisse
+            // --------------------------
+
+            transaction.update(
+              cashSessionRef,
+              {
+                totalSales:
+                  Number(
+                    cashSnapshot.data()
+                      .totalSales || 0
+                  ) +
+                  Number(
+                    sale.total || 0
+                  ),
+
+                numberOfSales:
+                  Number(
+                    cashSnapshot.data()
+                      .numberOfSales || 0
+                  ) + 1,
+
+                updatedAt:
+                  serverTimestamp(),
+              }
+            );
+          }
+        );
+
+        console.log(
+          "✅ Vente synchronisée :",
+          sale.offlineSaleId
+        );
+      } catch (error) {
+        console.error(
+          "❌ Synchronisation impossible :",
+          sale.offlineSaleId,
+          error
+        );
+
+        // Cette vente reste sur le téléphone.
+        remainingSales.push(sale);
+
+        /*
+         * Si Internet vient encore de disparaître,
+         * inutile de tenter les ventes suivantes.
+         */
+        if (!navigator.onLine) {
+          const currentIndex =
+            offlineSales.indexOf(sale);
+
+          remainingSales.push(
+            ...offlineSales.slice(
+              currentIndex + 1
+            )
+          );
+
+          break;
+        }
+      }
+    }
+
+    // ==============================
+    // CONSERVER UNIQUEMENT LES ÉCHECS
+    // ==============================
+
+    saveOfflineSales(
+      remainingSales
+    );
+
+    if (remainingSales.length === 0) {
+      console.log(
+        "🟢 Toutes les ventes sont synchronisées."
+      );
+    } else {
+      console.log(
+        `🟡 ${remainingSales.length} vente(s) restent en attente.`
+      );
+    }
+  } finally {
+    setSyncingSales(false);
+  }
+}; 
+
+// ==============================
+// SYNCHRONISATION AUTOMATIQUE
+// ==============================
+
+useEffect(() => {
+  if (!isOnline) {
+    return;
+  }
+
+  const offlineSales = getOfflineSales();
+
+  if (offlineSales.length === 0) {
+    return;
+  }
+
+  syncOfflineSales();
+}, [isOnline]);
+
+  if (!cashSession?.id) {
+    alert("Aucune caisse ouverte.");
+    return false;
+  }
+
+  if (!storeId || !userId) {
+    alert("Session utilisateur introuvable.");
+    return false;
+  }
+
+  if (ticket.length === 0) {
+    alert("Le ticket est vide.");
+    return false;
+  }
+
+  if (!Number.isFinite(received) || received < total) {
+    alert(
+      `Montant insuffisant. Le client doit payer au moins ${total.toLocaleString(
+        "fr-FR"
+      )} FC.`
+    );
+
+    return false;
+  }
+
+  try {
+    setPaying(true);
+
+    // ==============================
+    // QUANTITÉ À RETIRER PAR PRODUIT
+    // ==============================
+
+    const stockByProduct = {};
+
+    ticket.forEach((item) => {
+      const baseQuantity =
+        Number(item.quantity || 0) *
+        Number(item.variantQuantity || 1);
+
+      if (!stockByProduct[item.productId]) {
+        stockByProduct[item.productId] = 0;
+      }
+
+      stockByProduct[item.productId] += baseQuantity;
+    });
+
+    // ==============================
+    // VÉRIFIER LE STOCK LOCAL
+    // ==============================
+
+    for (const [productId, quantityToRemove] of Object.entries(
+      stockByProduct
+    )) {
+      const product = products.find(
+        (currentProduct) =>
+          currentProduct.id === productId
+      );
+
+      if (!product) {
+        alert(
+          "Un produit du ticket n'est plus disponible localement."
+        );
+
+        return false;
+      }
+
+      const currentStock =
+        Number(product.stock || 0);
+
+      if (currentStock < quantityToRemove) {
+        alert(
+          `Stock insuffisant pour ${
+            product.productName || "Produit"
+          }.\n\nStock disponible : ${currentStock}\nStock nécessaire : ${quantityToRemove}`
+        );
+
+        return false;
+      }
+    }
+
+    // ==============================
+    // CONSTRUIRE LES ARTICLES
+    // ==============================
+
+    const saleItems = ticket.map((item) => {
+      const quantity =
+        Number(item.quantity || 0);
+
+      const sellingPrice =
+        Number(item.price || 0);
+
+      const conversionQuantity =
+        Number(item.variantQuantity || 1);
+
+      const purchasePrice =
+        Number(item.purchasePrice || 0);
+
+      return {
+        productId: item.productId,
+        name: item.name,
+
+        categoryName:
+          item.categoryName || "Non classé",
+
+        variantType: item.variantType,
+
+        quantity,
+
+        price: sellingPrice,
+        sellingPrice,
+
+        purchasePrice,
+
+        basePurchasePrice:
+          Number(item.basePurchasePrice || 0),
+
+        variantQuantity:
+          conversionQuantity,
+
+        baseQuantity:
+          quantity * conversionQuantity,
+
+        stockUnit:
+          item.stockUnit || "",
+
+        lineTotal:
+          sellingPrice * quantity,
+
+        linePurchaseCost:
+          purchasePrice * quantity,
+
+        profit:
+          (sellingPrice - purchasePrice) *
+          quantity,
+      };
+    });
+
+    // ==============================
+    // TOTAUX
+    // ==============================
+
+    const totalPurchaseCost =
+      saleItems.reduce(
+        (sum, item) =>
+          sum +
+          Number(
+            item.linePurchaseCost || 0
+          ),
+        0
+      );
+
+    const totalProfit =
+      total - totalPurchaseCost;
+
+    const changeAmount =
+      received - total;
+
+    // ==============================
+    // IDENTIFIANT LOCAL UNIQUE
+    // ==============================
+
+    const offlineSaleId =
+      typeof crypto !== "undefined" &&
+      crypto.randomUUID
+        ? crypto.randomUUID()
+        : `offline-${Date.now()}-${Math.random()
+            .toString(36)
+            .slice(2)}`;
+
+    // ==============================
+    // CRÉER LA VENTE LOCALE
+    // ==============================
+
+    const offlineSale = {
+      offlineSaleId,
+
+      storeId,
+
+      cashSessionId:
+        cashSession.id,
+
+      userId,
+      userName,
+      userRole,
+
+      items: saleItems,
+
+      stockByProduct,
+
+      total,
+      totalItems,
+      totalPurchaseCost,
+      profit: totalProfit,
+
+      paymentMethod: "cash",
+
+      amountReceived: received,
+
+      changeAmount,
+
+      status: "pending_sync",
+
+      createdAt:
+        new Date().toISOString(),
+    };
+
+    // ==============================
+    // ENREGISTRER LOCALEMENT
+    // ==============================
+
+    const currentOfflineSales =
+      getOfflineSales();
+
+    const updatedOfflineSales = [
+      ...currentOfflineSales,
+      offlineSale,
+    ];
+
+    saveOfflineSales(
+      updatedOfflineSales
+    );
+
+    // ==============================
+    // DIMINUER LE STOCK À L'ÉCRAN
+    // ==============================
+
+    setProducts((currentProducts) =>
+      currentProducts.map((product) => {
+        const quantityToRemove =
+          stockByProduct[product.id];
+
+        if (!quantityToRemove) {
+          return product;
+        }
+
+        return {
+          ...product,
+
+          stock:
+            Number(product.stock || 0) -
+            quantityToRemove,
+        };
+      })
+    );
+
+    // ==============================
+    // AFFICHER LE REÇU
+    // ==============================
+
+    setLastSale({
+      total,
+      received,
+      changeAmount,
+
+      items: [...ticket],
+
+      totalItems,
+
+      offline: true,
+
+      offlineSaleId,
+    });
+
+    setTicketStep("receipt");
+
+    console.log(
+      "🟠 Vente enregistrée hors connexion :",
+      offlineSaleId
+    );
+
+    return true;
+  } catch (error) {
+    console.error(
+      "Erreur vente hors connexion :",
+      error
+    );
+
+    alert(
+      "Impossible d'enregistrer la vente hors connexion."
+    );
+
+    return false;
+  } finally {
+    setPaying(false);
+  }
+};
+
+  // ==============================
   // VALIDER LE PAIEMENT ESPÈCES
   // ==============================
 
@@ -1112,6 +1849,15 @@ function POS() {
     if (paying) return;
 
     const received = Number(cashReceived || 0);
+
+    // ==============================
+// PAIEMENT HORS CONNEXION
+// ==============================
+
+if (!isOnline) {
+  await handleOfflinePayment(received);
+  return;
+}
 
     if (!cashSession?.id) {
       alert("Aucune caisse ouverte.");
@@ -1604,7 +2350,9 @@ function POS() {
               styles.cashOpenIndicator
             }
           >
-            🟢 Caisse ouverte
+            {isOnline
+              ? "🟢 En ligne"
+              : "🟠 Hors connexion"}
           </small>
         </div>
 
