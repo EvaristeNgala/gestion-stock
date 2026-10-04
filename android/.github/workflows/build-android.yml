@@ -1,0 +1,49 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer le projet
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Installer Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Installer les dependances
+        run: npm ci
+
+      - name: Construire l'application React
+        run: npm run build
+
+      - name: Synchroniser Capacitor Android
+        run: npx cap sync android
+
+      - name: Donner la permission a Gradle
+        run: chmod +x android/gradlew
+
+      - name: Construire APK Debug
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Publier APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: stock-manager-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
