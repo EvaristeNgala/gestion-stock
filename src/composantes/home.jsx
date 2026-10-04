@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -37,6 +37,75 @@ function Home() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // ==========================================
+  // INSTALLATION PWA
+  // ==========================================
+
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    const checkInstalled = () => {
+      const standalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true;
+
+      setIsInstalled(standalone);
+    };
+
+    const handleBeforeInstallPrompt = (event) => {
+      event.preventDefault();
+      setInstallPrompt(event);
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setInstallPrompt(null);
+    };
+
+    checkInstalled();
+
+    window.addEventListener(
+      "beforeinstallprompt",
+      handleBeforeInstallPrompt
+    );
+
+    window.addEventListener(
+      "appinstalled",
+      handleAppInstalled
+    );
+
+    return () => {
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt
+      );
+
+      window.removeEventListener(
+        "appinstalled",
+        handleAppInstalled
+      );
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!installPrompt) {
+      return;
+    }
+
+    try {
+      await installPrompt.prompt();
+      await installPrompt.userChoice;
+    } catch (error) {
+      console.error(
+        "Erreur pendant l'installation de la PWA :",
+        error
+      );
+    } finally {
+      setInstallPrompt(null);
+    }
+  };
 
   // ==========================================
   // CONNEXION ADMINISTRATEUR
@@ -727,6 +796,21 @@ function Home() {
           )}
 
         </div>
+
+        {/* =====================================
+            INSTALLER L'APPLICATION
+        ===================================== */}
+
+        {installPrompt && !isInstalled && (
+          <button
+            type="button"
+            className="installAppButton"
+            onClick={handleInstallApp}
+          >
+            <span className="installAppIcon">📲</span>
+            Installer l'application
+          </button>
+        )}
 
         {/* =====================================
             CRÉER UN MAGASIN
