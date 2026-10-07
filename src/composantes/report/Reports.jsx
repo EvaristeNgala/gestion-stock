@@ -1278,8 +1278,6 @@ const allSales = useMemo(() => {
 
         <div className={styles.periodTitle}>
 
-          <span>📅</span>
-
 
 
           <div>
@@ -1480,14 +1478,6 @@ const allSales = useMemo(() => {
 
         <div className={styles.statCard}>
 
-          <div className={styles.statIcon}>
-
-            💰
-
-          </div>
-
-
-
           <div>
 
             <span>Chiffre d'affaires</span>
@@ -1505,15 +1495,6 @@ const allSales = useMemo(() => {
 
 
         <div className={styles.statCard}>
-
-          <div className={styles.statIcon}>
-
-            📈
-
-          </div>
-
-
-
           <div>
 
             <span>Bénéfice généré</span>
@@ -1531,15 +1512,6 @@ const allSales = useMemo(() => {
 
 
         <div className={styles.statCard}>
-
-          <div className={styles.statIcon}>
-
-            💸
-
-          </div>
-
-
-
           <div>
 
             <span>Dépenses</span>
@@ -1557,14 +1529,6 @@ const allSales = useMemo(() => {
 
 
         <div className={styles.statCard}>
-
-          <div className={styles.statIcon}>
-
-            🧾
-
-          </div>
-
-
 
           <div>
 
@@ -1718,10 +1682,6 @@ const allSales = useMemo(() => {
 
           <div className={styles.emptyState}>
 
-            <div>📊</div>
-
-
-
             <h3>
 
               Aucune vente pour cette période
@@ -1804,19 +1764,7 @@ const allSales = useMemo(() => {
 
                       >
 
-                        <div
-
-                          className={
-
-                            styles.productMiniIcon
-
-                          }
-
-                        >
-
-                          📦
-
-                        </div>
+                        
 
 
 
