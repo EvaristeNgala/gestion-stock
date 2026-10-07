@@ -597,39 +597,29 @@ const allSales = useMemo(() => {
 
 
   const filteredSales = useMemo(() => {
+  if (!selectedPeriod) return [];
 
-  if (!selectedPeriod) return [];
+  return allSales.filter((sale) => {
+    // Une vente annulée ne doit plus être comptée
+    // dans le chiffre d'affaires, bénéfice,
+    // articles vendus et nombre de ventes.
+    if (sale.status === "cancelled") {
+      return false;
+    }
 
+    const date = getDate(
+      sale.offlineCreatedAt ||
+      sale.createdAt ||
+      sale.date
+    );
 
+    if (!date) return false;
 
-  return allSales.filter((sale) => {
-
-    const date = getDate(
-
-      sale.offlineCreatedAt ||
-
-      sale.createdAt ||
-
-      sale.date
-
-    );
-
-
-
-    if (!date) return false;
-
-
-
-    return (
-
-      date >= selectedPeriod.start &&
-
-      date <= selectedPeriod.end
-
-    );
-
-  });
-
+    return (
+      date >= selectedPeriod.start &&
+      date <= selectedPeriod.end
+    );
+  });
 }, [allSales, selectedPeriod]);
 
   // =========================================================
