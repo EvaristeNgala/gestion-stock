@@ -1,0 +1,397 @@
+.page {
+  min-height: 100vh;
+  background: #f3f6fb;
+  color: #0f172a;
+}
+
+/* HEADER */
+
+.header {
+  min-height: 75px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+
+  display: flex;
+  align-items: center;
+
+  padding: 12px 18px;
+
+  gap: 14px;
+
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+}
+
+.header > div:nth-child(2) {
+  flex: 1;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.header p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.backButton {
+  width: 42px;
+  height: 42px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+
+  font-size: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+}
+
+.calendarIcon {
+  width: 42px;
+  height: 42px;
+
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.15);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 21px;
+}
+
+/* CONTENT */
+
+.content {
+  padding: 16px;
+}
+
+/* CALENDAR */
+
+.calendarCard {
+  background: white;
+
+  border-radius: 18px;
+
+  padding: 18px;
+
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.06);
+}
+
+/* MONTH */
+
+.monthHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 20px;
+}
+
+.monthHeader > div {
+  text-align: center;
+}
+
+.monthHeader h2 {
+  margin: 0;
+  font-size: 19px;
+  color: #1e3a8a;
+}
+
+.monthHeader span {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #64748b;
+
+  font-size: 12px;
+}
+
+.monthButton {
+  width: 40px;
+  height: 40px;
+
+  border: none;
+
+  background: #eff6ff;
+
+  color: #2563eb;
+
+  border-radius: 11px;
+
+  font-size: 27px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  cursor: pointer;
+}
+
+/* WEEK */
+
+.weekDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+
+  margin-bottom: 7px;
+}
+
+.weekDays div {
+  text-align: center;
+
+  color: #94a3b8;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* DAYS */
+
+.daysGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+
+  gap: 5px;
+}
+
+.dayButton {
+  aspect-ratio: 1;
+
+  border: none;
+  border-radius: 50%;
+
+  background: transparent;
+
+  color: #334155;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+
+  transition: 0.15s;
+}
+
+.dayButton:hover {
+  background: #eff6ff;
+}
+
+.emptyDay {
+  aspect-ratio: 1;
+}
+
+/* AUJOURD'HUI */
+
+.today {
+  border: 1px solid #2563eb;
+  color: #2563eb;
+}
+
+/* JOUR SÉLECTIONNÉ */
+
+.selectedDay {
+  background: #2563eb !important;
+  color: white !important;
+  border: none !important;
+
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+}
+
+/* TODAY BUTTON */
+
+.todayButton {
+  display: block;
+
+  margin: 18px auto 0;
+
+  border: none;
+  border-radius: 10px;
+
+  background: #eff6ff;
+  color: #2563eb;
+
+  padding: 9px 18px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+/* DATE SELECTED */
+
+.selectedDateCard {
+  margin-top: 14px;
+
+  background: linear-gradient(135deg, #dbeafe, #eff6ff);
+
+  border-radius: 15px;
+
+  padding: 15px 17px;
+}
+
+.selectedDateCard span {
+  color: #64748b;
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing: 1px;
+}
+
+.selectedDateCard h2 {
+  margin: 5px 0 0;
+
+  color: #1e3a8a;
+
+  font-size: 16px;
+
+  text-transform: capitalize;
+}
+
+/* ACTIVITY */
+
+.activitySection {
+  margin-top: 22px;
+}
+
+.activityTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 12px;
+}
+
+.activityTitle h2 {
+  margin: 0;
+
+  font-size: 18px;
+
+  color: #1e293b;
+}
+
+.activityTitle p {
+  margin: 3px 0 0;
+
+  color: #94a3b8;
+
+  font-size: 11px;
+}
+
+/* STATS */
+
+.statsGrid {
+  display: grid;
+
+  grid-template-columns: repeat(2, 1fr);
+
+  gap: 10px;
+}
+
+.statCard {
+  background: white;
+
+  border-radius: 14px;
+
+  padding: 14px;
+
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+
+  display: flex;
+  flex-direction: column;
+}
+
+.statIcon {
+  font-size: 21px;
+
+  margin-bottom: 9px;
+}
+
+.statCard span {
+  color: #64748b;
+
+  font-size: 11px;
+}
+
+.statCard strong {
+  color: #1e3a8a;
+
+  font-size: 19px;
+
+  margin-top: 4px;
+}
+
+/* EMPTY */
+
+.emptyActivity {
+  margin-top: 14px;
+
+  padding: 25px 18px;
+
+  background: white;
+
+  border-radius: 15px;
+
+  text-align: center;
+
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+}
+
+.emptyActivity > div {
+  font-size: 30px;
+
+  margin-bottom: 8px;
+}
+
+.emptyActivity h3 {
+  margin: 0;
+
+  color: #334155;
+
+  font-size: 14px;
+}
+
+.emptyActivity p {
+  max-width: 260px;
+
+  margin: 6px auto 0;
+
+  color: #94a3b8;
+
+  font-size: 11px;
+
+  line-height: 1.5;
+}
+
+/* DESKTOP */
+
+@media (min-width: 768px) {
+  .page {
+    max-width: 430px;
+
+    margin: auto;
+
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.dayButton {
+    position: relative;
+}

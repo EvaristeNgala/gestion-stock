@@ -2148,3 +2148,260 @@
     font-size: 10px;
   }
 }
+
+/* =========================================
+   VERROUILLAGE POS
+========================================= */
+
+.posLockScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background:
+    linear-gradient(
+      160deg,
+      #0f172a 0%,
+      #1e293b 50%,
+      #0f172a 100%
+    );
+
+  overflow-y: auto;
+}
+
+.posLockCard {
+  width: 100%;
+  max-width: 390px;
+
+  padding: 32px 24px;
+
+  background: white;
+
+  border-radius: 24px;
+
+  text-align: center;
+
+  box-shadow:
+    0 25px 60px
+    rgba(0, 0, 0, 0.35);
+}
+
+.posLockIcon {
+  width: 76px;
+  height: 76px;
+
+  margin: 0 auto 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #eff6ff;
+
+  font-size: 36px;
+}
+
+.posLockStatus {
+  display: inline-block;
+
+  padding: 6px 12px;
+
+  margin-bottom: 12px;
+
+  border-radius: 999px;
+
+  background: #fee2e2;
+  color: #b91c1c;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  letter-spacing: 0.6px;
+}
+
+.posLockCard h1 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 24px;
+}
+
+.posLockDescription {
+  margin: 10px 0 22px;
+
+  color: #64748b;
+
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.posLockUser {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 14px;
+
+  margin-bottom: 22px;
+
+  border-radius: 14px;
+
+  background: #f8fafc;
+
+  text-align: left;
+}
+
+.posLockAvatar {
+  width: 46px;
+  height: 46px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #2563eb;
+  color: white;
+
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.posLockUser > div:last-child {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.posLockUser strong {
+  color: #0f172a;
+
+  font-size: 15px;
+}
+
+.posLockUser span {
+  color: #64748b;
+
+  font-size: 13px;
+}
+
+.posUnlockForm {
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+
+  text-align: left;
+}
+
+.posUnlockForm label {
+  color: #334155;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.posUnlockForm input {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 15px 16px;
+
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+
+  outline: none;
+
+  text-align: center;
+
+  font-size: 22px;
+  font-weight: 800;
+
+  letter-spacing: 8px;
+
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.posUnlockForm input:focus {
+  border-color: #2563eb;
+
+  background: white;
+}
+
+.posUnlockForm button {
+  width: 100%;
+
+  margin-top: 6px;
+  padding: 15px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: #2563eb;
+  color: white;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.posUnlockForm button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.posUnlockError {
+  padding: 10px 12px;
+
+  border-radius: 10px;
+
+  background: #fef2f2;
+  color: #dc2626;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  text-align: center;
+}
+
+.posLockInfo {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+
+  margin-top: 22px;
+  padding-top: 18px;
+
+  border-top: 1px solid #e2e8f0;
+}
+
+.posLockInfo span {
+  color: #15803d;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.posLockInfo small {
+  color: #94a3b8;
+
+  font-size: 12px;
+}

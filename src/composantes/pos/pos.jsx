@@ -9,6 +9,7 @@ import {
   addDoc,
   updateDoc,
   doc,
+  getDoc,
   serverTimestamp,
   runTransaction,
 } from "firebase/firestore";
@@ -22,6 +23,17 @@ function POS() {
   // ==============================
   const navigate = useNavigate();
   const [showPosMenu, setShowPosMenu] = useState(false);
+  // ==============================
+// VERROUILLAGE DU POS
+// ==============================
+
+const [posLocked, setPosLocked] = useState(false);
+const [unlockCode, setUnlockCode] = useState("");
+const [unlockError, setUnlockError] = useState("");
+const [unlocking, setUnlocking] = useState(false);
+
+// 5 minutes sans activité
+const POS_INACTIVITY_TIME = 5 * 60 * 1000;
   const [products, setProducts] = useState([]);
   const [ticket, setTicket] = useState([]);
   const [search, setSearch] = useState("");
@@ -210,6 +222,237 @@ useEffect(() => {
   const userRole =
     session?.role || "cashier";
 
+  // ==============================
+// VERROUILLER LE POS
+// ==============================
+
+const lockPOS = () => {
+  setShowPosMenu(false);
+  setUnlockCode("");
+  setUnlockError("");
+  setPosLocked(true);
+};
+
+// ==============================
+// VERROUILLAGE AUTOMATIQUE
+// ==============================
+
+useEffect(() => {
+  // Le compteur ne doit fonctionner que
+  // lorsqu'une caisse est réellement ouverte.
+  if (!cashSession || posLocked) {
+    return;
+  }
+
+  let inactivityTimer = null;
+
+  const startTimer = () => {
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+    }
+
+    inactivityTimer = setTimeout(() => {
+      setShowPosMenu(false);
+      setUnlockCode("");
+      setUnlockError("");
+      setPosLocked(true);
+    }, POS_INACTIVITY_TIME);
+  };
+
+  const handleActivity = () => {
+    startTimer();
+  };
+
+  const events = [
+    "mousedown",
+    "touchstart",
+    "keydown",
+    "click",
+  ];
+
+  events.forEach((eventName) => {
+    window.addEventListener(
+      eventName,
+      handleActivity
+    );
+  });
+
+  startTimer();
+
+  return () => {
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+    }
+
+    events.forEach((eventName) => {
+      window.removeEventListener(
+        eventName,
+        handleActivity
+      );
+    });
+  };
+}, [cashSession, posLocked]);
+
+// ==============================
+// DÉVERROUILLER LE POS
+// ==============================
+
+const unlockPOS = async (event) => {
+  event.preventDefault();
+
+  const enteredCode = unlockCode.trim();
+
+  if (!enteredCode) {
+    setUnlockError(
+      "Veuillez entrer votre code."
+    );
+    return;
+  }
+
+  if (!storeId || !userId) {
+    setUnlockError(
+      "Session utilisateur introuvable."
+    );
+    return;
+  }
+
+  // La vérification du code nécessite Firebase.
+  if (!navigator.onLine) {
+    setUnlockError(
+      "Connexion Internet nécessaire pour déverrouiller le POS."
+    );
+    return;
+  }
+
+  try {
+    setUnlocking(true);
+    setUnlockError("");
+
+    // ==================================
+    // ADMINISTRATEUR
+    // ==================================
+
+    if (userRole === "admin") {
+      const settingsRef = doc(
+        db,
+        "settings",
+        storeId
+      );
+
+      const settingsSnapshot =
+        await getDoc(settingsRef);
+
+      if (!settingsSnapshot.exists()) {
+        setUnlockError(
+          "Paramètres du magasin introuvables."
+        );
+        return;
+      }
+
+      const settingsData =
+        settingsSnapshot.data();
+
+      const adminPosCode = String(
+        settingsData.adminPosCode || ""
+      ).trim();
+
+      if (
+        !adminPosCode ||
+        adminPosCode !== enteredCode
+      ) {
+        setUnlockError(
+          "Code incorrect."
+        );
+        setUnlockCode("");
+        return;
+      }
+
+      setPosLocked(false);
+      setUnlockCode("");
+      setUnlockError("");
+
+      return;
+    }
+
+    // ==================================
+    // EMPLOYÉ / MANAGER
+    // ==================================
+
+    const userRef = doc(
+      db,
+      "users",
+      userId
+    );
+
+    const userSnapshot =
+      await getDoc(userRef);
+
+    if (!userSnapshot.exists()) {
+      setUnlockError(
+        "Utilisateur introuvable."
+      );
+      return;
+    }
+
+    const userData =
+      userSnapshot.data();
+
+    // Sécurité :
+    // vérifier qu'il appartient toujours
+    // au même magasin.
+    if (userData.storeId !== storeId) {
+      setUnlockError(
+        "Cet utilisateur n'appartient pas à ce magasin."
+      );
+      return;
+    }
+
+    // Vérifier qu'il n'a pas été désactivé.
+    if (userData.status === "inactive") {
+      setUnlockError(
+        "Ce compte a été désactivé."
+      );
+      return;
+    }
+
+    const employeeCode = String(
+      userData.code || ""
+    ).trim();
+
+    if (
+      !employeeCode ||
+      employeeCode !== enteredCode
+    ) {
+      setUnlockError(
+        "Code incorrect."
+      );
+
+      setUnlockCode("");
+
+      return;
+    }
+
+    // ==================================
+    // CODE CORRECT
+    // ==================================
+
+    setPosLocked(false);
+    setUnlockCode("");
+    setUnlockError("");
+
+  } catch (error) {
+    console.error(
+      "Erreur déverrouillage POS :",
+      error
+    );
+
+    setUnlockError(
+      "Impossible de vérifier le code. Vérifiez votre connexion."
+    );
+  } finally {
+    setUnlocking(false);
+  }
+};
   // ==============================
   // VÉRIFIER LA CAISSE
   // ==============================
@@ -2097,6 +2340,122 @@ useEffect(() => {
   // POS
   // ==============================
 
+  // ==============================
+// ÉCRAN POS VERROUILLÉ
+// ==============================
+
+if (posLocked && cashSession) {
+  return (
+    <div className={styles.posLockScreen}>
+
+      <div className={styles.posLockCard}>
+
+        <div className={styles.posLockStatus}>
+          POS VERROUILLÉ
+        </div>
+
+        <h1>
+          Point de vente verrouillé
+        </h1>
+
+        <p className={styles.posLockDescription}>
+          Entrez votre code personnel
+          pour reprendre votre session.
+        </p>
+
+        <div className={styles.posLockUser}>
+
+          <div className={styles.posLockAvatar}>
+            {userName
+              .charAt(0)
+              .toUpperCase()}
+          </div>
+
+          <div>
+            <strong>
+              {userName}
+            </strong>
+
+            <span>
+              {userRole === "admin"
+                ? "Administrateur"
+                : userRole === "manager"
+                ? "Gérant"
+                : "Caissier"}
+            </span>
+          </div>
+
+        </div>
+
+        <form
+          onSubmit={unlockPOS}
+          className={styles.posUnlockForm}
+        >
+
+          <label>
+            Code d'accès
+          </label>
+
+          <input
+            type="password"
+            inputMode="numeric"
+            maxLength={6}
+            autoFocus
+            value={unlockCode}
+            placeholder="••••••"
+            onChange={(event) => {
+              setUnlockCode(
+                event.target.value.replace(
+                  /\D/g,
+                  ""
+                )
+              );
+
+              setUnlockError("");
+            }}
+          />
+
+          {unlockError && (
+            <div
+              className={
+                styles.posUnlockError
+              }
+            >
+              {unlockError}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={
+              unlocking ||
+              !unlockCode
+            }
+          >
+            {unlocking
+              ? "VÉRIFICATION..."
+              : " DÉVERROUILLER"}
+          </button>
+
+        </form>
+
+        <div className={styles.posLockInfo}>
+          <span>
+            Caisse toujours ouverte
+          </span>
+
+          <small>
+            Votre ticket et votre session
+            sont conservés.
+          </small>
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
   return (
     <div className={styles.pos}>
 
@@ -2156,6 +2515,21 @@ useEffect(() => {
           <small>Voir le résumé et fermer la caisse</small>
         </div>
       </button>
+
+      <button
+  type="button"
+  onClick={lockPOS}
+>
+  <div>
+    <strong>
+      🔒 Verrouiller le POS
+    </strong>
+
+    <small>
+      Sécuriser temporairement la caisse
+    </small>
+  </div>
+</button>
     </div>
   )}
 </div>

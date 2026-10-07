@@ -17,6 +17,7 @@ import SalesHistory from "./composantes/pos/SalesHistory";
 import Expenses from "./composantes/pos/Expenses";
 import CashClosing from "./composantes/pos/CashClosing";
 import ProductDetails from "./composantes/produit/ProductDetails";
+import Calendar from "./composantes/calendror/Calendar";
 
 function App() {
   return (
@@ -189,6 +190,15 @@ function App() {
         element={
           <ProtectedRoute permission="products">
             <ProductDetails />
+          </ProtectedRoute>
+        }
+      />
+
+       <Route
+        path="/calendar"
+        element={
+          <ProtectedRoute permission="calendar">
+            <Calendar />
           </ProtectedRoute>
         }
       />

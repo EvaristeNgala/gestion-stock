@@ -1,92 +1,181 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./dashbord.module.css";
 
 function Dashboard() {
-
   const navigate = useNavigate();
 
+  // ==============================
+  // MENU LATERAL
+  // ==============================
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showAccountInfo, setShowAccountInfo] = useState(false);
+  const [showStoreInfo, setShowStoreInfo] = useState(false);
 
   // ==============================
   // RÉCUPÉRER LA SESSION
   // ==============================
 
-  const savedSession =
-    localStorage.getItem("storeSession");
+  let session = null;
 
-  const session = savedSession
-    ? JSON.parse(savedSession)
-    : null;
+  try {
+    const savedSession = localStorage.getItem("storeSession");
 
+    session = savedSession
+      ? JSON.parse(savedSession)
+      : null;
+  } catch (error) {
+    console.error("Erreur lecture session :", error);
+  }
 
   // ==============================
   // INFORMATIONS UTILISATEUR
   // ==============================
 
   const userName =
-    session?.name || "Utilisateur";
+    session?.userName ||
+    session?.name ||
+    session?.displayName ||
+    "Utilisateur";
 
   const storeName =
-    session?.storeName || "Mon magasin";
+    session?.storeName ||
+    "Mon magasin";
 
   const storeId =
-    session?.storeId || "";
+    session?.storeId ||
+    "";
 
   const role =
-    session?.role || "Utilisateur";
+    session?.role ||
+    "Utilisateur";
 
+  const email =
+    session?.email ||
+    "";
+
+  const phone =
+    session?.phone ||
+    "";
+
+  const roleLabel =
+    role === "admin"
+      ? "Administrateur"
+      : role === "manager"
+        ? "Gérant"
+        : role === "cashier"
+          ? "Caissier"
+          : "Utilisateur";
 
   // ==============================
   // CARTES DU DASHBOARD
   // ==============================
 
   const cards = [
-
     {
       title: "Produits",
       description: "Gestion des produits",
       path: "/products",
-      icon: "📦"
+      icon: "📦",
     },
 
     {
       title: "Stock",
       description: "Gestion des stocks",
       path: "/stock",
-      icon: "🏪"
+      icon: "🏪",
     },
 
     {
       title: "POS",
       description: "Point de vente",
       path: "/pos",
-      icon: "💳"
+      icon: "💳",
     },
 
     {
       title: "Rapports",
       description: "Statistiques et rapports",
       path: "/reports",
-      icon: "📊"
+      icon: "📊",
     },
 
     {
       title: "Paramètres",
       description: "Configuration du magasin",
       path: "/settings",
-      icon: "⚙️"
-    }
-
+      icon: "⚙️",
+    },
   ];
 
+  // ==============================
+  // OUVRIR / FERMER MENU
+  // ==============================
+
+  const openMenu = () => {
+    setMenuOpen(true);
+  };
+
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setShowAccountInfo(false);
+    setShowStoreInfo(false);
+  };
+
+  // ==============================
+  // MON COMPTE
+  // ==============================
+
+  const handleAccount = () => {
+    setShowAccountInfo((prev) => !prev);
+    setShowStoreInfo(false);
+  };
+
+  // ==============================
+  // MON MAGASIN
+  // ==============================
+
+  const handleStore = () => {
+    setShowStoreInfo((prev) => !prev);
+    setShowAccountInfo(false);
+  };
+
+  // ==============================
+  // PARAMÈTRES
+  // ==============================
+
+  const handleSettings = () => {
+    closeMenu();
+    navigate("/settings");
+  };
+
+  // ==============================
+  // DÉCONNEXION
+  // ==============================
+
+  const handleLogout = () => {
+    const confirmation = window.confirm(
+      "Voulez-vous vraiment vous déconnecter ?"
+    );
+
+    if (!confirmation) {
+      return;
+    }
+
+    localStorage.removeItem("storeSession");
+
+    setMenuOpen(false);
+
+    navigate("/");
+  };
 
   // ==============================
   // AFFICHAGE
   // ==============================
 
   return (
-
     <div className={styles.dashboard}>
-
 
       {/* ============================== */}
       {/* EN-TÊTE */}
@@ -94,29 +183,35 @@ function Dashboard() {
 
       <header className={styles.header}>
 
-        <div className={styles.menu}>
+        <button
+          type="button"
+          className={styles.menuButton}
+          onClick={openMenu}
+          aria-label="Ouvrir le menu"
+        >
           ☰
-        </div>
+        </button>
 
         <h1>
           Stock Manager
         </h1>
 
-        <div className={styles.logo}>
-          🏪
-        </div>
+        <button
+          type="button"
+          className={styles.calendarButton}
+          onClick={() => navigate("/calendar")}
+          aria-label="Ouvrir le calendrier"
+        >
+          📅
+        </button>
 
       </header>
-
 
       {/* ============================== */}
       {/* INFORMATIONS UTILISATEUR */}
       {/* ============================== */}
 
       <section className={styles.userCard}>
-
-       
-
 
         <div>
 
@@ -129,27 +224,12 @@ function Dashboard() {
           </p>
 
           <span>
-            {role === "admin"
-              ? "Administrateur"
-              : role === "manager"
-                ? "Gérant"
-                : role === "cashier"
-                  ? "Caissier"
-                  : "Utilisateur"
-            }
+            {roleLabel}
           </span>
 
         </div>
 
       </section>
-
-
-      {/* ============================== */}
-      {/* INFORMATIONS MAGASIN */}
-      {/* ============================== */}
-
-      
-
 
       {/* ============================== */}
       {/* MODULES */}
@@ -161,15 +241,14 @@ function Dashboard() {
 
           <button
             key={item.title}
+            type="button"
             className={styles.card}
             onClick={() => navigate(item.path)}
           >
 
-            
-
             <h2
               style={{
-                color: "#1e3a8a"
+                color: "#1e3a8a",
               }}
             >
               {item.title}
@@ -177,7 +256,7 @@ function Dashboard() {
 
             <p
               style={{
-                marginTop: "-10px"
+                marginTop: "-10px",
               }}
             >
               {item.description}
@@ -189,34 +268,229 @@ function Dashboard() {
 
       </section>
 
+      {/* ============================== */}
+      {/* FOND SOMBRE DU MENU */}
+      {/* ============================== */}
+
+      {menuOpen && (
+        <div
+          className={styles.menuOverlay}
+          onClick={closeMenu}
+        />
+      )}
 
       {/* ============================== */}
-      {/* NAVIGATION BASSE */}
+      {/* MENU LATÉRAL */}
       {/* ============================== */}
 
-      <nav className={styles.bottomNav}>
+      <aside
+        className={`${styles.sideMenu} ${
+          menuOpen ? styles.sideMenuOpen : ""
+        }`}
+      >
 
-        <button className={styles.active}>
-          🏠
-        </button>
+        {/* EN-TÊTE DU MENU */}
 
-        <button>
-          🔔
-        </button>
+        <div className={styles.sideMenuHeader}>
 
-        <button>
-          🧾
-        </button>
+          <div>
 
-        <button>
-          👤
-        </button>
+            <span className={styles.sideMenuLabel}>
+              STOCK MANAGER
+            </span>
 
-      </nav>
+            <h2>
+              {storeName}
+            </h2>
+
+          </div>
+
+          <button
+            type="button"
+            className={styles.closeMenuButton}
+            onClick={closeMenu}
+            aria-label="Fermer le menu"
+          >
+            ✕
+          </button>
+
+        </div>
+
+        {/* UTILISATEUR */}
+
+        <div className={styles.menuUser}>
+
+          <div className={styles.menuAvatar}>
+            👤
+          </div>
+
+          <div>
+
+            <strong>
+              {userName}
+            </strong>
+
+            <span>
+              {roleLabel}
+            </span>
+
+          </div>
+
+        </div>
+
+        {/* OPTIONS */}
+
+        <nav className={styles.menuNavigation}>
+
+          {/* MON COMPTE */}
+
+          <button
+            type="button"
+            className={styles.menuItem}
+            onClick={handleAccount}
+          >
+
+            
+
+            <span className={styles.menuItemText}>
+              <strong>Mon compte</strong>
+              <small>
+                Informations personnelles
+              </small>
+            </span>
+
+            <span className={styles.menuArrow}>
+              {showAccountInfo ? "⌃" : "›"}
+            </span>
+
+          </button>
+
+          {showAccountInfo && (
+
+            <div className={styles.menuDetails}>
+
+              <div>
+                <span>Nom</span>
+                <strong>{userName}</strong>
+              </div>
+
+              <div>
+                <span>Rôle</span>
+                <strong>{roleLabel}</strong>
+              </div>
+
+              {email && (
+                <div>
+                  <span>Email</span>
+                  <strong>{email}</strong>
+                </div>
+              )}
+
+              {phone && (
+                <div>
+                  <span>Téléphone</span>
+                  <strong>{phone}</strong>
+                </div>
+              )}
+
+            </div>
+
+          )}
+
+          {/* MON MAGASIN */}
+
+          <button
+            type="button"
+            className={styles.menuItem}
+            onClick={handleStore}
+          >
+
+            
+
+            <span className={styles.menuItemText}>
+              <strong>Mon magasin</strong>
+              <small>
+                Informations du magasin
+              </small>
+            </span>
+
+            <span className={styles.menuArrow}>
+              {showStoreInfo ? "⌃" : "›"}
+            </span>
+
+          </button>
+
+          {showStoreInfo && (
+
+            <div className={styles.menuDetails}>
+
+              <div>
+                <span>Magasin</span>
+                <strong>{storeName}</strong>
+              </div>
+
+              {storeId && (
+                <div>
+                  <span>Identifiant</span>
+                  <strong className={styles.storeId}>
+                    {storeId}
+                  </strong>
+                </div>
+              )}
+
+            </div>
+
+          )}
+
+          {/* PARAMÈTRES */}
+
+          <button
+            type="button"
+            className={styles.menuItem}
+            onClick={handleSettings}
+          >
+
+           
+
+            <span className={styles.menuItemText}>
+              <strong>Paramètres</strong>
+              <small>
+                Configuration du magasin
+              </small>
+            </span>
+
+            <span className={styles.menuArrow}>
+              ›
+            </span>
+
+          </button>
+
+        </nav>
+
+        {/* DÉCONNEXION */}
+
+        <div className={styles.logoutSection}>
+
+          <button
+            type="button"
+            className={styles.logoutButton}
+            onClick={handleLogout}
+          >
+
+            
+
+            <span>
+              Se déconnecter
+            </span>
+
+          </button>
+
+        </div>
+
+      </aside>
 
     </div>
   );
 }
-
 
 export default Dashboard;
