@@ -247,7 +247,6 @@ function Settings() {
         <div className={styles.settingsGrid}>
           <section className={styles.settingsCard}>
             <div className={styles.cardHeader}>
-              <div className={styles.cardIcon}>🏪</div>
               <div>
                 <h2>Magasin</h2>
                 <p>Informations générales du magasin</p>
@@ -302,7 +301,6 @@ function Settings() {
 
           <section className={styles.settingsCard}>
             <div className={styles.cardHeader}>
-              <div className={styles.cardIcon}>👤</div>
               <div>
                 <h2>Administrateur</h2>
                 <p>Informations du responsable du magasin</p>
@@ -334,7 +332,6 @@ function Settings() {
 
           <section className={styles.settingsCard}>
             <div className={styles.cardHeader}>
-              <div className={styles.cardIcon}>🔐</div>
               <div>
                 <h2>Sécurité et accès</h2>
                 <p>Code administrateur et accès employés</p>
@@ -412,7 +409,6 @@ function Settings() {
 
           <section className={styles.settingsCard}>
             <div className={styles.cardHeader}>
-              <div className={styles.cardIcon}>📦</div>
               <div>
                 <h2>Stock</h2>
                 <p>Configuration des alertes de stock</p>
@@ -454,7 +450,6 @@ function Settings() {
             className={`${styles.settingsCard} ${styles.employeeCard}`}
           >
             <div className={styles.cardHeader}>
-              <div className={styles.cardIcon}>👥</div>
               <div>
                 <h2>Employés</h2>
                 <p>Gestion des utilisateurs et permissions</p>

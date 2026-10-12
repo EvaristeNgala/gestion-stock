@@ -11,6 +11,16 @@
   box-sizing: border-box;
 }
 
+.showCodeButton{
+  border-radius: 4px;
+  padding: 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  color: #d1d5db;
+  background-color: #2563eb;
+  border: none;
+}
+
 /* =========================================
    HEADER
 ========================================= */

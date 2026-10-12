@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Capacitor, registerPlugin } from "@capacitor/core";
+
+const ReceiptPrinter = registerPlugin("ReceiptPrinter");
 
 import {
   collection,
@@ -12,6 +15,8 @@ import {
   getDoc,
   serverTimestamp,
   runTransaction,
+  getDocsFromServer,
+  getDocs,
 } from "firebase/firestore";
 
 import { db } from "../../firebase";
@@ -64,6 +69,16 @@ const POS_INACTIVITY_TIME = 5 * 60 * 1000;
   // ==============================
 
   const [session, setSession] = useState(null);
+  // L'identité de caisse est toujours celle du compte connecté.
+  const posChoosingUser = false;
+  const [authorizedUsers, setAuthorizedUsers] = useState([]);
+  const [selectedCashierId, setSelectedCashierId] = useState("");
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState("");
+  const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [openingPin, setOpeningPin] = useState("");
+  const [pinChecking, setPinChecking] = useState(false);
+  const [pinError, setPinError] = useState("");
 
   // ==============================
   // CAISSE
@@ -76,6 +91,8 @@ const POS_INACTIVITY_TIME = 5 * 60 * 1000;
 
   const [openingCash, setOpeningCash] =
     useState(false);
+  const [openingAmount, setOpeningAmount] = useState("");
+  const [openingAmountError, setOpeningAmountError] = useState("");
 
   const [closingCash, setClosingCash] =
     useState(false);
@@ -104,12 +121,35 @@ const [isOnline, setIsOnline] = useState(
 const [pendingSalesCount, setPendingSalesCount] =
   useState(0);
 
-const [syncingSales, setSyncingSales] =
-  useState(false);
+const [syncingSales, setSyncingSales] = useState(false);
+const syncBusyRef = useRef(false);
+const [showSyncCenter, setShowSyncCenter] = useState(false);
+const [syncProgress, setSyncProgress] = useState({ done: 0, total: 0 });
+const [syncErrors, setSyncErrors] = useState({});
+const [syncNotice, setSyncNotice] = useState("");
+const getSyncErrorLabel = (error) => {
+  const message = String(error?.message || "");
+  if (message.includes("SYNC_STOCK_INSUFFICIENT")) return "Conflit de stock : intervention de l'administrateur requise";
+  if (message.includes("SYNC_PRODUCT_NOT_FOUND")) return "Produit introuvable : intervention de l'administrateur requise";
+  if (message.includes("SYNC_CASH_SESSION_NOT_FOUND")) return "Session de caisse introuvable";
+  if (error?.code === "permission-denied") return "Accès Firebase refusé : vérifier les autorisations";
+  if (error?.code === "unavailable" || error?.code === "deadline-exceeded") return "Connexion à Firebase indisponible";
+  return "Échec de synchronisation : consulter les journaux ou réessayer";
+};
 
 useEffect(() => {
   const handleOnline = () => {
     console.log("🟢 Connexion Internet rétablie");
+    // Afficher le suivi seulement au retour de connexion,
+    // et uniquement si des ventes hors ligne attendent un envoi.
+    try {
+      const sales = JSON.parse(localStorage.getItem("stockManagerOfflineSales") || "[]");
+      if (Array.isArray(sales) && sales.length > 0) {
+        setShowSyncCenter(true);
+      }
+    } catch (error) {
+      console.error("Lecture des ventes en attente impossible", error);
+    }
     setIsOnline(true);
   };
 
@@ -133,6 +173,19 @@ useEffect(() => {
 // ==============================
 
 const OFFLINE_SALES_KEY = "stockManagerOfflineSales";
+// Historique durable sur cet appareil, distinct de la file de synchronisation.
+const LOCAL_HISTORY_KEY = "stockManagerLocalSalesHistory";
+const persistLocalSale = (sale) => {
+  const existing = JSON.parse(localStorage.getItem(LOCAL_HISTORY_KEY) || "[]");
+  const list = Array.isArray(existing) ? existing : [];
+  const key = sale.offlineSaleId;
+  const index = list.findIndex((item) => item.offlineSaleId === key);
+  if (index >= 0) list[index] = { ...list[index], ...sale };
+  else list.push(sale);
+  localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(list));
+  window.dispatchEvent(new Event("stockManagerSalesChanged"));
+};
+
 
 const getOfflineSales = () => {
   try {
@@ -157,6 +210,7 @@ const saveOfflineSales = (sales) => {
   );
 
   setPendingSalesCount(sales.length);
+  window.dispatchEvent(new Event("stockManagerSalesChanged"));
 };
 
 
@@ -208,24 +262,73 @@ useEffect(() => {
 
   const storeId = session?.storeId || null;
 
-  const userId =
-    session?.uid ||
-    session?.userId ||
-    null;
+  const connectedUserId = session?.uid || session?.userId || null;
+  const connectedUserName = session?.userName || session?.name || session?.displayName || "Utilisateur";
+  const connectedRole = session?.role || "cashier";
+  const CASHIER_KEY = "stockManagerActiveCashier";
 
-  const userName =
-    session?.userName ||
-    session?.name ||
-    session?.displayName ||
-    "Utilisateur";
+  // Identité POS : toujours celle de la session connectée.
+  // Ne jamais réutiliser l'ancien caissier sauvegardé sur cet appareil.
+  useEffect(() => {
+    if (!storeId || !connectedUserId) {
+      setAuthorizedUsers([]);
+      setSelectedCashierId("");
+      setUsersLoading(false);
+      return;
+    }
+    setUsersLoading(true);
+    const unsubscribe = onSnapshot(
+      doc(db, "users", connectedUserId),
+      (snapshot) => {
+        const data = snapshot.exists() ? snapshot.data() : null;
+        const isAdmin = connectedRole === "admin" && session?.loginMode === "admin";
+        const allowed = isAdmin || (
+          data?.storeId === storeId &&
+          data?.status !== "inactive" &&
+          data?.canAccessPOS !== false &&
+          data?.permissions?.pos === true
+        );
+        setAuthorizedUsers(allowed ? [{
+          id: connectedUserId,
+          name: data?.name || connectedUserName,
+          role: data?.role || connectedRole
+        }] : []);
+        setSelectedCashierId(allowed ? connectedUserId : "");
+        setUsersError(allowed ? "" : "Ce compte n'est pas autorisé à utiliser la caisse.");
+        setUsersLoading(false);
+      },
+      (error) => {
+        console.error("Vérification de l'utilisateur POS :", error);
+        setAuthorizedUsers([]);
+        setSelectedCashierId("");
+        setUsersError("Impossible de vérifier les droits de ce compte.");
+        setUsersLoading(false);
+      }
+    );
+    return () => unsubscribe();
+  }, [storeId, connectedUserId, connectedRole, connectedUserName, session?.loginMode]);
 
-  const userRole =
-    session?.role || "cashier";
+  const selectedCashier = authorizedUsers.find((u) => u.id === connectedUserId);
+  const userId = selectedCashier?.id || null;
+  const userName = selectedCashier?.name || connectedUserName;
+  const userRole = selectedCashier?.role || connectedRole;
+
+  // Garder le caissier actif pour les pages de clôture et d'historique.
+  useEffect(() => {
+    if (!cashSession?.id || !storeId || !userId) return;
+    localStorage.setItem(CASHIER_KEY, JSON.stringify({
+      storeId, userId, userName, role: userRole, cashSessionId: cashSession.id,
+    }));
+  }, [cashSession?.id, storeId, userId, userName, userRole]);
 
   // ==============================
 // VERROUILLER LE POS
 // ==============================
 
+// Déconnexion contrôlée : vérifier la caisse dans Firestore, et non
+// seulement dans l'état React (qui peut être périmé).
+// La déconnexion générale se fait uniquement depuis le Dashboard.
+// La caisse se clôture dans CashClosing ; ensuite le POS demande un autre utilisateur.
 const lockPOS = () => {
   setShowPosMenu(false);
   setUnlockCode("");
@@ -297,158 +400,95 @@ useEffect(() => {
 // DÉVERROUILLER LE POS
 // ==============================
 
+// Utiliser les champs réellement enregistrés par Settings et Employees.
+// Pour l'admin : settings/{storeId}.adminPosCode est prioritaire.
+// Pour un employé : users/{userId}.code est prioritaire.
+const verifyCashierPin = async (cashierId, cashierRole, enteredPin) => {
+  if (!storeId || !cashierId) throw new Error("Utilisateur ou magasin introuvable.");
+  const snap = await getDoc(doc(db, "users", cashierId));
+  const data = snap.exists() ? snap.data() : null;
+  // Seul l'administrateur de la session connectée peut utiliser le
+  // compte admin sans document users. Ne pas se fier au rôle affiché seul.
+  const isConnectedAdmin = connectedRole === "admin" && cashierId === connectedUserId;
+  const isAdmin = data?.role === "admin" || (!data && isConnectedAdmin && cashierRole === "admin");
+  if (!data && !isAdmin) throw new Error("Compte utilisateur introuvable.");
+  if (data && (data.storeId !== storeId || data.status === "inactive" || data.canAccessPOS === false)) {
+    throw new Error("Utilisateur non autorisé à utiliser le POS.");
+  }
+  if (!isAdmin && data?.permissions?.pos !== true) {
+    throw new Error("Cet employé n'a pas accès au POS.");
+  }
+  let expected = "";
+  if (isAdmin) {
+    const settingsSnap = await getDoc(doc(db, "settings", storeId));
+    expected = settingsSnap.exists() ? String(settingsSnap.data().adminPosCode ?? "").trim() : "";
+    if (!expected) expected = String(data?.code || data?.posPin || "").trim();
+  } else {
+    expected = String(data?.code || data?.posPin || "").trim();
+  }
+  if (!expected) throw new Error(isAdmin ? "Configurez le code administrateur dans Paramètres." : "Aucun code POS configuré pour cet employé.");
+  if (expected !== enteredPin.trim()) throw new Error("Code PIN incorrect.");
+  return true;
+};
+
 const unlockPOS = async (event) => {
   event.preventDefault();
-
   const enteredCode = unlockCode.trim();
-
   if (!enteredCode) {
-    setUnlockError(
-      "Veuillez entrer votre code."
-    );
+    setUnlockError("Veuillez entrer votre code.");
     return;
   }
-
-  if (!storeId || !userId) {
-    setUnlockError(
-      "Session utilisateur introuvable."
-    );
+  // Toujours vérifier le propriétaire de la caisse verrouillée,
+  // même si la sélection d'utilisateur est actualisée entre-temps.
+  const lockedCashierId = cashSession?.userId;
+  const lockedCashierRole = cashSession?.role || userRole;
+  if (!storeId || !cashSession?.id || !lockedCashierId) {
+    setUnlockError("Aucune session de caisse active pour cet utilisateur.");
     return;
   }
-
-  // La vérification du code nécessite Firebase.
   if (!navigator.onLine) {
-    setUnlockError(
-      "Connexion Internet nécessaire pour déverrouiller le POS."
-    );
+    setUnlockError("Connexion Internet nécessaire pour déverrouiller le POS.");
     return;
   }
-
   try {
     setUnlocking(true);
     setUnlockError("");
+    // Le code du propriétaire de la caisse reste valable. Le code
+    // administrateur du même magasin peut aussi déverrouiller cette caisse,
+    // sans changer son propriétaire ni créer une nouvelle session.
+    let authorized = false;
+    let ownerError = null;
+    try {
+      await verifyCashierPin(lockedCashierId, lockedCashierRole, enteredCode);
+      authorized = true;
+    } catch (error) {
+      ownerError = error;
+    }
 
-    // ==================================
-    // ADMINISTRATEUR
-    // ==================================
-
-    if (userRole === "admin") {
-      const settingsRef = doc(
-        db,
-        "settings",
-        storeId
-      );
-
-      const settingsSnapshot =
-        await getDoc(settingsRef);
-
-      if (!settingsSnapshot.exists()) {
-        setUnlockError(
-          "Paramètres du magasin introuvables."
-        );
-        return;
+    if (!authorized) {
+      // Autorisation supplémentaire : code administrateur du magasin.
+      // Le document settings est lié au storeId courant, pas au caissier.
+      const adminSettings = await getDoc(doc(db, "settings", storeId));
+      const adminData = adminSettings.exists() ? adminSettings.data() : null;
+      const adminPin = String(adminData?.adminPosCode ?? "").trim();
+      const sameStore = !adminData?.storeId || adminData.storeId === storeId;
+      if (sameStore && adminPin && adminPin === enteredCode) {
+        authorized = true;
       }
-
-      const settingsData =
-        settingsSnapshot.data();
-
-      const adminPosCode = String(
-        settingsData.adminPosCode || ""
-      ).trim();
-
-      if (
-        !adminPosCode ||
-        adminPosCode !== enteredCode
-      ) {
-        setUnlockError(
-          "Code incorrect."
-        );
-        setUnlockCode("");
-        return;
-      }
-
-      setPosLocked(false);
-      setUnlockCode("");
-      setUnlockError("");
-
-      return;
     }
 
-    // ==================================
-    // EMPLOYÉ / MANAGER
-    // ==================================
-
-    const userRef = doc(
-      db,
-      "users",
-      userId
-    );
-
-    const userSnapshot =
-      await getDoc(userRef);
-
-    if (!userSnapshot.exists()) {
-      setUnlockError(
-        "Utilisateur introuvable."
-      );
-      return;
+    if (!authorized) {
+      // Ne pas divulguer si un code administrateur existe ou non.
+      if (ownerError?.code === "permission-denied") throw ownerError;
+      throw new Error("Code PIN incorrect.");
     }
-
-    const userData =
-      userSnapshot.data();
-
-    // Sécurité :
-    // vérifier qu'il appartient toujours
-    // au même magasin.
-    if (userData.storeId !== storeId) {
-      setUnlockError(
-        "Cet utilisateur n'appartient pas à ce magasin."
-      );
-      return;
-    }
-
-    // Vérifier qu'il n'a pas été désactivé.
-    if (userData.status === "inactive") {
-      setUnlockError(
-        "Ce compte a été désactivé."
-      );
-      return;
-    }
-
-    const employeeCode = String(
-      userData.code || ""
-    ).trim();
-
-    if (
-      !employeeCode ||
-      employeeCode !== enteredCode
-    ) {
-      setUnlockError(
-        "Code incorrect."
-      );
-
-      setUnlockCode("");
-
-      return;
-    }
-
-    // ==================================
-    // CODE CORRECT
-    // ==================================
-
     setPosLocked(false);
     setUnlockCode("");
     setUnlockError("");
-
   } catch (error) {
-    console.error(
-      "Erreur déverrouillage POS :",
-      error
-    );
-
-    setUnlockError(
-      "Impossible de vérifier le code. Vérifiez votre connexion."
-    );
+    console.error("Erreur déverrouillage POS :", error);
+    setUnlockError(error?.message || "Impossible de vérifier le code. Vérifiez votre connexion.");
+    setUnlockCode("");
   } finally {
     setUnlocking(false);
   }
@@ -459,6 +499,7 @@ const unlockPOS = async (event) => {
 
   useEffect(() => {
     if (!storeId || !userId) {
+      setCashSession(null);
       if (session) {
         setCashLoading(false);
       }
@@ -516,28 +557,53 @@ const unlockPOS = async (event) => {
   // ==============================
 
   const openCashRegister = async () => {
-    if (!storeId || !userId) {
-      alert(
-        "Impossible d'ouvrir la caisse : session utilisateur introuvable."
-      );
-
-      return;
+    if (!storeId || !userId || !selectedCashier) {
+            return;
     }
 
     if (cashSession) {
-      alert("La caisse est déjà ouverte.");
       return;
     }
 
-    const confirmation = window.confirm(
-      "Voulez-vous ouvrir la caisse maintenant ?"
-    );
-
-    if (!confirmation) {
+    // Le fonds initial peut être égal à zéro, mais doit être renseigné.
+    const enteredAmount = openingAmount.trim().replace(",", ".");
+    const amount = Number(enteredAmount);
+    if (enteredAmount === "" || !Number.isFinite(amount) || amount < 0) {
+      setOpeningAmountError("Indiquez un montant valide (0 autorisé).");
       return;
     }
+    if (!navigator.onLine) {
+      setOpeningAmountError("Connexion Internet nécessaire pour ouvrir la caisse.");
+      return;
+    }
+    setOpeningAmountError("");
+    setPinError("");
+    setOpeningPin("");
+    setPinModalOpen(true);
+  };
 
+  const confirmOpenCashRegister = async (event) => {
+    event.preventDefault();
+    if (!openingPin.trim() || !storeId || !userId || !selectedCashier) return;
+    if (!navigator.onLine) {
+      setPinError("Connexion Internet nécessaire pour vérifier le PIN.");
+      return;
+    }
+    setPinChecking(true);
+    setPinError("");
     try {
+      // Même vérification pour ouvrir et déverrouiller la caisse.
+      await verifyCashierPin(userId, userRole, openingPin);
+      if (cashSession) throw new Error("Une caisse est déjà ouverte.");
+      const alreadyOpen = await getDocsFromServer(query(
+        collection(db, "cashSessions"),
+        where("storeId", "==", storeId),
+        where("userId", "==", userId),
+        where("status", "==", "open")
+      ));
+      if (!alreadyOpen.empty) throw new Error("Cet utilisateur a déjà une caisse ouverte.");
+      const amount = Number(openingAmount.trim().replace(",", "."));
+      if (!Number.isFinite(amount) || amount < 0) throw new Error("Fonds initial invalide.");
       setOpeningCash(true);
 
       const cashSessionsRef =
@@ -551,6 +617,8 @@ const unlockPOS = async (event) => {
         openedAt: serverTimestamp(),
         closedAt: null,
         status: "open",
+        openingAmount: amount,
+        openingCurrency: "FC",
         totalSales: 0,
         numberOfSales: 0,
         createdAt: serverTimestamp(),
@@ -568,20 +636,19 @@ const unlockPOS = async (event) => {
         openedAt: new Date(),
       });
 
-      alert(
-        "La caisse a été ouverte avec succès."
-      );
+      setOpeningAmount("");
+      setPinModalOpen(false);
     } catch (error) {
       console.error(
         "Erreur ouverture caisse :",
         error
       );
 
-      alert(
-        "Impossible d'ouvrir la caisse. Vérifiez votre connexion."
-      );
+      setPinError(error.message || "Impossible d'ouvrir la caisse.");
     } finally {
       setOpeningCash(false);
+      setPinChecking(false);
+      setOpeningPin("");
     }
   };
 
@@ -591,20 +658,22 @@ const unlockPOS = async (event) => {
 
   const closeCashRegister = async () => {
     if (!cashSession?.id) {
-      alert("Aucune caisse ouverte.");
       return;
     }
 
     if (ticket.length > 0) {
-      alert(
-        "Veuillez terminer ou vider le ticket avant de fermer la caisse."
-      );
-
       setShowTicket(true);
 
       return;
     }
 
+    if (syncBusyRef.current || getOfflineSales().length > 0) {
+      setShowSyncCenter(true);
+       return;
+    }
+    if (!navigator.onLine) {
+       return;
+    }
     const confirmation = window.confirm(
       "Voulez-vous vraiment fermer la caisse ?"
     );
@@ -632,18 +701,10 @@ const unlockPOS = async (event) => {
 
       setCashSession(null);
       setTicket([]);
-
-      alert(
-        "La caisse a été fermée avec succès."
-      );
     } catch (error) {
       console.error(
         "Erreur fermeture caisse :",
         error
-      );
-
-      alert(
-        "Impossible de fermer la caisse. Vérifiez votre connexion."
       );
     } finally {
       setClosingCash(false);
@@ -848,18 +909,10 @@ const unlockPOS = async (event) => {
     product
   ) => {
     if (!cashSession) {
-      alert(
-        "La caisse est fermée. Veuillez d'abord ouvrir la caisse."
-      );
-
       return;
     }
 
     if (product.isActive === false) {
-      alert(
-        "Ce produit n'est pas disponible à la vente."
-      );
-
       return;
     }
 
@@ -887,18 +940,10 @@ const unlockPOS = async (event) => {
     quantityToAdd = 1
   ) => {
     if (!cashSession) {
-      alert(
-        "La caisse est fermée. Veuillez d'abord ouvrir la caisse."
-      );
-
       return false;
     }
 
     if (product.isActive === false) {
-      alert(
-        "Ce produit n'est pas disponible à la vente."
-      );
-
       return false;
     }
 
@@ -931,26 +976,14 @@ const unlockPOS = async (event) => {
     // ==============================
 
     if (quantity <= 0) {
-      alert(
-        "La quantité doit être supérieure à zéro."
-      );
-
       return false;
     }
 
     if (stock <= 0) {
-      alert(
-        "Ce produit est en rupture de stock."
-      );
-
       return false;
     }
 
     if (variantQuantity <= 0) {
-      alert(
-        "La quantité de la variante est invalide."
-      );
-
       return false;
     }
 
@@ -959,13 +992,6 @@ const unlockPOS = async (event) => {
       quantity * variantQuantity;
 
     if (requiredStock > stock) {
-      alert(
-        `Stock insuffisant.\n\nStock disponible : ${stock} ${
-          product.stockUnit || ""
-        }\nStock nécessaire : ${requiredStock} ${
-          product.stockUnit || ""
-        }`
-      );
 
       return false;
     }
@@ -999,14 +1025,6 @@ const unlockPOS = async (event) => {
         newRequiredStock >
         stock
       ) {
-        alert(
-          `Stock insuffisant.\n\nStock disponible : ${stock} ${
-            product.stockUnit || ""
-          }\nStock nécessaire : ${newRequiredStock} ${
-            product.stockUnit || ""
-          }`
-        );
-
         return false;
       }
 
@@ -1097,10 +1115,6 @@ const unlockPOS = async (event) => {
     if (
       conversionQuantity <= 0
     ) {
-      alert(
-        "La quantité de cette variante est invalide."
-      );
-
       return;
     }
 
@@ -1108,12 +1122,6 @@ const unlockPOS = async (event) => {
       stock <
       conversionQuantity
     ) {
-      alert(
-        `Stock insuffisant.\n\nStock disponible : ${stock} ${
-          product.stockUnit || ""
-        }`
-      );
-
       return;
     }
 
@@ -1153,10 +1161,6 @@ const unlockPOS = async (event) => {
       variantQuantity >=
       maxQuantity
     ) {
-      alert(
-        `Stock maximum atteint.\n\nVous pouvez ajouter au maximum ${maxQuantity} ${selectedVariant.type}.`
-      );
-
       return;
     }
 
@@ -1238,12 +1242,6 @@ const unlockPOS = async (event) => {
       requiredStock >
       stock
     ) {
-      alert(
-        `Stock insuffisant.\n\nStock disponible : ${stock} ${
-          item.stockUnit || ""
-        }`
-      );
-
       return;
     }
 
@@ -1380,7 +1378,6 @@ const unlockPOS = async (event) => {
 
   const openPayment = () => {
     if (ticket.length === 0) {
-      alert("Le ticket est vide.");
       return;
     }
 
@@ -1394,7 +1391,6 @@ const unlockPOS = async (event) => {
     if (savingTicket || ticket.length === 0) return;
 
     if (!cashSession?.id || !storeId || !userId) {
-      alert("Session de caisse introuvable.");
       return;
     }
 
@@ -1420,10 +1416,8 @@ const unlockPOS = async (event) => {
       setTicketStep("ticket");
       setCashReceived("");
 
-      alert("Ticket enregistré. Vous pourrez le reprendre plus tard.");
     } catch (error) {
       console.error("Erreur enregistrement ticket :", error);
-      alert("Impossible d'enregistrer le ticket. Vérifiez votre connexion.");
     } finally {
       setSavingTicket(false);
     }
@@ -1435,26 +1429,18 @@ const unlockPOS = async (event) => {
 
 const handleOfflinePayment = async (received) => {
 if (!cashSession?.id) {
-    alert("Aucune caisse ouverte.");
     return false;
   }
 
   if (!storeId || !userId) {
-    alert("Session utilisateur introuvable.");
     return false;
   }
 
   if (ticket.length === 0) {
-    alert("Le ticket est vide.");
     return false;
   }
 
   if (!Number.isFinite(received) || received < total) {
-    alert(
-      `Montant insuffisant. Le client doit payer au moins ${total.toLocaleString(
-        "fr-FR"
-      )} FC.`
-    );
 
     return false;
   }
@@ -1493,10 +1479,6 @@ if (!cashSession?.id) {
       );
 
       if (!product) {
-        alert(
-          "Un produit du ticket n'est plus disponible localement."
-        );
-
         return false;
       }
 
@@ -1504,12 +1486,6 @@ if (!cashSession?.id) {
         Number(product.stock || 0);
 
       if (currentStock < quantityToRemove) {
-        alert(
-          `Stock insuffisant pour ${
-            product.productName || "Produit"
-          }.\n\nStock disponible : ${currentStock}\nStock nécessaire : ${quantityToRemove}`
-        );
-
         return false;
       }
     }
@@ -1652,9 +1628,15 @@ if (!cashSession?.id) {
       offlineSale,
     ];
 
-    saveOfflineSales(
-      updatedOfflineSales
-    );
+    // Enregistrer d'abord dans la file de synchronisation.
+    saveOfflineSales(updatedOfflineSales);
+    // Puis dans l'historique local consultable sans réseau.
+    try {
+      persistLocalSale(offlineSale);
+    } catch (historyError) {
+      console.error("Historique local indisponible :", historyError);
+      // La vente reste conservée dans la file de synchronisation.
+    }
 
     // ==============================
     // DIMINUER LE STOCK À L'ÉCRAN
@@ -1710,11 +1692,6 @@ if (!cashSession?.id) {
       "Erreur vente hors connexion :",
       error
     );
-
-    alert(
-      "Impossible d'enregistrer la vente hors connexion."
-    );
-
     return false;
   } finally {
     setPaying(false);
@@ -1728,17 +1705,17 @@ if (!cashSession?.id) {
 
 const syncOfflineSales = async () => {
   // Pas de réseau ou synchronisation déjà en cours
-  if (!navigator.onLine || syncingSales) {
-    return;
-  }
-
+  if (!navigator.onLine || syncBusyRef.current) return;
+  syncBusyRef.current = true;
   const offlineSales = getOfflineSales();
 
   if (offlineSales.length === 0) {
     setPendingSalesCount(0);
+    syncBusyRef.current = false;
     return;
   }
-
+  setSyncProgress({ done: 0, total: offlineSales.length });
+  setSyncNotice("");
   console.log(
     `🔄 Synchronisation de ${offlineSales.length} vente(s)...`
   );
@@ -1747,7 +1724,8 @@ const syncOfflineSales = async () => {
 
   // On garde ici les ventes qui n'ont pas pu être synchronisées
   const remainingSales = [];
-
+  const failed = {};
+  let processed = 0;
   try {
     for (const sale of offlineSales) {
       try {
@@ -1762,6 +1740,7 @@ const syncOfflineSales = async () => {
           );
 
           remainingSales.push(sale);
+          failed[sale.offlineSaleId || `sans-id-${processed}`] = "Identifiant de vente manquant";
           continue;
         }
 
@@ -2011,6 +1990,11 @@ const syncOfflineSales = async () => {
           }
         );
 
+        try {
+          persistLocalSale({ ...sale, status: "completed", syncedLocallyAt: new Date().toISOString() });
+        } catch (historyError) {
+          console.warn("Impossible d'actualiser l'historique local :", historyError);
+        }
         console.log(
           "✅ Vente synchronisée :",
           sale.offlineSaleId
@@ -2024,6 +2008,7 @@ const syncOfflineSales = async () => {
 
         // Cette vente reste sur le téléphone.
         remainingSales.push(sale);
+        failed[sale.offlineSaleId || `sans-id-${processed}`] = getSyncErrorLabel(error);
 
         /*
          * Si Internet vient encore de disparaître,
@@ -2041,16 +2026,24 @@ const syncOfflineSales = async () => {
 
           break;
         }
+      } finally {
+        processed += 1;
+        setSyncProgress({ done: processed, total: offlineSales.length });
       }
     }
-
+    setSyncErrors(failed);
+    if (Object.keys(failed).length) setSyncNotice("Certaines ventes nécessitent une nouvelle tentative ou une intervention de l'administrateur.");
     // ==============================
     // CONSERVER UNIQUEMENT LES ÉCHECS
     // ==============================
 
-    saveOfflineSales(
-      remainingSales
+    // Une autre vente peut être ajoutée pendant la synchronisation :
+    // ne jamais effacer ces nouvelles ventes.
+    const attemptedIds = new Set(offlineSales.map((sale) => sale.offlineSaleId));
+    const newlyAdded = getOfflineSales().filter(
+      (sale) => !attemptedIds.has(sale.offlineSaleId)
     );
+    saveOfflineSales([...remainingSales, ...newlyAdded]);
 
     if (remainingSales.length === 0) {
       console.log(
@@ -2062,6 +2055,7 @@ const syncOfflineSales = async () => {
       );
     }
   } finally {
+    syncBusyRef.current = false;
     setSyncingSales(false);
   }
 }; 
@@ -2118,8 +2112,49 @@ useEffect(() => {
     setShowTicket(false);
   };
 
-  const printReceipt = () => {
-    window.print();
+  const printReceipt = async () => {
+    if (!lastSale) return;
+
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[char]);
+    const fc = (value) => `${Number(value || 0).toLocaleString("fr-FR")} FC`;
+    const rows = (lastSale.items || []).map((item) => {
+      const quantity = Number(item.quantity || 0);
+      const price = Number(item.price || 0);
+      return `<div class="item"><b>${escapeHtml(item.name)}</b><div class="line"><span>${quantity} x ${fc(price)}${item.variantType ? ` (${escapeHtml(item.variantType)})` : ""}</span><b>${fc(quantity * price)}</b></div></div>`;
+    }).join("");
+    const html = `<!doctype html><html><head><meta charset="UTF-8"/><style>
+      @page { size: 58mm auto; margin: 0; }
+      html, body { margin: 0; padding: 0; background: white; color: black; }
+      body { width: 54mm; padding: 2mm; font: 11px monospace; }
+      h2, .center { text-align: center; } h2 { font-size: 14px; margin: 4px 0; }
+      .line { display: flex; justify-content: space-between; gap: 5px; }
+      .item { margin: 6px 0; overflow-wrap: anywhere; }
+      hr { border: 0; border-top: 1px dashed #333; margin: 7px 0; }
+      .total { font-weight: bold; font-size: 13px; }
+    </style></head><body>
+      <h2>STOCK MANAGER</h2>
+      <div class="center">Ticket de caisse</div>
+      <div class="center">${escapeHtml(new Date().toLocaleString("fr-FR"))}</div>
+      <div>Caissier : ${escapeHtml(userName)}</div>
+      <hr/>${rows}<hr/>
+      <div class="line total"><span>TOTAL</span><span>${fc(lastSale.total)}</span></div>
+      <div class="line"><span>Espèces</span><span>${fc(lastSale.received)}</span></div>
+      <div class="line"><span>Monnaie</span><span>${fc(lastSale.changeAmount)}</span></div>
+      <hr/><div class="center">Merci pour votre achat !</div>
+    </body></html>`;
+
+    try {
+      if (Capacitor.isNativePlatform()) {
+        await ReceiptPrinter.print({ html });
+      } else {
+        window.print();
+      }
+    } catch (error) {
+      console.error("Impression du reçu impossible :", error);
+      window.alert(error?.message || "Impossible de lancer l'impression Android.");
+    }
   };
 
   // ==============================
@@ -2205,7 +2240,7 @@ useEffect(() => {
 
   if (
     !session ||
-    cashLoading
+    (cashLoading && !posChoosingUser) || usersLoading
   ) {
     return (
       <div
@@ -2299,9 +2334,7 @@ useEffect(() => {
                 Utilisateur
               </span>
 
-              <strong>
-                {userName}
-              </strong>
+              <strong>{userName}</strong>
             </div>
 
             <div>
@@ -2315,6 +2348,36 @@ useEffect(() => {
             </div>
           </div>
 
+          {usersError && <p role="alert" style={{ color: "#b91c1c" }}>{usersError}</p>}
+          <div style={{ textAlign: "left", marginBottom: 18 }}>
+            <label htmlFor="openingAmount" style={{ display: "block", fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
+              Fonds de caisse initial (FC)
+            </label>
+            <input
+              id="openingAmount"
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="any"
+              value={openingAmount}
+              onChange={(event) => {
+                setOpeningAmount(event.target.value);
+                setOpeningAmountError("");
+              }}
+              placeholder="Ex. 20000 (ou 0)"
+              disabled={openingCash}
+              style={{ width: "100%", height: 46, padding: "0 12px", border: "1px solid #cbd5e1", borderRadius: 10, fontSize: 16, background: "#fff" }}
+            />
+            <p style={{ fontSize: 12, color: "#64748b", margin: "8px 0 0" }}>
+              Saisissez l'argent déjà présent dans le tiroir avant les ventes.
+            </p>
+            {openingAmountError && (
+              <p role="alert" style={{ color: "#b91c1c", fontSize: 12, marginTop: 8 }}>
+                {openingAmountError}
+              </p>
+            )}
+          </div>
+
           <button
             type="button"
             className={
@@ -2323,14 +2386,33 @@ useEffect(() => {
             onClick={
               openCashRegister
             }
-            disabled={
-              openingCash
-            }
+            disabled={openingCash || !selectedCashierId || usersLoading}
           >
             {openingCash
               ? "Ouverture..."
               : "Ouvrir la caisse"}
           </button>
+          {pinModalOpen && (
+            <div role="dialog" aria-modal="true" aria-label="Confirmer le code PIN"
+              style={{ position: "fixed", inset: 0, background: "#0009", display: "grid", placeItems: "center", zIndex: 9999, padding: 16 }}>
+              <form onSubmit={confirmOpenCashRegister}
+                style={{ width: "100%", maxWidth: 380, background: "white", borderRadius: 14, padding: 24, textAlign: "left" }}>
+                <h2>Confirmation du PIN</h2>
+                <p>Confirmez le code personnel de {userName} pour ouvrir sa caisse.</p>
+                <input autoFocus type="password" inputMode="numeric" autoComplete="off"
+                  value={openingPin} onChange={e => { setOpeningPin(e.target.value); setPinError(""); }}
+                  placeholder="Code PIN personnel" required disabled={pinChecking}
+                  style={{ width: "100%", padding: 12, marginBottom: 12, border: "1px solid #ccc", borderRadius: 8 }}/>
+                {pinError && <p role="alert" style={{ color: "#b91c1c" }}>{pinError}</p>}
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button type="button" disabled={pinChecking} onClick={() => { setPinModalOpen(false); setOpeningPin(""); setPinError(""); }}>Annuler</button>
+                  <button type="submit" disabled={pinChecking || !openingPin.trim()}>
+                    {pinChecking ? "Vérification..." : "Confirmer et ouvrir"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -2366,20 +2448,20 @@ if (posLocked && cashSession) {
         <div className={styles.posLockUser}>
 
           <div className={styles.posLockAvatar}>
-            {userName
+            {(cashSession?.userName || userName)
               .charAt(0)
               .toUpperCase()}
           </div>
 
           <div>
             <strong>
-              {userName}
+              {cashSession?.userName || userName}
             </strong>
 
             <span>
-              {userRole === "admin"
+              {(cashSession?.role || userRole) === "admin"
                 ? "Administrateur"
-                : userRole === "manager"
+                : (cashSession?.role || userRole) === "manager"
                 ? "Gérant"
                 : "Caissier"}
             </span>
@@ -2503,11 +2585,26 @@ if (posLocked && cashSession) {
         </div>
       </button>
 
+      <button type="button" onClick={() => { setShowPosMenu(false); setShowSyncCenter(true); }}>
+        <div><strong>☁️ Synchronisation {pendingSalesCount ? `(${pendingSalesCount})` : ""}</strong>
+        <small>Progression, erreurs et nouvelles tentatives</small></div>
+      </button>
+
       <button
         type="button"
-        onClick={() =>
-          navigate("/cash-closing")
-        }
+        onClick={() => {
+          if (syncBusyRef.current || getOfflineSales().length) {
+            setShowPosMenu(false);
+            setShowSyncCenter(true);
+            alert("Synchronisez toutes les ventes avant la clôture.");
+            return;
+          }
+          if (!navigator.onLine) {
+            alert("Une connexion Internet est nécessaire pour clôturer la caisse.");
+            return;
+          }
+          navigate("/cash-closing");
+        }}
       >
 
         <div>
@@ -2516,7 +2613,8 @@ if (posLocked && cashSession) {
         </div>
       </button>
 
-      <button
+
+  <button
   type="button"
   onClick={lockPOS}
 >
@@ -2573,6 +2671,38 @@ if (posLocked && cashSession) {
         </button>
       </header>
 
+
+      {showSyncCenter && (
+        <div role="dialog" aria-modal="true" aria-label="Centre de synchronisation"
+          style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,.65)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+          <div style={{background:"white",color:"#222",borderRadius:14,padding:20,width:"min(100%,540px)",maxHeight:"85vh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <h2 style={{margin:0}}>☁️ Centre de synchronisation</h2>
+              <button type="button" onClick={() => setShowSyncCenter(false)} style={{padding:8}}>✕</button>
+            </div>
+            <p>{isOnline ? "🟢 Réseau disponible" : "🟠 Hors connexion"}</p>
+            <p><strong>{syncingSales ? "Synchronisation en cours" : pendingSalesCount ? "Ventes à synchroniser" : "Toutes les ventes locales ont été envoyées"}</strong></p>
+            {syncProgress.total > 0 && <>
+              <progress max={syncProgress.total} value={syncProgress.done} style={{width:"100%",height:16}} />
+              <p>{syncProgress.done} / {syncProgress.total} ventes traitées (y compris les échecs)</p>
+            </>}
+            <p><strong>En attente :</strong> {pendingSalesCount}</p>
+            <p><strong>Erreurs détectées :</strong> {Object.keys(syncErrors).length}</p>
+            {syncNotice && <p style={{color:"#a44"}}>{syncNotice}</p>}
+            {Object.entries(syncErrors).map(([id, message]) => (
+              <div key={id} style={{border:"1px solid #e5b3b3",padding:10,borderRadius:8,marginBottom:8}}>
+                <strong>Vente {id.slice(0,12)}…</strong><p style={{margin:"4px 0"}}>{message}</p>
+              </div>
+            ))}
+            <button type="button" disabled={!isOnline || syncingSales || !pendingSalesCount}
+              onClick={() => syncOfflineSales()}
+              style={{padding:12,width:"100%",background:"#1769aa",color:"white",border:0,borderRadius:8,opacity:(!isOnline || syncingSales || !pendingSalesCount)?0.5:1}}>
+              {syncingSales ? "Synchronisation en cours…" : "🔄 Réessayer la synchronisation"}
+            </button>
+            <p style={{fontSize:12,marginBottom:0}}>Les ventes en conflit sont conservées. Ne les recommencez pas. Un conflit de stock nécessite une régularisation par l'administrateur.</p>
+          </div>
+        </div>
+      )}
 
       {/* INFORMATIONS CAISSE */}
 

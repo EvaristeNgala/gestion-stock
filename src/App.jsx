@@ -1,7 +1,4 @@
 import { Routes, Route } from "react-router-dom";
-
-import Dashboard from "./composantes/dashbord";
-import Home from "./composantes/home";
 import Produit from "./composantes/produit/produit";
 import AddProduct from "./composantes/produit/AddProduct";
 import Stock from "./composantes/stock/stock";
@@ -11,201 +8,39 @@ import Reports from "./composantes/report/Reports";
 import Settings from "./composantes/setteing/Settings";
 import CreateStore from "./composantes/CreateStore";
 import Employees from "./composantes/employe/Employees";
-
 import ProtectedRoute from "./components/ProtectedRoute";
 import SalesHistory from "./composantes/pos/SalesHistory";
 import Expenses from "./composantes/pos/Expenses";
 import CashClosing from "./composantes/pos/CashClosing";
 import ProductDetails from "./composantes/produit/ProductDetails";
 import Calendar from "./composantes/calendror/Calendar";
+import CashHistory from "./composantes/Cashhistory/CashHistory";
+import Home from "./composantes/Home";
+import Dashboard from "./composantes/dashboard";
 
+const guard = (element, permission) => (
+  <ProtectedRoute permission={permission}>{element}</ProtectedRoute>
+);
 function App() {
-  return (
-    <Routes>
-
-      {/* ==========================================
-          PAGES PUBLIQUES
-      ========================================== */}
-
-      <Route path="/" element={<Home />} />
-
-      <Route
-        path="/create-store"
-        element={<CreateStore />}
-      />
-
-
-      {/* ==========================================
-          DASHBOARD
-      ========================================== */}
-
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-
-
-      {/* ==========================================
-          PRODUITS
-      ========================================== */}
-
-      <Route
-        path="/products"
-        element={
-          <ProtectedRoute permission="products">
-            <Produit />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/Addproducts"
-        element={
-          <ProtectedRoute permission="products">
-            <AddProduct />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/products/:productId/edit"
-        element={
-          <ProtectedRoute permission="products">
-            <AddProduct />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* ==========================================
-          STOCK
-      ========================================== */}
-
-      <Route
-        path="/stock"
-        element={
-          <ProtectedRoute permission="stock">
-            <Stock />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/stock/adjustment"
-        element={
-          <ProtectedRoute permission="stock">
-            <Ajustement />
-          </ProtectedRoute>
-        }
-      />
-
-
-      {/* ==========================================
-          POS / CAISSE
-      ========================================== */}
-
-      <Route
-        path="/pos"
-        element={
-          <ProtectedRoute permission="pos">
-            <POS />
-          </ProtectedRoute>
-        }
-      />
-
-
-      {/* ==========================================
-          RAPPORTS
-      ========================================== */}
-
-      <Route
-        path="/reports"
-        element={
-          <ProtectedRoute permission="reports">
-            <Reports />
-          </ProtectedRoute>
-        }
-      />
-
-
-      {/* ==========================================
-          PARAMÈTRES
-      ========================================== */}
-
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute permission="settings">
-            <Settings />
-          </ProtectedRoute>
-        }
-      />
-
-
-      {/* ==========================================
-          GESTION DES EMPLOYÉS
-      ========================================== */}
-
-      <Route
-        path="/settings/employees"
-        element={
-          <ProtectedRoute permission="settings">
-            <Employees />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/sales-history"
-        element={
-          <ProtectedRoute permission="pos">
-            <SalesHistory />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/expenses"
-        element={
-          <ProtectedRoute permission="pos">
-            <Expenses />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/cash-closing"
-        element={
-          <ProtectedRoute permission="pos">
-            <CashClosing />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/products/:productId"
-        element={
-          <ProtectedRoute permission="products">
-            <ProductDetails />
-          </ProtectedRoute>
-        }
-      />
-
-       <Route
-        path="/calendar"
-        element={
-          <ProtectedRoute permission="calendar">
-            <Calendar />
-          </ProtectedRoute>
-        }
-      />
-
-    </Routes>
-  );
+  return <Routes>
+    <Route path="/" element={<Home />} />
+    <Route path="/create-store" element={<CreateStore />} />
+    <Route path="/dashboard" element={guard(<Dashboard />)} />
+    <Route path="/products" element={guard(<Produit />, "products")} />
+    <Route path="/Addproducts" element={guard(<AddProduct />, "products")} />
+    <Route path="/products/:productId/edit" element={guard(<AddProduct />, "products")} />
+    <Route path="/products/:productId" element={guard(<ProductDetails />, "products")} />
+    <Route path="/stock" element={guard(<Stock />, "stock")} />
+    <Route path="/stock/adjustment" element={guard(<Ajustement />, "stockAdjustment")} />
+    <Route path="/pos" element={guard(<POS />, "pos")} />
+    <Route path="/reports" element={guard(<Reports />, "reports")} />
+    <Route path="/settings" element={guard(<Settings />, "settings")} />
+    <Route path="/settings/employees" element={guard(<Employees />, "adminOnly")} />
+    <Route path="/sales-history" element={guard(<SalesHistory />, "sales")} />
+    <Route path="/expenses" element={guard(<Expenses />, "expenses")} />
+    <Route path="/cash-closing" element={guard(<CashClosing />, "pos")} />
+    <Route path="/calendar" element={guard(<Calendar />, "calendar")} />
+    <Route path="/cash-history" element={guard(<CashHistory />, "cash-history")} />
+  </Routes>;
 }
-
 export default App;
-

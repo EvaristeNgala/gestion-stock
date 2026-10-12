@@ -302,9 +302,7 @@ function CreateStore() {
       // MESSAGE
       // ==============================
 
-      alert(
-        `Le magasin "${cleanStoreName}" a été créé avec succès.`
-      );
+    
 
       // ==============================
       // DASHBOARD
@@ -514,7 +512,7 @@ function CreateStore() {
             </div>
 
            {/* BOUTON */}
-           {/*
+           
             <button
               type="submit"
               className="create-store-submit"
@@ -525,13 +523,10 @@ function CreateStore() {
                 : "Créer mon magasin"}
             </button>
 
-            */}
           </form>
 
           {/* INFORMATION */}
           <div className="create-store-info">
-
-            <span>🔒</span>
 
             <p>
               Votre compte administrateur vous permettra

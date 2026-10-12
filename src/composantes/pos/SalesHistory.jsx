@@ -40,7 +40,9 @@ function SalesHistory() {
 
   const [sales, setSales] = useState([]);
   const [offlineSales, setOfflineSales] = useState([]);
+  const [localHistory, setLocalHistory] = useState([]);
   const OFFLINE_SALES_KEY = "stockManagerOfflineSales";
+  const LOCAL_HISTORY_KEY = "stockManagerLocalSalesHistory";
 
   const [loading, setLoading] = useState(true);
 
@@ -296,9 +298,12 @@ function SalesHistory() {
           localStorage.getItem(OFFLINE_SALES_KEY) || "[]"
         );
         setOfflineSales(Array.isArray(saved) ? saved : []);
+        const history = JSON.parse(localStorage.getItem(LOCAL_HISTORY_KEY) || "[]");
+        setLocalHistory(Array.isArray(history) ? history : []);
       } catch (error) {
         console.error("Erreur lecture ventes locales :", error);
         setOfflineSales([]);
+        setLocalHistory([]);
       }
     };
 
@@ -306,39 +311,43 @@ function SalesHistory() {
     window.addEventListener("storage", loadOfflineSales);
     window.addEventListener("online", loadOfflineSales);
     window.addEventListener("focus", loadOfflineSales);
+    window.addEventListener("stockManagerSalesChanged", loadOfflineSales);
     return () => {
       window.removeEventListener("storage", loadOfflineSales);
       window.removeEventListener("online", loadOfflineSales);
       window.removeEventListener("focus", loadOfflineSales);
+      window.removeEventListener("stockManagerSalesChanged", loadOfflineSales);
     };
   }, []);
 
-  // Fusion sans doublons : priorité aux ventes Firebase.
+  // Firebase + historique permanent local + ventes encore en attente.
+  // Une même vente conserve son offlineSaleId après synchronisation.
   const allSales = useMemo(() => {
     const combined = new Map();
-    for (const sale of sales) {
-      const key = sale.offlineSaleId || sale.id;
-      if (key) combined.set(key, { ...sale, isPendingLocal: false });
-    }
-    for (const sale of offlineSales) {
+    const pendingIds = new Set(offlineSales.map((sale) => sale.offlineSaleId));
+    for (const sale of [...localHistory, ...offlineSales]) {
       if (sale.storeId !== storeId) continue;
       if (userRole !== "admin" && sale.userId !== userId) continue;
-      if (sale.status === "cancelled") continue;
       const key = sale.offlineSaleId || sale.id;
-      if (!key || combined.has(key)) continue;
+      if (!key) continue;
       combined.set(key, {
         ...sale,
         id: key,
-        isPendingLocal: true,
-        status: "pending_sync",
+        isPendingLocal: pendingIds.has(key),
+        status: pendingIds.has(key) ? "pending_sync" : sale.status,
       });
+    }
+    // Les documents serveur prévalent, notamment pour les annulations.
+    for (const sale of sales) {
+      const key = sale.offlineSaleId || sale.id;
+      if (key) combined.set(key, { ...sale, isPendingLocal: false });
     }
     return Array.from(combined.values()).sort((a, b) => {
       const dateA = getDate(a.offlineCreatedAt || a.createdAt || a.paidAt);
       const dateB = getDate(b.offlineCreatedAt || b.createdAt || b.paidAt);
       return (dateB?.getTime() || 0) - (dateA?.getTime() || 0);
     });
-  }, [sales, offlineSales, storeId, userId, userRole]);
+  }, [sales, offlineSales, localHistory, storeId, userId, userRole]);
 
   // ==============================
 
@@ -440,7 +449,7 @@ function SalesHistory() {
 
     () =>
 
-      sales.filter((sale) =>
+      allSales.filter((sale) =>
 
         isToday(sale.offlineCreatedAt || sale.createdAt || sale.paidAt)
 

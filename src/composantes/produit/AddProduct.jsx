@@ -225,14 +225,6 @@ function AddProduct() {
   const createCategory = async () => {
     const trimmedName = newCategoryName.trim();
 
-    if (!storeId) {
-      alert("Aucun magasin connecté.");
-      return;
-    }
-    if (!trimmedName) {
-      alert("Veuillez entrer le nom de la catégorie.");
-      return;
-    }
 
     try {
       setCreatingCategory(true);
@@ -273,10 +265,8 @@ function AddProduct() {
       setCategoryName(trimmedName);
       setShowNewCategory(false);
       setNewCategoryName("");
-      alert("Catégorie créée avec succès !");
     } catch (error) {
       console.error("Erreur lors de la création de la catégorie :", error);
-      alert("Erreur lors de la création de la catégorie.");
     } finally {
       setCreatingCategory(false);
     }
@@ -308,15 +298,12 @@ function AddProduct() {
     const type = variantType.trim();
 
     if (!type) {
-      alert("Veuillez entrer le type de variante.");
       return;
     }
     if (variantQuantity === "" || Number(variantQuantity) <= 0) {
-      alert("Veuillez entrer une quantité valide.");
       return;
     }
     if (variantPrice === "" || Number(variantPrice) < 0) {
-      alert("Veuillez entrer un prix valide.");
       return;
     }
 
@@ -325,7 +312,6 @@ function AddProduct() {
     );
 
     if (alreadyExists) {
-      alert("Cette variante existe déjà.");
       return;
     }
 
@@ -384,7 +370,6 @@ function AddProduct() {
 
   const saveProduct = async () => {
     if (!storeId) {
-      alert("Aucun magasin connecté. Veuillez vous reconnecter.");
       return;
     }
 
@@ -395,7 +380,6 @@ function AddProduct() {
       stock === "" ||
       !stockUnit.trim()
     ) {
-      alert("Veuillez remplir tous les champs importants !");
       return;
     }
 
@@ -411,20 +395,16 @@ function AddProduct() {
         unitsPerPurchaseUnit === "" ||
         Number(unitsPerPurchaseUnit) <= 0
       ) {
-        alert("Veuillez compléter correctement les informations d'achat automatique.");
         return;
       }
 
       if (calculatedUnitPurchasePrice === null) {
-        alert("Impossible de calculer le coût d'achat unitaire.");
         return;
       }
 
       finalPurchasePrice = calculatedUnitPurchasePrice;
     } else {
       if (purchasePrice === "" || Number(purchasePrice) < 0) {
-        alert("Veuillez entrer un prix d'achat valide.");
-        return;
       }
       finalPurchasePrice = Number(purchasePrice);
     }
@@ -434,11 +414,9 @@ function AddProduct() {
       return;
     }
     if (alertStock !== "" && Number(alertStock) < 0) {
-      alert("L'alerte stock ne peut pas être négative.");
       return;
     }
     if (hasVariants && variants.length === 0) {
-      alert("Vous avez activé les variantes. Veuillez ajouter au moins une variante.");
       return;
     }
 
@@ -506,7 +484,6 @@ function AddProduct() {
           ...productData,
           updatedAt: serverTimestamp(),
         });
-        alert("Produit modifié avec succès !");
         navigate(`/products/${productId}`);
         return;
       }
@@ -516,7 +493,6 @@ function AddProduct() {
         createdAt: serverTimestamp(),
       });
 
-      alert("Produit enregistré avec succès !");
       resetForm();
     } catch (error) {
       console.error(
@@ -524,11 +500,6 @@ function AddProduct() {
           ? "Erreur lors de la modification :"
           : "Erreur lors de l'enregistrement :",
         error
-      );
-      alert(
-        isEditMode
-          ? "Erreur lors de la modification du produit."
-          : "Erreur lors de l'enregistrement du produit."
       );
     } finally {
       setSavingProduct(false);
