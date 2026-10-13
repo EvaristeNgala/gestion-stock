@@ -2603,6 +2603,37 @@ if (posLocked && cashSession) {
       <header
         className={styles.header}
       >
+        {/* Retour à la page précédente, sans fermer la caisse */}
+        <button
+          type="button"
+          aria-label="Retour à la page précédente"
+          title="Retour"
+          onClick={() => {
+            setShowPosMenu(false);
+            if (window.history.state?.idx > 0) {
+              navigate(-1);
+            } else {
+              navigate("/dashboard");
+            }
+          }}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            width: 38,
+            height: 38,
+            borderRadius: 10,
+            border: "1px solid rgba(148,163,184,.35)",
+            background: "transparent",
+            color: "inherit",
+            fontSize: 25,
+            fontWeight: 600,
+            cursor: "pointer"
+          }}
+        >
+          ←
+        </button>
         <div className={styles.posMenuWrapper}>
   <button
     type="button"
