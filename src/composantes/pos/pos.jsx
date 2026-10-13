@@ -2147,13 +2147,70 @@ useEffect(() => {
 
     try {
       if (Capacitor.isNativePlatform()) {
-        await ReceiptPrinter.print({ html });
+        const address = localStorage.getItem(`stockManagerBluetoothPrinter:${storeId}`);
+        if (!address) {
+          window.alert("Aucune imprimante Bluetooth sélectionnée. Ouvrez Paramètres > Imprimante Bluetooth, puis choisissez IposPrinter.");
+          return;
+        }
+
+        // ESC/POS sur papier 58 mm : 32 caractères environ par ligne.
+        // Le texte est préparé sans caractères accentués pour le test Q2i.
+        const clean = (value) => String(value ?? "")
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^\x20-\x7E]/g, "?");
+        const money = (value) => `${Math.round(Number(value || 0)).toLocaleString("en-US").replace(/,/g, " ")} FC`;
+        const width = 32;
+        const line = (left, right) => {
+          const a = clean(left);
+          const b = clean(right);
+          if (a.length + b.length + 1 > width) return `${a}\n${b.padStart(width)}\n`;
+          return a + " ".repeat(width - a.length - b.length) + b + "\n";
+        };
+        const wrap = (value) => {
+          const words = clean(value).split(/\s+/);
+          const lines = [];
+          let current = "";
+          for (const word of words) {
+            if (!word) continue;
+            if (current && (current.length + word.length + 1 > width)) {
+              lines.push(current);
+              current = "";
+            }
+            if (word.length > width) {
+              if (current) { lines.push(current); current = ""; }
+              for (let i = 0; i < word.length; i += width) lines.push(word.slice(i, i + width));
+            } else current = current ? `${current} ${word}` : word;
+          }
+          if (current) lines.push(current);
+          return lines.join("\n") + "\n";
+        };
+        const receiptLines = [
+          "STOCK MANAGER",
+          "TICKET DE CAISSE",
+          clean(new Date().toLocaleString("fr-FR")),
+          "--------------------------------",
+          wrap(`Caissier: ${userName}`).trimEnd(),
+          "--------------------------------",
+        ];
+        for (const item of lastSale.items || []) {
+          receiptLines.push(wrap(`${item.name}${item.variantType ? ` (${item.variantType})` : ""}`).trimEnd());
+          receiptLines.push(line(`${Number(item.quantity || 0)} x ${money(item.price)}`, money(Number(item.quantity || 0) * Number(item.price || 0))).trimEnd());
+        }
+        receiptLines.push("--------------------------------");
+        receiptLines.push(line("TOTAL", money(lastSale.total)).trimEnd());
+        receiptLines.push(line("Especes", money(lastSale.received)).trimEnd());
+        receiptLines.push(line("Monnaie", money(lastSale.changeAmount)).trimEnd());
+        receiptLines.push("--------------------------------", "Merci pour votre achat !", "", "", "");
+        await ReceiptPrinter.printBluetoothReceipt({
+          address,
+          text: receiptLines.join("\n"),
+        });
       } else {
         window.print();
       }
     } catch (error) {
-      console.error("Impression du reçu impossible :", error);
-      window.alert(error?.message || "Impossible de lancer l'impression Android.");
+      console.error("Impression Bluetooth impossible :", error);
+      window.alert((error?.message || "Impression Bluetooth impossible.") + "\nVérifiez le Bluetooth et l'imprimante sélectionnée dans Paramètres.");
     }
   };
 
