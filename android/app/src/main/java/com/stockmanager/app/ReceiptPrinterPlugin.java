@@ -1,11 +1,16 @@
 
 package com.stockmanager.app;
 
+import android.Manifest;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
-import android.content.Intent;
+import android.os.Build;
 import android.print.PrintAttributes;
 import android.print.PrintManager;
 import android.webkit.WebView;
@@ -18,14 +23,21 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
-import org.json.JSONException;
-
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 @CapacitorPlugin(name = "ReceiptPrinter")
 public class ReceiptPrinterPlugin extends Plugin {
 
-    // Impression actuelle : conservée
+    private static final UUID SPP_UUID =
+        UUID.fromString(
+            "00001101-0000-1000-8000-00805F9B34FB"
+        );
+
+    // Impression Android actuelle : conservée
     @PluginMethod
     public void print(PluginCall call) {
 
@@ -95,7 +107,7 @@ public class ReceiptPrinterPlugin extends Plugin {
 
                         } catch (Exception error) {
                             call.reject(
-                                "Erreur lors du lancement de l'impression : "
+                                "Erreur impression Android : "
                                     + error.getMessage()
                             );
                         }
@@ -119,7 +131,7 @@ public class ReceiptPrinterPlugin extends Plugin {
         });
     }
 
-    // Diagnostic des services d'impression Android
+    // Diagnostic Android : conservé
     @PluginMethod
     public void diagnose(PluginCall call) {
 
@@ -139,7 +151,6 @@ public class ReceiptPrinterPlugin extends Plugin {
             for (ResolveInfo info : services) {
 
                 ServiceInfo service = info.serviceInfo;
-
                 if (service == null) continue;
 
                 JSObject item = new JSObject();
@@ -148,17 +159,14 @@ public class ReceiptPrinterPlugin extends Plugin {
                     "name",
                     String.valueOf(info.loadLabel(pm))
                 );
-
                 item.put(
                     "packageName",
                     service.packageName
                 );
-
                 item.put(
                     "serviceName",
                     service.name
                 );
-
                 item.put(
                     "permission",
                     service.permission == null
@@ -173,34 +181,28 @@ public class ReceiptPrinterPlugin extends Plugin {
 
             response.put(
                 "manufacturer",
-                android.os.Build.MANUFACTURER
+                Build.MANUFACTURER
             );
-
             response.put(
                 "brand",
-                android.os.Build.BRAND
+                Build.BRAND
             );
-
             response.put(
                 "model",
-                android.os.Build.MODEL
+                Build.MODEL
             );
-
             response.put(
                 "device",
-                android.os.Build.DEVICE
+                Build.DEVICE
             );
-
             response.put(
                 "androidVersion",
-                android.os.Build.VERSION.RELEASE
+                Build.VERSION.RELEASE
             );
-
             response.put(
                 "services",
                 results
             );
-
             response.put(
                 "serviceCount",
                 services.size()
@@ -213,5 +215,190 @@ public class ReceiptPrinterPlugin extends Plugin {
                 "Erreur diagnostic : " + error.getMessage()
             );
         }
+    }
+
+    // Liste des appareils Bluetooth déjà associés
+    @PluginMethod
+    public void getBluetoothPrinters(PluginCall call) {
+
+        try {
+            BluetoothAdapter adapter =
+                BluetoothAdapter.getDefaultAdapter();
+
+            if (adapter == null) {
+                call.reject(
+                    "Bluetooth indisponible sur ce terminal."
+                );
+                return;
+            }
+
+            if (!adapter.isEnabled()) {
+                call.reject(
+                    "Activez le Bluetooth du terminal."
+                );
+                return;
+            }
+
+            if (!hasBluetoothPermission()) {
+                call.reject(
+                    "Autorisation Bluetooth manquante."
+                );
+                return;
+            }
+
+            Set<BluetoothDevice> devices =
+                adapter.getBondedDevices();
+
+            JSArray results = new JSArray();
+
+            for (BluetoothDevice device : devices) {
+
+                JSObject item = new JSObject();
+
+                item.put(
+                    "name",
+                    device.getName() == null
+                        ? "Appareil sans nom"
+                        : device.getName()
+                );
+
+                item.put(
+                    "address",
+                    device.getAddress()
+                );
+
+                results.put(item);
+            }
+
+            JSObject response = new JSObject();
+            response.put("devices", results);
+            response.put("count", results.length());
+
+            call.resolve(response);
+
+        } catch (Exception error) {
+            call.reject(
+                "Erreur Bluetooth : " + error.getMessage()
+            );
+        }
+    }
+
+    // Test d'impression Bluetooth directe
+    @PluginMethod
+    public void testBluetoothPrinter(PluginCall call) {
+
+        String address = call.getString("address");
+
+        if (address == null ||
+            !BluetoothAdapter.checkBluetoothAddress(address)) {
+            call.reject("Adresse Bluetooth invalide.");
+            return;
+        }
+
+        if (!hasBluetoothPermission()) {
+            call.reject(
+                "Autorisation Bluetooth manquante."
+            );
+            return;
+        }
+
+        new Thread(() -> {
+
+            BluetoothSocket socket = null;
+
+            try {
+                BluetoothAdapter adapter =
+                    BluetoothAdapter.getDefaultAdapter();
+
+                if (adapter == null || !adapter.isEnabled()) {
+                    call.reject(
+                        "Bluetooth désactivé ou indisponible."
+                    );
+                    return;
+                }
+
+                BluetoothDevice device =
+                    adapter.getRemoteDevice(address);
+
+                if (device.getBondState() !=
+                    BluetoothDevice.BOND_BONDED) {
+                    call.reject(
+                        "Appareil Bluetooth non associé."
+                    );
+                    return;
+                }
+
+                socket =
+                    device.createRfcommSocketToServiceRecord(
+                        SPP_UUID
+                    );
+
+                adapter.cancelDiscovery();
+                socket.connect();
+
+                OutputStream output =
+                    socket.getOutputStream();
+
+                // Initialisation ESC/POS
+                output.write(
+                    new byte[]{0x1B, 0x40}
+                );
+
+                // Centrer le texte
+                output.write(
+                    new byte[]{0x1B, 0x61, 0x01}
+                );
+
+                String ticket =
+                    "STOCK MANAGER\n" +
+                    "TEST BLUETOOTH Q2i\n" +
+                    "------------------------\n" +
+                    "Impression directe OK\n" +
+                    "------------------------\n\n\n";
+
+                output.write(
+                    ticket.getBytes(
+                        StandardCharsets.US_ASCII
+                    )
+                );
+
+                output.flush();
+
+                JSObject response = new JSObject();
+                response.put("success", true);
+                response.put(
+                    "message",
+                    "Commandes envoyées à l'imprimante."
+                );
+
+                call.resolve(response);
+
+            } catch (Exception error) {
+                call.reject(
+                    "Échec du test Bluetooth : "
+                        + error.getMessage()
+                );
+            } finally {
+                if (socket != null) {
+                    try {
+                        socket.close();
+                    } catch (Exception ignored) {}
+                }
+            }
+
+        }).start();
+    }
+
+    private boolean hasBluetoothPermission() {
+
+        if (Build.VERSION.SDK_INT >= 31) {
+            return getContext().checkSelfPermission(
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) == PackageManager.PERMISSION_GRANTED;
+        }
+
+        return getContext().checkSelfPermission(
+            Manifest.permission.BLUETOOTH
+        ) == PackageManager.PERMISSION_GRANTED;
     }
 }
