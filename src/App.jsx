@@ -15,7 +15,7 @@ import CashClosing from "./composantes/pos/CashClosing";
 import ProductDetails from "./composantes/produit/ProductDetails";
 import Calendar from "./composantes/calendror/Calendar";
 import CashHistory from "./composantes/Cashhistory/CashHistory";
-import Home from "./composantes/Home";
+import Home from "./composantes/home";
 import Dashboard from "./composantes/dashboard";
 
 const guard = (element, permission) => (
