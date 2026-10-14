@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
 
@@ -34,10 +34,15 @@ import "./home.css";
 function Home() {
 
   const navigate = useNavigate();
+  const location = useLocation();
   const [checkingSavedSession, setCheckingSavedSession] = useState(true);
 
   // Une session conservée ne remplace pas les permissions des routes.
   useEffect(() => {
+    if (location.state?.skipAutoLogin) {
+      setCheckingSavedSession(false);
+      return;
+    }
     let active = true;
     let unsubscribe = () => {};
     let saved = null;
