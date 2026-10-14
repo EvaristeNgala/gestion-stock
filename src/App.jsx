@@ -1,4 +1,5 @@
-import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Produit from "./composantes/produit/produit";
 import AddProduct from "./composantes/produit/AddProduct";
 import Stock from "./composantes/stock/stock";
@@ -21,26 +22,47 @@ import Dashboard from "./composantes/dashboard";
 const guard = (element, permission) => (
   <ProtectedRoute permission={permission}>{element}</ProtectedRoute>
 );
+
+// Une dernière page différente par magasin et par utilisateur.
+function RememberLastPage() {
+  const location = useLocation();
+  useEffect(() => {
+    if (["/", "/create-store"].includes(location.pathname)) return;
+    try {
+      const session = JSON.parse(localStorage.getItem("storeSession") || "null");
+      if (!session?.storeId || !(session.uid || session.userId)) return;
+      const key = `stockManagerLastPage:${session.storeId}:${session.uid || session.userId}`;
+      localStorage.setItem(key, location.pathname + location.search);
+    } catch (error) {
+      console.warn("Mémorisation de la page impossible :", error);
+    }
+  }, [location.pathname, location.search]);
+  return null;
+}
+
 function App() {
-  return <Routes>
-    <Route path="/" element={<Home />} />
-    <Route path="/create-store" element={<CreateStore />} />
-    <Route path="/dashboard" element={guard(<Dashboard />)} />
-    <Route path="/products" element={guard(<Produit />, "products")} />
-    <Route path="/Addproducts" element={guard(<AddProduct />, "products")} />
-    <Route path="/products/:productId/edit" element={guard(<AddProduct />, "products")} />
-    <Route path="/products/:productId" element={guard(<ProductDetails />, "products")} />
-    <Route path="/stock" element={guard(<Stock />, "stock")} />
-    <Route path="/stock/adjustment" element={guard(<Ajustement />, "stockAdjustment")} />
-    <Route path="/pos" element={guard(<POS />, "pos")} />
-    <Route path="/reports" element={guard(<Reports />, "reports")} />
-    <Route path="/settings" element={guard(<Settings />, "settings")} />
-    <Route path="/settings/employees" element={guard(<Employees />, "adminOnly")} />
-    <Route path="/sales-history" element={guard(<SalesHistory />, "sales")} />
-    <Route path="/expenses" element={guard(<Expenses />, "expenses")} />
-    <Route path="/cash-closing" element={guard(<CashClosing />, "pos")} />
-    <Route path="/calendar" element={guard(<Calendar />, "calendar")} />
-    <Route path="/cash-history" element={guard(<CashHistory />, "cash-history")} />
-  </Routes>;
+  return <>
+    <RememberLastPage />
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/create-store" element={<CreateStore />} />
+      <Route path="/dashboard" element={guard(<Dashboard />)} />
+      <Route path="/products" element={guard(<Produit />, "products")} />
+      <Route path="/Addproducts" element={guard(<AddProduct />, "products")} />
+      <Route path="/products/:productId/edit" element={guard(<AddProduct />, "products")} />
+      <Route path="/products/:productId" element={guard(<ProductDetails />, "products")} />
+      <Route path="/stock" element={guard(<Stock />, "stock")} />
+      <Route path="/stock/adjustment" element={guard(<Ajustement />, "stockAdjustment")} />
+      <Route path="/pos" element={guard(<POS />, "pos")} />
+      <Route path="/reports" element={guard(<Reports />, "reports")} />
+      <Route path="/settings" element={guard(<Settings />, "settings")} />
+      <Route path="/settings/employees" element={guard(<Employees />, "adminOnly")} />
+      <Route path="/sales-history" element={guard(<SalesHistory />, "sales")} />
+      <Route path="/expenses" element={guard(<Expenses />, "expenses")} />
+      <Route path="/cash-closing" element={guard(<CashClosing />, "pos")} />
+      <Route path="/calendar" element={guard(<Calendar />, "calendar")} />
+      <Route path="/cash-history" element={guard(<CashHistory />, "cash-history")} />
+    </Routes>
+  </>;
 }
 export default App;

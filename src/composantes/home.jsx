@@ -21,7 +21,9 @@ import {
 import {
 
   signInWithEmailAndPassword,
+
   sendPasswordResetEmail,
+  onAuthStateChanged,
 
 } from "firebase/auth";
 
@@ -32,6 +34,72 @@ import "./home.css";
 function Home() {
 
   const navigate = useNavigate();
+  const [checkingSavedSession, setCheckingSavedSession] = useState(true);
+
+  // Une session conservée ne remplace pas les permissions des routes.
+  useEffect(() => {
+    let active = true;
+    let unsubscribe = () => {};
+    let saved = null;
+    try {
+      saved = JSON.parse(localStorage.getItem("storeSession") || "null");
+    } catch {
+      localStorage.removeItem("storeSession");
+    }
+    const valid = saved?.storeId && (saved?.uid || saved?.userId);
+    if (!valid) {
+      setCheckingSavedSession(false);
+      return;
+    }
+
+    const finish = (allowed) => {
+      if (!active) return;
+      if (allowed) {
+        const key = `stockManagerLastPage:${saved.storeId}:${saved.uid || saved.userId}`;
+        const last = localStorage.getItem(key);
+        const fallback = saved.role === "admin" || [
+          "products", "stock", "stockAdjustment", "sales", "expenses",
+          "reports", "settings", "calendar", "cash-history"
+        ].some((p) => saved.permissions?.[p] === true) ? "/dashboard" : "/pos";
+        const path = last?.split(/[?#]/)[0] || "";
+        const required = path.startsWith("/products") || path === "/Addproducts" ? "products"
+          : path === "/stock/adjustment" ? "stockAdjustment"
+          : path === "/stock" ? "stock"
+          : path === "/pos" || path === "/cash-closing" ? "pos"
+          : path === "/reports" ? "reports"
+          : path === "/settings/employees" ? "adminOnly"
+          : path === "/settings" ? "settings"
+          : path === "/sales-history" ? "sales"
+          : path === "/expenses" ? "expenses"
+          : path === "/calendar" ? "calendar"
+          : path === "/cash-history" ? "cash-history"
+          : path === "/dashboard" ? "dashboard" : "unknown";
+        const isAdmin = saved.role === "admin" && saved.loginMode === "admin";
+        const permitted = isAdmin || (required === "dashboard"
+          ? fallback === "/dashboard"
+          : required !== "unknown" && required !== "adminOnly" && saved.permissions?.[required] === true);
+        const target = last?.startsWith("/") && !last.startsWith("//") && permitted
+          ? last : fallback;
+        navigate(target, { replace: true });
+      } else {
+        // La session admin Firebase a expiré : ne pas restaurer son compte.
+        localStorage.removeItem("storeSession");
+        setCheckingSavedSession(false);
+      }
+    };
+
+    if (saved.role === "admin" && saved.loginMode === "admin") {
+      unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        finish(Boolean(firebaseUser && firebaseUser.uid === (saved.uid || saved.userId)));
+      }, () => finish(false));
+    } else if (["cashier", "manager"].includes(saved.role) &&
+      ["employeeCode", "employee"].includes(saved.loginMode)) {
+      finish(true);
+    } else {
+      finish(false);
+    }
+    return () => { active = false; unsubscribe(); };
+  }, [navigate]);
 
   // ==========================================
 
@@ -46,8 +114,11 @@ function Home() {
   const [email, setEmail] = useState("");
 
   const [password, setPassword] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
+
   const [resetLoading, setResetLoading] = useState(false);
+
   const [resetMessage, setResetMessage] = useState("");
 
   // Connexion employé
@@ -179,29 +250,53 @@ function Home() {
   // ==========================================
 
   const handlePasswordReset = async () => {
+
     setError("");
+
     setResetMessage("");
+
     const adminEmail = email.trim();
+
     if (!adminEmail) {
+
       setError("Saisissez d'abord votre adresse email administrateur.");
+
       return;
+
     }
+
     try {
+
       setResetLoading(true);
+
       await sendPasswordResetEmail(auth, adminEmail);
+
       setResetMessage("Si cette adresse est associée à un compte, vous recevrez un email de réinitialisation. Vérifiez aussi vos spams.");
+
     } catch (error) {
+
       console.error("Réinitialisation du mot de passe :", error.code);
+
       if (error.code === "auth/invalid-email") {
+
         setError("L'adresse email n'est pas valide.");
+
       } else if (error.code === "auth/too-many-requests") {
+
         setError("Trop de tentatives. Réessayez plus tard.");
+
       } else {
+
         setError("Impossible d'envoyer le message pour le moment. Vérifiez votre connexion et réessayez.");
+
       }
+
     } finally {
+
       setResetLoading(false);
+
     }
+
   };
 
   const handleAdminLogin = async (e) => {
@@ -603,18 +698,29 @@ function Home() {
       // ==========================================
 
       // 2. CODE ADMINISTRATEUR : REDIRECTION VERS UNE AUTHENTIFICATION FORTE
+
       // Le PIN admin ne crée JAMAIS de session administrateur.
+
       // Il reste réservé au déverrouillage des caisses dans POS.jsx.
 
       const settingsSnapshot = await getDoc(doc(db, "settings", storeId));
+
       if (settingsSnapshot.exists()) {
+
         const adminPosCode = String(settingsSnapshot.data().adminPosCode ?? "").trim();
+
         if (adminPosCode && adminPosCode === enteredEmployeeCode) {
+
           setEmployeeCode("");
+
           setLoginType("admin");
+
           setError("Code administrateur reconnu. Pour accéder à votre espace administrateur, connectez-vous avec votre e-mail et votre mot de passe.");
+
           return;
+
         }
+
       }
 
       // ==========================================
@@ -650,9 +756,13 @@ function Home() {
       }
 
       if (employeeSnapshot.size !== 1) {
+
           setError("Ce code est attribué à plusieurs employés. Contactez l'administrateur.");
+
           return;
+
         }
+
         const employeeDoc = employeeSnapshot.docs[0];
 
       const employeeData =
@@ -758,7 +868,9 @@ function Home() {
         loginMode: "employeeCode",
 
         permissions: Object.fromEntries(
+
           Object.entries(permissions).map(([key, value]) => [key, value === true])
+
         ),
 
       };
@@ -778,13 +890,21 @@ function Home() {
       // ==========================================
 
       const managementKeys = ["products", "stock", "stockAdjustment", "sales", "expenses", "reports", "settings", "calendar", "cash-history"];
+
         if (managementKeys.some(key => permissions[key] === true)) {
+
           navigate("/dashboard", { replace: true });
+
         } else if (permissions.pos === true) {
+
           navigate("/pos", { replace: true });
+
         } else {
+
           localStorage.removeItem("storeSession");
+
           setError("Aucune fonctionnalité n'est autorisée pour ce compte.");
+
         }
 
     } catch (error) {
@@ -1120,39 +1240,73 @@ function Home() {
               </div>
 
               <div className="formGroup">
+
                 <label htmlFor="admin-password">Mot de passe</label>
+
                 <div className="adminPasswordField">
+
                   <input
+
                     id="admin-password"
+
                     type={showPassword ? "text" : "password"}
+
                     placeholder="Votre mot de passe"
+
                     value={password}
+
                     autoComplete="current-password"
+
                     onChange={(e) => setPassword(e.target.value)}
+
                   />
+
                   <button
+
                     type="button"
+
                     className="adminPasswordToggle"
+
                     onClick={() => setShowPassword((current) => !current)}
+
                     aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+
                     aria-pressed={showPassword}
+
                   >
+
                     {showPassword ? "Masquer" : "Voir"}
+
                   </button>
+
                 </div>
+
               </div>
+
               <div className="adminResetRow">
+
                 <button
+
                   type="button"
+
                   className="adminResetButton"
+
                   onClick={handlePasswordReset}
+
                   disabled={loading || resetLoading}
+
                 >
+
                   {resetLoading ? "Envoi en cours..." : "Mot de passe oublié ?"}
+
                 </button>
+
               </div>
+
               {resetMessage && (
+
                 <p className="adminResetMessage" role="status">{resetMessage}</p>
+
               )}
 
               <button
