@@ -39,7 +39,8 @@ function Home() {
 
   // Une session conservée ne remplace pas les permissions des routes.
   useEffect(() => {
-    if (location.state?.skipAutoLogin) {
+    // Navigation volontaire vers l'accueil : ne pas restaurer la session.
+    if (location.state?.manualHome === true) {
       setCheckingSavedSession(false);
       return;
     }
@@ -104,7 +105,7 @@ function Home() {
       finish(false);
     }
     return () => { active = false; unsubscribe(); };
-  }, [navigate]);
+  }, [navigate, location.state?.manualHome]);
 
   // ==========================================
 

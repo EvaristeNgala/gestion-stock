@@ -329,20 +329,6 @@ useEffect(() => {
 // seulement dans l'état React (qui peut être périmé).
 // La déconnexion générale se fait uniquement depuis le Dashboard.
 // La caisse se clôture dans CashClosing ; ensuite le POS demande un autre utilisateur.
-const changeAccount = () => {
-  if (ticket.length > 0) {
-    alert("Terminez, enregistrez ou videz le ticket avant de changer de compte.");
-    return;
-  }
-  if (cashSession?.id && !window.confirm(
-    "La caisse restera ouverte. Pour la reprendre, reconnectez-vous et utilisez votre PIN. Changer de compte ?"
-  )) return;
-  setShowPosMenu(false);
-  setPosLocked(true);
-  localStorage.removeItem("storeSession");
-  navigate("/", { replace: true, state: { skipAutoLogin: true } });
-};
-
 const lockPOS = () => {
   setShowPosMenu(false);
   setUnlockCode("");
@@ -2624,17 +2610,9 @@ if (posLocked && cashSession) {
           title="Retour"
           onClick={() => {
             setShowPosMenu(false);
-            const canOpenDashboard = connectedRole === "admin" ||
-              ["products", "stock", "stockAdjustment", "sales", "expenses",
-                "reports", "settings", "calendar", "cash-history", "dashboard"]
-                .some((key) => session?.permissions?.[key] === true);
-            if (!canOpenDashboard) {
-              changeAccount();
-            } else if (window.history.state?.idx > 0) {
-              navigate(-1);
-            } else {
-              navigate("/dashboard", { replace: true });
-            }
+            // Retour volontaire : afficher les deux choix de connexion.
+            // La session est conservée pour une éventuelle réouverture.
+            navigate("/", { replace: true, state: { manualHome: true } });
           }}
           style={{
             display: "inline-flex",
@@ -2667,11 +2645,6 @@ if (posLocked && cashSession) {
 
   {showPosMenu && (
     <div className={styles.posDropdownMenu}>
-      <button type="button" onClick={changeAccount}>
-        <div><strong>⇄ Changer de compte</strong>
-          <small>Connexion employé ou administrateur</small></div>
-      </button>
-
       <button
         type="button"
         onClick={() =>
