@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Capacitor, registerPlugin } from "@capacitor/core";
+import { signOut } from "firebase/auth";
+import { auth } from "../../firebase";
 
 const ReceiptPrinter = registerPlugin("ReceiptPrinter");
 
@@ -28,6 +30,16 @@ function POS() {
   // ==============================
   const navigate = useNavigate();
   const [showPosMenu, setShowPosMenu] = useState(false);
+  const [showPrinterSettings, setShowPrinterSettings] = useState(false);
+  const [printerDevices, setPrinterDevices] = useState([]);
+  const [printerAddress, setPrinterAddress] = useState("");
+  const [printerBusy, setPrinterBusy] = useState(false);
+  const [printerNotice, setPrinterNotice] = useState("");
+  const [autoPrint, setAutoPrint] = useState(false);
+  const [leavingStore, setLeavingStore] = useState(false);
+  const [logoutPin, setLogoutPin] = useState("");
+  const [logoutError, setLogoutError] = useState("");
+  const [logoutBusy, setLogoutBusy] = useState(false);
   // ==============================
 // VERROUILLAGE DU POS
 // ==============================
@@ -266,6 +278,80 @@ useEffect(() => {
   const connectedUserName = session?.userName || session?.name || session?.displayName || "Utilisateur";
   const connectedRole = session?.role || "cashier";
   const CASHIER_KEY = "stockManagerActiveCashier";
+  const isAdminSession = connectedRole === "admin" && session?.loginMode === "admin";
+  const printerKey = `stockManagerBluetoothPrinter:${storeId}`;
+  const autoPrintKey = `stockManagerAutoPrint:${storeId}`;
+  useEffect(() => {
+    if (!storeId) return;
+    setPrinterAddress(localStorage.getItem(printerKey) || "");
+    setAutoPrint(localStorage.getItem(autoPrintKey) === "true");
+  }, [storeId]);
+
+  const openPrinterSettings = () => {
+    setShowPosMenu(false);
+    setPrinterNotice("");
+    setShowPrinterSettings(true);
+  };
+  const searchPrinters = async () => {
+    setPrinterBusy(true);
+    setPrinterNotice("");
+    try {
+      if (!Capacitor.isNativePlatform()) throw new Error("Disponible dans l'APK Android uniquement.");
+      const result = await ReceiptPrinter.getBluetoothPrinters();
+      const devices = Array.isArray(result?.devices) ? result.devices : [];
+      setPrinterDevices(devices);
+      setPrinterNotice(devices.length ? `${devices.length} imprimante(s)/appareil(s) associé(s).` : "Aucun appareil Bluetooth associé trouvé.");
+    } catch (error) {
+      setPrinterNotice(error?.message || "Recherche Bluetooth impossible.");
+    } finally { setPrinterBusy(false); }
+  };
+  const testPrinter = async () => {
+    if (!printerAddress) return;
+    setPrinterBusy(true);
+    setPrinterNotice("");
+    try {
+      const result = await ReceiptPrinter.testBluetoothPrinter({ address: printerAddress });
+      setPrinterNotice(result?.message || "Test envoyé. Vérifiez la sortie papier.");
+    } catch (error) {
+      setPrinterNotice(error?.message || "Échec de l'impression du ticket de test.");
+    } finally { setPrinterBusy(false); }
+  };
+
+  // Déconnexion complète du magasin, réservée à l'administrateur.
+  // Ne jamais effacer les données locales de ventes, même après synchronisation.
+  const disconnectStore = async (event) => {
+    event.preventDefault();
+    if (!isAdminSession || logoutBusy) return;
+    setLogoutBusy(true);
+    setLogoutError("");
+    try {
+      if (!navigator.onLine) throw new Error("Connexion Internet nécessaire pour quitter le magasin.");
+      if (syncBusyRef.current || getOfflineSales().length > 0) {
+        throw new Error("Synchronisez d'abord toutes les ventes hors connexion.");
+      }
+      if (ticket.length > 0 || showTicket) throw new Error("Terminez ou videz le ticket en cours.");
+      // Contrôle serveur de toutes les caisses du magasin, pas uniquement de celle affichée.
+      const openSessions = await getDocsFromServer(query(
+        collection(db, "cashSessions"), where("storeId", "==", storeId), where("status", "==", "open")
+      ));
+      if (!openSessions.empty) throw new Error("Une caisse est encore ouverte dans ce magasin. Clôturez-la avant de vous déconnecter.");
+      const settingsSnap = await getDoc(doc(db, "settings", storeId));
+      const expectedPin = String(settingsSnap.data()?.adminPosCode ?? "").trim();
+      if (!/^\d{4}$/.test(logoutPin) || !expectedPin || logoutPin !== expectedPin) {
+        throw new Error("Code PIN administrateur incorrect.");
+      }
+      if (!window.confirm("Quitter complètement ce magasin sur ce terminal ? Une nouvelle connexion email et mot de passe sera nécessaire.")) return;
+      await signOut(auth);
+      localStorage.removeItem("stockManagerDeviceStore");
+      localStorage.removeItem("storeSession");
+      localStorage.removeItem("stockManagerActiveCashier");
+      setLeavingStore(false);
+      navigate("/", { replace: true });
+    } catch (error) {
+      setLogoutError(error?.message || "Déconnexion impossible.");
+    } finally { setLogoutBusy(false); }
+  };
+
 
   // Identité POS : toujours celle de la session connectée.
   // Ne jamais réutiliser l'ancien caissier sauvegardé sur cet appareil.
@@ -2598,6 +2684,41 @@ if (posLocked && cashSession) {
   return (
     <div className={styles.pos}>
 
+      {showPrinterSettings && <div role="dialog" aria-modal="true" aria-label="Configuration imprimante" style={{position:"fixed",inset:0,zIndex:10000,background:"#000a",display:"grid",placeItems:"center",padding:16}}>
+        <section style={{width:"100%",maxWidth:430,maxHeight:"90vh",overflowY:"auto",background:"#fff",color:"#111827",borderRadius:16,padding:20}}>
+          <h2>🖨️ Configuration imprimante</h2>
+          <p style={{fontSize:13}}>Choisissez l'imprimante Bluetooth associée au Q2i.</p>
+          <button type="button" disabled={printerBusy} onClick={searchPrinters}>Rechercher les appareils Bluetooth</button>
+          <label style={{display:"block",marginTop:16,marginBottom:6}}>Imprimante sélectionnée</label>
+          <select style={{width:"100%",padding:12}} value={printerAddress} onChange={e => {
+            const address = e.target.value; setPrinterAddress(address);
+            if (address) localStorage.setItem(printerKey,address); else localStorage.removeItem(printerKey);
+          }}>
+            <option value="">Sélectionner une imprimante...</option>
+            {printerAddress && !printerDevices.some(d => d.address === printerAddress) && <option value={printerAddress}>Imprimante enregistrée ({printerAddress})</option>}
+            {printerDevices.map(d => <option key={d.address} value={d.address}>{d.name} — {d.address}</option>)}
+          </select>
+          <label style={{display:"flex",alignItems:"center",gap:10,marginTop:18}}>
+            <input type="checkbox" checked={autoPrint} onChange={e => {setAutoPrint(e.target.checked);localStorage.setItem(autoPrintKey,String(e.target.checked));}} />
+            Impression automatique après paiement (préférence)
+          </label>
+          <p style={{fontSize:12,color:"#6b7280"}}>La préférence est enregistrée sur ce terminal. L'impression automatique sera activée lors de son raccordement au flux de paiement.</p>
+          <button type="button" disabled={printerBusy || !printerAddress} onClick={testPrinter}>Imprimer un ticket de test</button>
+          {printerNotice && <p role="status" style={{fontSize:13}}>{printerNotice}</p>}
+          <div style={{marginTop:18}}><button type="button" onClick={() => setShowPrinterSettings(false)}>Fermer</button></div>
+        </section>
+      </div>}
+      {leavingStore && <div role="dialog" aria-modal="true" aria-label="Quitter le magasin" style={{position:"fixed",inset:0,zIndex:10001,background:"#000a",display:"grid",placeItems:"center",padding:16}}>
+        <form onSubmit={disconnectStore} style={{width:"100%",maxWidth:400,background:"#fff",color:"#111827",borderRadius:16,padding:20}}>
+          <h2>Se déconnecter du magasin</h2>
+          <p>Cette action nécessite la clôture de toutes les caisses et la synchronisation des ventes.</p>
+          <label htmlFor="logout-admin-pin">Code PIN administrateur</label>
+          <input id="logout-admin-pin" type="password" inputMode="numeric" maxLength={4} autoComplete="off" value={logoutPin} onChange={e => setLogoutPin(e.target.value.replace(/\D/g,"").slice(0,4))} style={{display:"block",width:"100%",padding:12,margin:"8px 0 12px"}} />
+          {logoutError && <p role="alert" style={{color:"#b91c1c"}}>{logoutError}</p>}
+          <div style={{display:"flex",gap:10}}><button type="button" disabled={logoutBusy} onClick={() => setLeavingStore(false)}>Annuler</button><button type="submit" disabled={logoutBusy || logoutPin.length!==4}>{logoutBusy ? "Vérification..." : "Quitter le magasin"}</button></div>
+        </form>
+      </div>}
+
       {/* HEADER */}
 
       <header
@@ -2658,6 +2779,7 @@ if (posLocked && cashSession) {
         </div>
       </button>
 
+      {session?.permissions?.expenses === true || isAdminSession ? (
       <button
         type="button"
         onClick={() =>
@@ -2670,6 +2792,7 @@ if (posLocked && cashSession) {
           <small>Ajouter et consulter les dépenses</small>
         </div>
       </button>
+      ) : null}
 
       <button type="button" onClick={() => { setShowPosMenu(false); setShowSyncCenter(true); }}>
         <div><strong>☁️ Synchronisation {pendingSalesCount ? `(${pendingSalesCount})` : ""}</strong>
@@ -2699,6 +2822,20 @@ if (posLocked && cashSession) {
         </div>
       </button>
 
+
+      <button type="button" onClick={openPrinterSettings}>
+        <div><strong>🖨️ Configuration imprimante</strong><small>Bluetooth, sélection et ticket de test</small></div>
+      </button>
+      <button type="button" onClick={() => {
+        setShowPosMenu(false);
+        if (cashSession) { alert("Clôturez votre caisse avant de changer de caissier."); navigate("/cash-closing"); }
+        else navigate("/pin", { replace: true });
+      }}>
+        <div><strong>👥 Changer de caissier</strong><small>Clôturer puis saisir un autre code PIN</small></div>
+      </button>
+      {isAdminSession && <button type="button" onClick={() => { setShowPosMenu(false); setLogoutPin(""); setLogoutError(""); setLeavingStore(true); }}>
+        <div><strong>🚪 Se déconnecter du magasin</strong><small>Retour à la connexion email / mot de passe</small></div>
+      </button>}
 
   <button
   type="button"
