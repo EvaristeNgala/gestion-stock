@@ -218,18 +218,33 @@ function CashClosing() {
 
 
 
-  // La personne connectée peut être différente du caissier qui a ouvert.
-  // L'identifiant de la session de caisse fait foi.
-  const [activeCashier] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("stockManagerActiveCashier") || "null");
-      return saved?.storeId ? saved : null;
-    } catch { return null; }
-  });
-  const validActiveCashier = activeCashier?.storeId === storeId ? activeCashier : null;
-  const userId = validActiveCashier?.userId || session?.uid || session?.userId || null;
-  const userName = cashSession?.userName || validActiveCashier?.userName || session?.userName || session?.name || "Utilisateur";
-  const userRole = cashSession?.role || validActiveCashier?.role || session?.role || "cashier";
+  const userId =
+
+    session?.uid ||
+
+    session?.userId ||
+
+    null;
+
+
+
+  const userName =
+
+    session?.userName ||
+
+    session?.name ||
+
+    session?.displayName ||
+
+    "Utilisateur";
+
+
+
+  const userRole =
+
+    session?.role || "cashier";
+
+
 
   // ==========================================
 
@@ -261,9 +276,17 @@ function CashClosing() {
 
 
 
-    const cashQuery = validActiveCashier?.cashSessionId
-      ? doc(db, "cashSessions", validActiveCashier.cashSessionId)
-      : query(collection(db, "cashSessions"), where("storeId", "==", storeId), where("userId", "==", userId), where("status", "==", "open"));
+    const cashQuery = query(
+
+      collection(db, "cashSessions"),
+
+      where("storeId", "==", storeId),
+
+      where("userId", "==", userId),
+
+      where("status", "==", "open")
+
+    );
 
 
 
@@ -273,8 +296,9 @@ function CashClosing() {
 
       (snapshot) => {
 
-        const cashDoc = snapshot.docs ? snapshot.docs[0] : snapshot;
-        if (cashDoc?.exists() && cashDoc.data().status === "open" && cashDoc.data().storeId === storeId && cashDoc.data().userId === userId) {
+        if (!snapshot.empty) {
+
+          const cashDoc = snapshot.docs[0];
 
 
 
@@ -1048,9 +1072,11 @@ function CashClosing() {
 
       });
 
-      localStorage.removeItem("posRequireSelection");
+      localStorage.removeItem("stockManagerActiveCashier");
+        localStorage.removeItem("posRequireSelection");
         localStorage.removeItem("posActiveUser");
-        navigate("/pos", { replace: true });
+        localStorage.removeItem("storeSession");
+        navigate("/pin", { replace: true });
 
     } catch (error) {
 

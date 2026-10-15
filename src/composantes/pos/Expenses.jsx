@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import {
   addDoc,
   collection,
+  doc,
+  getDoc,
   onSnapshot,
   query,
   serverTimestamp,
@@ -36,6 +38,7 @@ function Expenses() {
   const [reason, setReason] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
 
   const [saving, setSaving] = useState(false);
 
@@ -103,12 +106,25 @@ function Expenses() {
   const userRole =
     session?.role || "cashier";
 
+  // Une dépense doit appartenir à la caisse réellement sélectionnée.
+  const activeCashier = (() => {
+    try {
+      const value = JSON.parse(localStorage.getItem("stockManagerActiveCashier") || "null");
+      return value?.storeId === storeId ? value : null;
+    } catch {
+      return null;
+    }
+  })();
+  const cashierUserId = activeCashier?.userId || userId;
+  const cashierName = activeCashier?.userName || userName;
+
+
   // ==========================================
   // RÉCUPÉRER LA CAISSE OUVERTE
   // ==========================================
 
   useEffect(() => {
-    if (!storeId || !userId) {
+    if (!storeId || !cashierUserId) {
       if (session) {
         setCashLoading(false);
       }
@@ -126,7 +142,7 @@ function Expenses() {
     const cashQuery = query(
       cashSessionsRef,
       where("storeId", "==", storeId),
-      where("userId", "==", userId),
+      where("userId", "==", cashierUserId),
       where("status", "==", "open")
     );
 
@@ -158,7 +174,7 @@ function Expenses() {
     );
 
     return () => unsubscribe();
-  }, [storeId, userId, session]);
+  }, [storeId, cashierUserId, session]);
 
   // ==========================================
   // RÉCUPÉRER LES DÉPENSES
@@ -456,6 +472,18 @@ function Expenses() {
 
     try {
       setSaving(true);
+      if (!navigator.onLine) {
+        throw new Error("Connexion Internet nécessaire pour enregistrer une dépense.");
+      }
+      const currentCash = await getDoc(doc(db, "cashSessions", cashSession.id));
+      if (
+        !currentCash.exists() ||
+        currentCash.data().storeId !== storeId ||
+        currentCash.data().userId !== cashierUserId ||
+        currentCash.data().status !== "open"
+      ) {
+        throw new Error("Cette caisse n'est plus ouverte. Actualisez la page.");
+      }
 
       // ========================================
       // CRÉER LA DÉPENSE
@@ -473,6 +501,10 @@ function Expenses() {
         // Caisse
         cashSessionId:
           cashSession.id,
+        cashierUserId,
+        cashierName,
+        paymentMethod,
+        paymentType: paymentMethod,
 
         // Utilisateur ayant effectué
         // la dépense
@@ -507,6 +539,7 @@ function Expenses() {
       setReason("");
       setAmount("");
       setNote("");
+      setPaymentMethod("cash");
 
       setMessage(
         "Dépense enregistrée avec succès."
@@ -782,6 +815,23 @@ function Expenses() {
 
                 <span>FC</span>
               </div>
+            </div>
+
+            {/* MODE DE PAIEMENT : indispensable pour la clôture */}
+            <div className={styles.field}>
+              <label htmlFor="paymentMethod">Mode de paiement</label>
+              <select
+                id="paymentMethod"
+                value={paymentMethod}
+                onChange={(event) => setPaymentMethod(event.target.value)}
+                disabled={saving}
+                required
+                style={{ width: "100%", padding: "12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "white" }}
+              >
+                <option value="cash">Espèces (sortie d'argent de la caisse)</option>
+                <option value="other">Autre moyen de paiement (hors caisse espèces)</option>
+              </select>
+              <small>Seules les dépenses en espèces diminuent les espèces attendues à la clôture.</small>
             </div>
 
             {/* NOTE */}

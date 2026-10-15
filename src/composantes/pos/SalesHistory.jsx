@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
+import { Capacitor, registerPlugin } from "@capacitor/core";
+
+const ReceiptPrinter = registerPlugin("ReceiptPrinter");
 
 import {
 
@@ -47,6 +50,7 @@ function SalesHistory() {
   const [loading, setLoading] = useState(true);
 
   const [selectedSale, setSelectedSale] = useState(null);
+  const [printing, setPrinting] = useState(false);
 
 
 
@@ -198,35 +202,11 @@ function SalesHistory() {
 
 
 
-    let salesQuery;
-
-
-
-    if (userRole === "admin") {
-
-      salesQuery = query(
-
-        collection(db, "sales"),
-
-        where("storeId", "==", storeId)
-
-      );
-
-    } else {
-
-      salesQuery = query(
-
-        collection(db, "sales"),
-
-        where("storeId", "==", storeId),
-
-        where("userId", "==", userId)
-
-      );
-
-    }
-
-
+    // Tous les employés autorisés consultent les ventes du magasin.
+    const salesQuery = query(
+      collection(db, "sales"),
+      where("storeId", "==", storeId)
+    );
 
     const unsubscribe = onSnapshot(
 
@@ -284,7 +264,7 @@ function SalesHistory() {
 
     return () => unsubscribe();
 
-  }, [storeId, userId, userRole]);
+  }, [storeId, userId]);
 
 
 
@@ -327,7 +307,7 @@ function SalesHistory() {
     const pendingIds = new Set(offlineSales.map((sale) => sale.offlineSaleId));
     for (const sale of [...localHistory, ...offlineSales]) {
       if (sale.storeId !== storeId) continue;
-      if (userRole !== "admin" && sale.userId !== userId) continue;
+      // Les ventes locales restent limitées au magasin courant.
       const key = sale.offlineSaleId || sale.id;
       if (!key) continue;
       combined.set(key, {
@@ -347,7 +327,7 @@ function SalesHistory() {
       const dateB = getDate(b.offlineCreatedAt || b.createdAt || b.paidAt);
       return (dateB?.getTime() || 0) - (dateA?.getTime() || 0);
     });
-  }, [sales, offlineSales, localHistory, storeId, userId, userRole]);
+  }, [sales, offlineSales, localHistory, storeId]);
 
   // ==============================
 
@@ -486,6 +466,56 @@ function SalesHistory() {
   );
 
 
+
+  // Réimpression à partir de la vente sélectionnée, jamais du ticket courant.
+  const reprintSale = async (sale) => {
+    if (!sale || printing) return;
+    setPrinting(true);
+    const clean = (value) => String(value ?? "")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\x20-\x7E]/g, "?");
+    const money = (value) => `${Math.round(Number(value || 0)).toLocaleString("en-US").replace(/,/g, " ")} FC`;
+    const date = getDate(sale.offlineCreatedAt || sale.createdAt || sale.paidAt);
+    const lines = [
+      "STOCK MANAGER", "COPIE DU TICKET", "--------------------------------",
+      `Vente: ${clean(sale.saleNumber || sale.id || "-")}`,
+      `Date: ${date ? clean(date.toLocaleString("fr-FR")) : "-"}`,
+      `Caissier: ${clean(sale.userName || "Utilisateur")}`,
+      "--------------------------------",
+    ];
+    for (const item of sale.items || []) {
+      lines.push(clean(`${item.name || "Produit"}${item.variantType ? ` (${item.variantType})` : ""}`));
+      lines.push(clean(`${Number(item.quantity || 0)} x ${money(item.price)} = ${money(Number(item.quantity || 0) * Number(item.price || 0))}`));
+    }
+    lines.push("--------------------------------", `TOTAL: ${money(sale.total)}`);
+    const received = sale.amountReceived ?? sale.cashReceived ?? sale.received;
+    const change = sale.change ?? sale.changeAmount;
+    if (received != null) lines.push(`Recu: ${money(received)}`);
+    if (change != null) lines.push(`Monnaie: ${money(change)}`);
+    if (["cancelled", "canceled", "annulled"].includes(sale.status)) lines.push("*** VENTE ANNULEE ***");
+    if (sale.isPendingLocal) lines.push("*** EN ATTENTE DE SYNCHRO ***");
+    lines.push("--------------------------------", "Merci pour votre achat !", "", "", "");
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const address = localStorage.getItem(`stockManagerBluetoothPrinter:${storeId}`);
+        if (!address) throw new Error("Aucune imprimante Bluetooth configurée. Configurez-la depuis le menu POS.");
+        await ReceiptPrinter.printBluetoothReceipt({ address, text: lines.join("\n") });
+      } else {
+        const popup = window.open("", "_blank", "width=420,height=650");
+        if (!popup) throw new Error("Autorisez les fenêtres contextuelles pour imprimer le ticket.");
+        const escaped = lines.join("\n").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+        popup.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>Ticket ${String(sale.saleNumber || sale.id || "")}</title><style>@page{size:58mm auto;margin:2mm}body{font:11px monospace;white-space:pre-wrap;width:54mm;margin:0}</style></head><body>${escaped}</body></html>`);
+        popup.document.close();
+        popup.focus();
+        popup.print();
+      }
+    } catch (error) {
+      console.error("Réimpression impossible :", error);
+      alert(error?.message || "Impossible de réimprimer le ticket.");
+    } finally {
+      setPrinting(false);
+    }
+  };
 
   // ==============================
 
@@ -1241,11 +1271,7 @@ function SalesHistory() {
 
           <p>
 
-            {userRole === "admin"
-
-              ? "Ventes du magasin aujourd'hui"
-
-              : "Mes ventes effectuées aujourd'hui"}
+            Toutes les ventes du magasin aujourd'hui
 
           </p>
 
@@ -1299,11 +1325,7 @@ function SalesHistory() {
 
               <h2>
 
-                {userRole === "admin"
-
-                  ? "Ventes du jour"
-
-                  : "Mes ventes du jour"}
+                Ventes du jour
 
               </h2>
 
@@ -1814,7 +1836,16 @@ function SalesHistory() {
 
             <div className={styles.modalFooter}>
 
-              {selectedSale.status !== "cancelled" && !selectedSale.isPendingLocal && (
+              <button
+                type="button"
+                className={styles.closeModalButton}
+                onClick={() => reprintSale(selectedSale)}
+                disabled={printing}
+              >
+                {printing ? "Impression..." : "🖨 Réimprimer le ticket"}
+              </button>
+
+              {selectedSale.status !== "cancelled" && !selectedSale.isPendingLocal && sales.some(s => s.id === selectedSale.id) && (
 
                 <button
 

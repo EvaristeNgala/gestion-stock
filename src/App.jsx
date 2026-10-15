@@ -51,7 +51,7 @@ function App() {
     <Route path="/pin" element={<PosPin onUnlock={() => setUnlocked(true)} onLock={() => setUnlocked(false)} />} />
     <Route path="/pos" element={<NativeGate unlocked={unlocked}>{guard(<POS />, "pos")}</NativeGate>} />
     <Route path="/cash-closing" element={<NativeGate unlocked={unlocked}>{guard(<CashClosing />, "pos")}</NativeGate>} />
-    <Route path="/sales-history" element={<NativeGate unlocked={unlocked}>{guard(<SalesHistory />, "sales")}</NativeGate>} />
+    <Route path="/sales-history" element={<NativeGate unlocked={unlocked}>{guard(<SalesHistory />, "pos")}</NativeGate>} />
     <Route path="/expenses" element={<NativeGate unlocked={unlocked}>{guard(<Expenses />, "expenses")}</NativeGate>} />
     <Route path="/cash-history" element={<NativeGate unlocked={unlocked}>{guard(<CashHistory />, "cash-history")}</NativeGate>} />
     <Route path="/settings" element={<NativeGate unlocked={unlocked}>{guard(<Settings />, "settings")}</NativeGate>} />

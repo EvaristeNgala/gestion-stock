@@ -2826,13 +2826,6 @@ if (posLocked && cashSession) {
       <button type="button" onClick={openPrinterSettings}>
         <div><strong>🖨️ Configuration imprimante</strong><small>Bluetooth, sélection et ticket de test</small></div>
       </button>
-      <button type="button" onClick={() => {
-        setShowPosMenu(false);
-        if (cashSession) { alert("Clôturez votre caisse avant de changer de caissier."); navigate("/cash-closing"); }
-        else navigate("/pin", { replace: true });
-      }}>
-        <div><strong>👥 Changer de caissier</strong><small>Clôturer puis saisir un autre code PIN</small></div>
-      </button>
       {isAdminSession && <button type="button" onClick={() => { setShowPosMenu(false); setLogoutPin(""); setLogoutError(""); setLeavingStore(true); }}>
         <div><strong>🚪 Se déconnecter du magasin</strong><small>Retour à la connexion email / mot de passe</small></div>
       </button>}
