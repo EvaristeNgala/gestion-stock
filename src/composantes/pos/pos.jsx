@@ -2612,7 +2612,7 @@ if (posLocked && cashSession) {
             setShowPosMenu(false);
             // Retour volontaire : afficher les deux choix de connexion.
             // La session est conservée pour une éventuelle réouverture.
-            navigate("/", { replace: true, state: { manualHome: true } });
+            navigate(Capacitor.isNativePlatform() ? "/pin" : "/", { replace: true, state: Capacitor.isNativePlatform() ? undefined : { manualHome: true } });
           }}
           style={{
             display: "inline-flex",
