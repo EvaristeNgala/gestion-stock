@@ -323,9 +323,9 @@ function Employees() {
 
       Math.floor(
 
-        100000 +
+        1000 +
 
-          Math.random() * 900000
+          Math.random() * 9000
 
       ).toString();
 
@@ -461,13 +461,13 @@ function Employees() {
 
       if (
 
-        code.trim().length !== 6
+        !/^\d{4}$/.test(code.trim())
 
       ) {
 
         alert(
 
-          "Le code doit contenir exactement 6 chiffres."
+          "Le code doit contenir exactement 4 chiffres."
 
         );
 
@@ -1062,9 +1062,9 @@ function Employees() {
 
                   inputMode="numeric"
 
-                  maxLength={6}
+                  maxLength={4}
 
-                  placeholder="6 chiffres"
+                  placeholder="4 chiffres"
 
                   value={code}
 

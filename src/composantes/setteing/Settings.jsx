@@ -602,7 +602,7 @@ function Settings() {
 
 
 
-    if (value.length > 6) return;
+    if (value.length > 4) return;
 
 
 
@@ -654,7 +654,7 @@ function Settings() {
 
 
 
-    if (value.length > 6) return;
+    if (value.length > 4) return;
 
 
 
@@ -806,7 +806,7 @@ function Settings() {
 
 
 
-      !/^\d{4,6}$/.test(settings.adminPosCode)
+      !/^\d{4}$/.test(settings.adminPosCode)
 
 
 
@@ -818,7 +818,7 @@ function Settings() {
 
 
 
-        "Le code administrateur POS doit contenir entre 4 et 6 chiffres."
+        "Le code administrateur POS doit contenir exactement 4 chiffres."
 
 
 
@@ -1562,11 +1562,11 @@ function Settings() {
 
 
 
-                      placeholder="4 à 6 chiffres"
+                      placeholder="4 chiffres"
 
 
 
-                      maxLength={6}
+                      maxLength={4}
 
 
 
@@ -1654,7 +1654,7 @@ function Settings() {
 
 
 
-                    maxLength={6}
+                    maxLength={4}
 
 
 
