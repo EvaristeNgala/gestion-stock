@@ -23,7 +23,7 @@ import PosDeviceLogin from "./composantes/pos/PosDeviceLogin";
 import PosPin from "./composantes/pos/PosPin";
 
 const guard = (element, permission) => <ProtectedRoute permission={permission}>{element}</ProtectedRoute>;
-const native = Capacitor.isNativePlatform();
+const native = true;
 
 function RememberLastPage() {
   const location = useLocation();
