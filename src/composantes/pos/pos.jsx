@@ -24,11 +24,66 @@ import {
 import { db } from "../../firebase";
 import styles from "./pos.module.css";
 
-function POS() {
+const POS_UNLOCK_REQUEST_KEY = "stockManagerPosUnlockRequest";
+
+const readSavedPosTicket = () => {
+  try {
+    const session = JSON.parse(localStorage.getItem("storeSession") || "null");
+    const activeCashier = JSON.parse(localStorage.getItem("stockManagerActiveCashier") || "null");
+    const userId = session?.uid || session?.userId;
+
+    if (
+      !session?.storeId ||
+      !userId ||
+      activeCashier?.storeId !== session.storeId ||
+      activeCashier?.userId !== userId ||
+      !activeCashier?.cashSessionId
+    ) return [];
+
+    const key = `stockManagerPendingTicket:${session.storeId}:${userId}`;
+    const saved = JSON.parse(localStorage.getItem(key) || "null");
+
+    if (saved?.cashSessionId !== activeCashier.cashSessionId || !Array.isArray(saved.items)) {
+      return [];
+    }
+
+    return saved.items;
+  } catch (error) {
+    console.error("Erreur récupération du ticket sauvegardé :", error);
+    return [];
+  }
+};
+
+function POS({ onLock }) {
   // ==============================
   // PRODUITS / TICKET
   // ==============================
   const navigate = useNavigate();
+
+  // Identifiant stable de cette installation (web ou Android).
+  // Il sert à retrouver l'appareil qui a effectué chaque vente.
+  const [deviceId] = useState(() => {
+    const storageKey = "stockManagerDeviceId";
+
+    try {
+      const savedDeviceId = localStorage.getItem(storageKey);
+      if (savedDeviceId) return savedDeviceId;
+
+      const generatedDeviceId =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+      localStorage.setItem(storageKey, generatedDeviceId);
+      return generatedDeviceId;
+    } catch (error) {
+      console.error("Identifiant de l'appareil indisponible :", error);
+      return `temporary-device-${Date.now()}`;
+    }
+  });
+
+  const deviceType = Capacitor.getPlatform();
+
   const [showPosMenu, setShowPosMenu] = useState(false);
   const [showPrinterSettings, setShowPrinterSettings] = useState(false);
   const [printerDevices, setPrinterDevices] = useState([]);
@@ -40,19 +95,10 @@ function POS() {
   const [logoutPin, setLogoutPin] = useState("");
   const [logoutError, setLogoutError] = useState("");
   const [logoutBusy, setLogoutBusy] = useState(false);
-  // ==============================
-// VERROUILLAGE DU POS
-// ==============================
-
-const [posLocked, setPosLocked] = useState(false);
-const [unlockCode, setUnlockCode] = useState("");
-const [unlockError, setUnlockError] = useState("");
-const [unlocking, setUnlocking] = useState(false);
-
-// 5 minutes sans activité
+  // Verrouillage automatique après cinq minutes sans activité.
 const POS_INACTIVITY_TIME = 5 * 60 * 1000;
   const [products, setProducts] = useState([]);
-  const [ticket, setTicket] = useState([]);
+  const [ticket, setTicket] = useState(readSavedPosTicket);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState(
     "Tous les articles"
@@ -398,6 +444,13 @@ useEffect(() => {
   const userId = selectedCashier?.id || null;
   const userName = selectedCashier?.name || connectedUserName;
   const userRole = selectedCashier?.role || connectedRole;
+  const pendingTicketStorageKey =
+    storeId && userId ? `stockManagerPendingTicket:${storeId}:${userId}` : null;
+  const ticketRef = useRef(ticket);
+
+  useEffect(() => {
+    ticketRef.current = ticket;
+  }, [ticket]);
 
   // Garder le caissier actif pour les pages de clôture et d'historique.
   useEffect(() => {
@@ -407,19 +460,60 @@ useEffect(() => {
     }));
   }, [cashSession?.id, storeId, userId, userName, userRole]);
 
+  // Sauvegarder le ticket pour le retrouver après le passage par la page PIN.
+  useEffect(() => {
+    if (!cashSession?.id || !pendingTicketStorageKey) return;
+
+    try {
+      localStorage.setItem(
+        pendingTicketStorageKey,
+        JSON.stringify({ cashSessionId: cashSession.id, items: ticket })
+      );
+    } catch (error) {
+      console.error("Sauvegarde du ticket impossible :", error);
+    }
+  }, [ticket, cashSession?.id, pendingTicketStorageKey]);
+
   // ==============================
 // VERROUILLER LE POS
 // ==============================
 
-// Déconnexion contrôlée : vérifier la caisse dans Firestore, et non
-// seulement dans l'état React (qui peut être périmé).
-// La déconnexion générale se fait uniquement depuis le Dashboard.
-// La caisse se clôture dans CashClosing ; ensuite le POS demande un autre utilisateur.
 const lockPOS = () => {
-  setShowPosMenu(false);
-  setUnlockCode("");
-  setUnlockError("");
-  setPosLocked(true);
+  if (!cashSession?.id || !cashSession?.userId || !storeId) {
+    alert("Aucune caisse ouverte à verrouiller.");
+    return;
+  }
+
+  try {
+    // Sauvegarde immédiate : ne pas dépendre du prochain rendu React.
+    if (pendingTicketStorageKey) {
+      localStorage.setItem(
+        pendingTicketStorageKey,
+        JSON.stringify({
+          cashSessionId: cashSession.id,
+          items: ticketRef.current
+        })
+      );
+    }
+
+    localStorage.setItem(
+      POS_UNLOCK_REQUEST_KEY,
+      JSON.stringify({
+        storeId,
+        userId: cashSession.userId,
+        cashSessionId: cashSession.id,
+        role: cashSession.role || userRole,
+        requestedAt: Date.now()
+      })
+    );
+
+    setShowPosMenu(false);
+    onLock?.();
+    navigate("/pin", { replace: true });
+  } catch (error) {
+    console.error("Erreur verrouillage POS :", error);
+    alert("Impossible de verrouiller le POS.");
+  }
 };
 
 // ==============================
@@ -427,158 +521,31 @@ const lockPOS = () => {
 // ==============================
 
 useEffect(() => {
-  // Le compteur ne doit fonctionner que
-  // lorsqu'une caisse est réellement ouverte.
-  if (!cashSession || posLocked) {
-    return;
-  }
+  if (!cashSession?.id) return;
 
   let inactivityTimer = null;
 
   const startTimer = () => {
-    if (inactivityTimer) {
-      clearTimeout(inactivityTimer);
-    }
-
+    if (inactivityTimer) clearTimeout(inactivityTimer);
     inactivityTimer = setTimeout(() => {
-      setShowPosMenu(false);
-      setUnlockCode("");
-      setUnlockError("");
-      setPosLocked(true);
+      lockPOS();
     }, POS_INACTIVITY_TIME);
   };
 
-  const handleActivity = () => {
-    startTimer();
-  };
+  const handleActivity = () => startTimer();
+  const events = ["mousedown", "touchstart", "keydown", "click"];
 
-  const events = [
-    "mousedown",
-    "touchstart",
-    "keydown",
-    "click",
-  ];
-
-  events.forEach((eventName) => {
-    window.addEventListener(
-      eventName,
-      handleActivity
-    );
-  });
-
+  events.forEach(eventName => window.addEventListener(eventName, handleActivity));
   startTimer();
 
   return () => {
-    if (inactivityTimer) {
-      clearTimeout(inactivityTimer);
-    }
-
-    events.forEach((eventName) => {
-      window.removeEventListener(
-        eventName,
-        handleActivity
-      );
-    });
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    events.forEach(eventName => window.removeEventListener(eventName, handleActivity));
   };
-}, [cashSession, posLocked]);
+  // Le timer dépend de l'identité de la caisse, pas du contenu du ticket.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [cashSession?.id, cashSession?.userId, storeId]);
 
-// ==============================
-// DÉVERROUILLER LE POS
-// ==============================
-
-// Utiliser les champs réellement enregistrés par Settings et Employees.
-// Pour l'admin : settings/{storeId}.adminPosCode est prioritaire.
-// Pour un employé : users/{userId}.code est prioritaire.
-const verifyCashierPin = async (cashierId, cashierRole, enteredPin) => {
-  if (!storeId || !cashierId) throw new Error("Utilisateur ou magasin introuvable.");
-  const snap = await getDoc(doc(db, "users", cashierId));
-  const data = snap.exists() ? snap.data() : null;
-  // Seul l'administrateur de la session connectée peut utiliser le
-  // compte admin sans document users. Ne pas se fier au rôle affiché seul.
-  const isConnectedAdmin = connectedRole === "admin" && cashierId === connectedUserId;
-  const isAdmin = data?.role === "admin" || (!data && isConnectedAdmin && cashierRole === "admin");
-  if (!data && !isAdmin) throw new Error("Compte utilisateur introuvable.");
-  if (data && (data.storeId !== storeId || data.status === "inactive" || data.canAccessPOS === false)) {
-    throw new Error("Utilisateur non autorisé à utiliser le POS.");
-  }
-  if (!isAdmin && data?.permissions?.pos !== true) {
-    throw new Error("Cet employé n'a pas accès au POS.");
-  }
-  let expected = "";
-  if (isAdmin) {
-    const settingsSnap = await getDoc(doc(db, "settings", storeId));
-    expected = settingsSnap.exists() ? String(settingsSnap.data().adminPosCode ?? "").trim() : "";
-    if (!expected) expected = String(data?.code || data?.posPin || "").trim();
-  } else {
-    expected = String(data?.code || data?.posPin || "").trim();
-  }
-  if (!expected) throw new Error(isAdmin ? "Configurez le code administrateur dans Paramètres." : "Aucun code POS configuré pour cet employé.");
-  if (expected !== enteredPin.trim()) throw new Error("Code PIN incorrect.");
-  return true;
-};
-
-const unlockPOS = async (event) => {
-  event.preventDefault();
-  const enteredCode = unlockCode.trim();
-  if (!enteredCode) {
-    setUnlockError("Veuillez entrer votre code.");
-    return;
-  }
-  // Toujours vérifier le propriétaire de la caisse verrouillée,
-  // même si la sélection d'utilisateur est actualisée entre-temps.
-  const lockedCashierId = cashSession?.userId;
-  const lockedCashierRole = cashSession?.role || userRole;
-  if (!storeId || !cashSession?.id || !lockedCashierId) {
-    setUnlockError("Aucune session de caisse active pour cet utilisateur.");
-    return;
-  }
-  if (!navigator.onLine) {
-    setUnlockError("Connexion Internet nécessaire pour déverrouiller le POS.");
-    return;
-  }
-  try {
-    setUnlocking(true);
-    setUnlockError("");
-    // Le code du propriétaire de la caisse reste valable. Le code
-    // administrateur du même magasin peut aussi déverrouiller cette caisse,
-    // sans changer son propriétaire ni créer une nouvelle session.
-    let authorized = false;
-    let ownerError = null;
-    try {
-      await verifyCashierPin(lockedCashierId, lockedCashierRole, enteredCode);
-      authorized = true;
-    } catch (error) {
-      ownerError = error;
-    }
-
-    if (!authorized) {
-      // Autorisation supplémentaire : code administrateur du magasin.
-      // Le document settings est lié au storeId courant, pas au caissier.
-      const adminSettings = await getDoc(doc(db, "settings", storeId));
-      const adminData = adminSettings.exists() ? adminSettings.data() : null;
-      const adminPin = String(adminData?.adminPosCode ?? "").trim();
-      const sameStore = !adminData?.storeId || adminData.storeId === storeId;
-      if (sameStore && adminPin && adminPin === enteredCode) {
-        authorized = true;
-      }
-    }
-
-    if (!authorized) {
-      // Ne pas divulguer si un code administrateur existe ou non.
-      if (ownerError?.code === "permission-denied") throw ownerError;
-      throw new Error("Code PIN incorrect.");
-    }
-    setPosLocked(false);
-    setUnlockCode("");
-    setUnlockError("");
-  } catch (error) {
-    console.error("Erreur déverrouillage POS :", error);
-    setUnlockError(error?.message || "Impossible de vérifier le code. Vérifiez votre connexion.");
-    setUnlockCode("");
-  } finally {
-    setUnlocking(false);
-  }
-};
   // ==============================
   // VÉRIFIER LA CAISSE
   // ==============================
@@ -785,6 +752,10 @@ const unlockPOS = async (event) => {
         }
       );
 
+      if (pendingTicketStorageKey) {
+        localStorage.removeItem(pendingTicketStorageKey);
+      }
+      localStorage.removeItem(POS_UNLOCK_REQUEST_KEY);
       setCashSession(null);
       setTicket([]);
     } catch (error) {
@@ -1681,6 +1652,10 @@ if (!cashSession?.id) {
       userName,
       userRole,
 
+      // Traçabilité de l'appareil qui a réalisé la vente.
+      deviceId,
+      deviceType,
+
       items: saleItems,
 
       stockByProduct,
@@ -1987,6 +1962,13 @@ const syncOfflineSales = async () => {
 
                 userRole:
                   sale.userRole,
+
+                // Identité de l'appareil conservée après synchronisation.
+                deviceId:
+                  sale.deviceId || null,
+
+                deviceType:
+                  sale.deviceType || null,
 
                 items:
                   sale.items || [],
@@ -2565,122 +2547,6 @@ useEffect(() => {
   // POS
   // ==============================
 
-  // ==============================
-// ÉCRAN POS VERROUILLÉ
-// ==============================
-
-if (posLocked && cashSession) {
-  return (
-    <div className={styles.posLockScreen}>
-
-      <div className={styles.posLockCard}>
-
-        <div className={styles.posLockStatus}>
-          POS VERROUILLÉ
-        </div>
-
-        <h1>
-          Point de vente verrouillé
-        </h1>
-
-        <p className={styles.posLockDescription}>
-          Entrez votre code personnel
-          pour reprendre votre session.
-        </p>
-
-        <div className={styles.posLockUser}>
-
-          <div className={styles.posLockAvatar}>
-            {(cashSession?.userName || userName)
-              .charAt(0)
-              .toUpperCase()}
-          </div>
-
-          <div>
-            <strong>
-              {cashSession?.userName || userName}
-            </strong>
-
-            <span>
-              {(cashSession?.role || userRole) === "admin"
-                ? "Administrateur"
-                : (cashSession?.role || userRole) === "manager"
-                ? "Gérant"
-                : "Caissier"}
-            </span>
-          </div>
-
-        </div>
-
-        <form
-          onSubmit={unlockPOS}
-          className={styles.posUnlockForm}
-        >
-
-          <label>
-            Code d'accès
-          </label>
-
-          <input
-            type="password"
-            inputMode="numeric"
-            maxLength={6}
-            autoFocus
-            value={unlockCode}
-            placeholder="••••••"
-            onChange={(event) => {
-              setUnlockCode(
-                event.target.value.replace(
-                  /\D/g,
-                  ""
-                )
-              );
-
-              setUnlockError("");
-            }}
-          />
-
-          {unlockError && (
-            <div
-              className={
-                styles.posUnlockError
-              }
-            >
-              {unlockError}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={
-              unlocking ||
-              !unlockCode
-            }
-          >
-            {unlocking
-              ? "VÉRIFICATION..."
-              : " DÉVERROUILLER"}
-          </button>
-
-        </form>
-
-        <div className={styles.posLockInfo}>
-          <span>
-            Caisse toujours ouverte
-          </span>
-
-          <small>
-            Votre ticket et votre session
-            sont conservés.
-          </small>
-        </div>
-
-      </div>
-
-    </div>
-  );
-}
-
   return (
     <div className={styles.pos}>
 
@@ -2725,34 +2591,7 @@ if (posLocked && cashSession) {
         className={styles.header}
       >
         {/* Retour à la page précédente, sans fermer la caisse */}
-        <button
-          type="button"
-          aria-label="Retour à la page précédente"
-          title="Retour"
-          onClick={() => {
-            setShowPosMenu(false);
-            // Retour volontaire : afficher les deux choix de connexion.
-            // La session est conservée pour une éventuelle réouverture.
-            navigate(Capacitor.isNativePlatform() ? "/pin" : "/", { replace: true, state: Capacitor.isNativePlatform() ? undefined : { manualHome: true } });
-          }}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-            width: 38,
-            height: 38,
-            borderRadius: 10,
-            border: "1px solid rgba(148,163,184,.35)",
-            background: "transparent",
-            color: "inherit",
-            fontSize: 25,
-            fontWeight: 600,
-            cursor: "pointer"
-          }}
-        >
-          ←
-        </button>
+
         <div className={styles.posMenuWrapper}>
   <button
     type="button"

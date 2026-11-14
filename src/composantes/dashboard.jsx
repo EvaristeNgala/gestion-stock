@@ -144,19 +144,6 @@ function Dashboard() {
 
     {
 
-      permission: "pos",
-      title: "POS",
-
-      description: "Point de vente",
-
-      path: "/pos",
-
-      icon: "💳",
-
-    },
-
-    {
-
       permission: "reports",
       title: "Rapports",
 

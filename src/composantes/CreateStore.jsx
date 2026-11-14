@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
+  signOut,
 } from "firebase/auth";
 
 import {
@@ -11,8 +13,8 @@ import {
   getDocs,
   query,
   serverTimestamp,
-  setDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 
 import { auth, db } from "../firebase";
@@ -26,23 +28,12 @@ function CreateStore() {
   // ÉTATS
   // ==============================
 
-  const [storeName, setStoreName] =
-    useState("");
-
-  const [adminName, setAdminName] =
-    useState("");
-
-  const [email, setEmail] =
-    useState("");
-
-  const [password, setPassword] =
-    useState("");
-
-  const [confirmPassword, setConfirmPassword] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
+  const [storeName, setStoreName] = useState("");
+  const [adminName, setAdminName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // ==============================
   // CRÉATION DU MAGASIN
@@ -62,25 +53,23 @@ function CreateStore() {
       !password ||
       !confirmPassword
     ) {
-      alert(
-        "Veuillez remplir tous les champs."
-      );
+      alert("Veuillez remplir tous les champs.");
       return;
     }
 
     if (password.length < 6) {
-      alert(
-        "Le mot de passe doit contenir au moins 6 caractères."
-      );
+      alert("Le mot de passe doit contenir au moins 6 caractères.");
       return;
     }
 
     if (password !== confirmPassword) {
-      alert(
-        "Les deux mots de passe ne correspondent pas."
-      );
+      alert("Les deux mots de passe ne correspondent pas.");
       return;
     }
+
+    // Cette variable permet de savoir si Firebase Auth a déjà créé
+    // le compte, au cas où l'enregistrement Firestore échouerait.
+    let createdUser = null;
 
     try {
       setLoading(true);
@@ -89,17 +78,10 @@ function CreateStore() {
       // NETTOYAGE DES DONNÉES
       // ==============================
 
-      const cleanStoreName =
-        storeName.trim();
-
-      const cleanStoreNameLower =
-        cleanStoreName.toLowerCase();
-
-      const cleanAdminName =
-        adminName.trim();
-
-      const cleanEmail =
-        email.trim().toLowerCase();
+      const cleanStoreName = storeName.trim();
+      const cleanStoreNameLower = cleanStoreName.toLowerCase();
+      const cleanAdminName = adminName.trim();
+      const cleanEmail = email.trim().toLowerCase();
 
       // ==============================
       // VÉRIFIER SI LE MAGASIN EXISTE
@@ -107,63 +89,33 @@ function CreateStore() {
 
       const storesQuery = query(
         collection(db, "stores"),
-        where(
-          "storeNameLower",
-          "==",
-          cleanStoreNameLower
-        )
+        where("storeNameLower", "==", cleanStoreNameLower)
       );
 
-      const storesSnapshot =
-        await getDocs(storesQuery);
+      const storesSnapshot = await getDocs(storesQuery);
 
-      // ==========================================
-      // COMPATIBILITÉ AVEC LES ANCIENS MAGASINS
-      // ==========================================
-      //
-      // Si certains anciens magasins n'ont pas
-      // encore storeNameLower, on vérifie aussi
-      // leur storeName directement.
-      // ==========================================
-
+      // Compatibilité avec les anciens magasins qui n'ont pas
+      // encore le champ storeNameLower.
       let oldStoreExists = false;
 
       if (storesSnapshot.empty) {
-        const allStoresSnapshot =
-          await getDocs(
-            collection(db, "stores")
-          );
+        const allStoresSnapshot = await getDocs(collection(db, "stores"));
 
-        allStoresSnapshot.forEach(
-          (storeDoc) => {
-            const data =
-              storeDoc.data();
+        allStoresSnapshot.forEach((storeDoc) => {
+          const data = storeDoc.data();
+          const existingName = (data.storeName || "")
+            .toString()
+            .trim()
+            .toLowerCase();
 
-            const existingName =
-              (
-                data.storeName || ""
-              )
-                .toString()
-                .trim()
-                .toLowerCase();
-
-            if (
-              existingName ===
-              cleanStoreNameLower
-            ) {
-              oldStoreExists = true;
-            }
+          if (existingName === cleanStoreNameLower) {
+            oldStoreExists = true;
           }
-        );
+        });
       }
 
-      if (
-        !storesSnapshot.empty ||
-        oldStoreExists
-      ) {
-        alert(
-          "Un magasin portant ce nom existe déjà."
-        );
+      if (!storesSnapshot.empty || oldStoreExists) {
+        alert("Un magasin portant ce nom existe déjà.");
         return;
       }
 
@@ -171,82 +123,56 @@ function CreateStore() {
       // CRÉER LE COMPTE FIREBASE AUTH
       // ==============================
 
-      const userCredential =
-        await createUserWithEmailAndPassword(
-          auth,
-          cleanEmail,
-          password
-        );
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        cleanEmail,
+        password
+      );
 
-      const user =
-        userCredential.user;
+      const user = userCredential.user;
+      createdUser = user;
 
-      // ==============================
-      // ID DU MAGASIN
-      // ==============================
-
-      // L'UID de l'administrateur sert
-      // actuellement d'identifiant unique
-      // du magasin.
-
+      // L'UID de l'administrateur reste l'identifiant du magasin.
+      // Nous conservons donc la compatibilité avec le magasin de test.
       const storeId = user.uid;
 
       // ==============================
-      // CRÉER LE MAGASIN
+      // PRÉPARER LES DOCUMENTS FIRESTORE
       // ==============================
 
-      await setDoc(
-        doc(db, "stores", storeId),
-        {
-          storeId,
+      const storeData = {
+        storeId,
+        storeName: cleanStoreName,
+        storeNameLower: cleanStoreNameLower,
+        createdBy: user.uid,
+        status: "active",
+        createdAt: serverTimestamp(),
+      };
 
-          storeName:
-            cleanStoreName,
-
-          storeNameLower:
-            cleanStoreNameLower,
-
-          createdBy:
-            user.uid,
-
-          status: "active",
-
-          createdAt:
-            serverTimestamp(),
-        }
-      );
+      const adminData = {
+        uid: user.uid,
+        name: cleanAdminName,
+        email: cleanEmail,
+        role: "admin",
+        storeId,
+        storeName: cleanStoreName,
+        storeNameLower: cleanStoreNameLower,
+        status: "active",
+        createdAt: serverTimestamp(),
+      };
 
       // ==============================
-      // CRÉER L'ADMINISTRATEUR
+      // ENREGISTREMENT ATOMIQUE
       // ==============================
+      // Les deux documents sont enregistrés ensemble :
+      // soit les deux réussissent, soit aucun n'est enregistré.
 
-      await setDoc(
-        doc(db, "users", user.uid),
-        {
-          uid: user.uid,
+      const batch = writeBatch(db);
 
-          name:
-            cleanAdminName,
+      batch.set(doc(db, "stores", storeId), storeData);
+      batch.set(doc(db, "users", user.uid), adminData);
 
-          email:
-            cleanEmail,
-
-          role: "admin",
-
-          storeId,
-
-          storeName:
-            cleanStoreName,
-
-          storeNameLower:
-            cleanStoreNameLower,
-
-          status: "active",
-
-          createdAt:
-            serverTimestamp(),
-        }
-      );
+      await batch.commit();
 
       // ==============================
       // SESSION ADMIN
@@ -254,24 +180,13 @@ function CreateStore() {
 
       const session = {
         uid: user.uid,
-
         userId: user.uid,
-
-        name:
-          cleanAdminName,
-
+        name: cleanAdminName,
         role: "admin",
-
         storeId,
-
-        storeName:
-          cleanStoreName,
-
+        storeName: cleanStoreName,
         storeCode: "",
-
-        email:
-          cleanEmail,
-
+        email: cleanEmail,
         permissions: {
           pos: true,
           products: true,
@@ -283,67 +198,65 @@ function CreateStore() {
         },
       };
 
-      localStorage.setItem(
-        "storeSession",
-        JSON.stringify(session)
-      );
+      localStorage.setItem("storeSession", JSON.stringify(session));
 
-      // ==============================
-      // VIDER LES CHAMPS
-      // ==============================
-
+      // Vider les champs après la réussite complète.
       setStoreName("");
       setAdminName("");
       setEmail("");
       setPassword("");
       setConfirmPassword("");
 
-      // ==============================
-      // MESSAGE
-      // ==============================
-
-    
-
-      // ==============================
-      // DASHBOARD
-      // ==============================
-
+      alert("Votre magasin a été créé avec succès.");
       navigate("/dashboard");
-
     } catch (error) {
-      console.error(
-        "Erreur lors de la création du magasin :",
-        error
-      );
+      console.error("Erreur lors de la création du magasin :", error);
+
+      let cleanupFailed = false;
+
+      // Si le compte Auth vient d'être créé mais que l'écriture
+      // Firestore a échoué, on tente de supprimer ce compte incomplet.
+      if (createdUser) {
+        try {
+          await deleteUser(createdUser);
+        } catch (cleanupError) {
+          cleanupFailed = true;
+          console.error(
+            "Impossible de supprimer le compte créé sans magasin :",
+            cleanupError
+          );
+
+          // On ferme au moins la session Firebase si la suppression
+          // du compte n'a pas pu être effectuée.
+          try {
+            await signOut(auth);
+          } catch (signOutError) {
+            console.error("Erreur lors de la déconnexion :", signOutError);
+          }
+        }
+      }
 
       // ==============================
-      // ERREURS FIREBASE AUTH
+      // MESSAGES D'ERREUR
       // ==============================
 
-      if (
-        error.code ===
-        "auth/email-already-in-use"
-      ) {
+      if (error.code === "auth/email-already-in-use") {
+        alert("Cette adresse email est déjà utilisée.");
+      } else if (error.code === "auth/invalid-email") {
+        alert("L'adresse email n'est pas valide.");
+      } else if (error.code === "auth/weak-password") {
+        alert("Le mot de passe est trop faible.");
+      } else if (cleanupFailed) {
         alert(
-          "Cette adresse email est déjà utilisée."
+          "La création du magasin a échoué et le nettoyage du compte n'a pas pu être terminé. Vérifiez votre connexion et contactez l'administrateur avant de réessayer avec cette adresse email."
         );
-      } else if (
-        error.code ===
-        "auth/invalid-email"
-      ) {
+      } else if (createdUser) {
         alert(
-          "L'adresse email n'est pas valide."
-        );
-      } else if (
-        error.code ===
-        "auth/weak-password"
-      ) {
-        alert(
-          "Le mot de passe est trop faible."
+          "Le compte administrateur a été annulé, car l'enregistrement du magasin a échoué. Vérifiez votre connexion et réessayez."
         );
       } else {
         alert(
-          "Une erreur est survenue lors de la création du magasin."
+          "Une erreur est survenue lors de la création du magasin. Vérifiez votre connexion et réessayez."
         );
       }
     } finally {
@@ -365,13 +278,11 @@ function CreateStore() {
 
   return (
     <div className="create-store-page">
-
       {/* OVERLAY */}
       <div className="create-store-overlay"></div>
 
       {/* CONTENU */}
       <div className="create-store-container">
-
         {/* RETOUR */}
         <button
           type="button"
@@ -383,159 +294,100 @@ function CreateStore() {
 
         {/* CARTE */}
         <div className="create-store-card">
-
           {/* EN-TÊTE */}
           <div className="create-store-header">
-
-            <h1>
-              Créer un magasin
-            </h1>
-
+            <h1>Créer un magasin</h1>
             <p>
-              Configurez votre magasin et créez
-              votre compte administrateur.
+              Configurez votre magasin et créez votre compte administrateur.
             </p>
-
           </div>
 
           {/* FORMULAIRE */}
-          <form
-            onSubmit={handleCreateStore}
-          >
-
+          <form onSubmit={handleCreateStore}>
             {/* NOM DU MAGASIN */}
             <div className="create-form-group">
-
-              <label htmlFor="storeName">
-                Nom du magasin
-              </label>
-
+              <label htmlFor="storeName">Nom du magasin</label>
               <input
                 id="storeName"
                 type="text"
                 placeholder="Ex : Boutique Elva"
                 value={storeName}
-                onChange={(e) =>
-                  setStoreName(
-                    e.target.value
-                  )
-                }
+                onChange={(e) => setStoreName(e.target.value)}
+                autoComplete="organization"
               />
-
             </div>
 
             {/* NOM ADMIN */}
             <div className="create-form-group">
-
-              <label htmlFor="adminName">
-                Nom de l'administrateur
-              </label>
-
+              <label htmlFor="adminName">Nom de l'administrateur</label>
               <input
                 id="adminName"
                 type="text"
                 placeholder="Ex : Evariste"
                 value={adminName}
-                onChange={(e) =>
-                  setAdminName(
-                    e.target.value
-                  )
-                }
+                onChange={(e) => setAdminName(e.target.value)}
+                autoComplete="name"
               />
-
             </div>
 
             {/* EMAIL */}
             <div className="create-form-group">
-
-              <label htmlFor="email">
-                Adresse email
-              </label>
-
+              <label htmlFor="email">Adresse email</label>
               <input
                 id="email"
                 type="email"
                 placeholder="exemple@email.com"
                 value={email}
-                onChange={(e) =>
-                  setEmail(
-                    e.target.value
-                  )
-                }
+                onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
               />
-
             </div>
 
             {/* MOT DE PASSE */}
             <div className="create-form-group">
-
-              <label htmlFor="password">
-                Mot de passe
-              </label>
-
+              <label htmlFor="password">Mot de passe</label>
               <input
                 id="password"
                 type="password"
                 placeholder="Minimum 6 caractères"
                 value={password}
-                onChange={(e) =>
-                  setPassword(
-                    e.target.value
-                  )
-                }
+                onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
               />
-
             </div>
 
             {/* CONFIRMATION */}
             <div className="create-form-group">
-
               <label htmlFor="confirmPassword">
                 Confirmer le mot de passe
               </label>
-
               <input
                 id="confirmPassword"
                 type="password"
                 placeholder="Confirmez votre mot de passe"
                 value={confirmPassword}
-                onChange={(e) =>
-                  setConfirmPassword(
-                    e.target.value
-                  )
-                }
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 autoComplete="new-password"
               />
-
             </div>
 
-           {/* BOUTON */}
-           
+            {/* BOUTON */}
             <button
               type="submit"
               className="create-store-submit"
               disabled={loading}
             >
-              {loading
-                ? "Création en cours..."
-                : "Créer mon magasin"}
+              {loading ? "Création en cours..." : "Créer mon magasin"}
             </button>
-
           </form>
 
           {/* INFORMATION */}
           <div className="create-store-info">
-
             <p>
-              Votre compte administrateur vous permettra
-              de gérer votre magasin et de créer les
-              accès de vos employés.
+              Votre compte administrateur vous permettra de gérer votre
+              magasin et de créer les accès de vos employés.
             </p>
-
           </div>
-
         </div>
       </div>
     </div>

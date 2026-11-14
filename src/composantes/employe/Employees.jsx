@@ -318,19 +318,16 @@ function Employees() {
   // ==========================================
 
   const generateCode = () => {
+    // Génération avec l'API Crypto du navigateur.
+    // Le code reste un PIN à 4 chiffres.
+    const randomValues = new Uint32Array(1);
+    window.crypto.getRandomValues(randomValues);
 
-    const generatedCode =
-
-      Math.floor(
-
-        1000 +
-
-          Math.random() * 9000
-
-      ).toString();
+    const generatedCode = String(
+      1000 + (randomValues[0] % 9000)
+    );
 
     setCode(generatedCode);
-
   };
 
   // ==========================================
@@ -586,18 +583,7 @@ function Employees() {
             serverTimestamp(),
 
         };
-
-        const sameCode = await getDocs(query(
-          collection(db, "users"),
-          where("storeId", "==", storeId),
-          where("code", "==", code.trim())
-        ));
-        if (!sameCode.empty) {
-          alert("Ce code est déjà utilisé dans ce magasin. Choisissez un autre code.");
-          return;
-        }
-
-        await addDoc(
+await addDoc(
 
           collection(
 
