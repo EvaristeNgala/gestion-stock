@@ -133,10 +133,6 @@ const POS_INACTIVITY_TIME = 5 * 60 * 1000;
   const [selectedCashierId, setSelectedCashierId] = useState("");
   const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState("");
-  const [pinModalOpen, setPinModalOpen] = useState(false);
-  const [openingPin, setOpeningPin] = useState("");
-  const [pinChecking, setPinChecking] = useState(false);
-  const [pinError, setPinError] = useState("");
 
   // ==============================
   // CAISSE
@@ -611,7 +607,7 @@ useEffect(() => {
 
   const openCashRegister = async () => {
     if (!storeId || !userId || !selectedCashier) {
-            return;
+      return;
     }
 
     if (cashSession) {
@@ -621,46 +617,32 @@ useEffect(() => {
     // Le fonds initial peut être égal à zéro, mais doit être renseigné.
     const enteredAmount = openingAmount.trim().replace(",", ".");
     const amount = Number(enteredAmount);
+
     if (enteredAmount === "" || !Number.isFinite(amount) || amount < 0) {
       setOpeningAmountError("Indiquez un montant valide (0 autorisé).");
       return;
     }
+
     if (!navigator.onLine) {
       setOpeningAmountError("Connexion Internet nécessaire pour ouvrir la caisse.");
       return;
     }
-    setOpeningAmountError("");
-    setPinError("");
-    setOpeningPin("");
-    setPinModalOpen(true);
-  };
 
-  const confirmOpenCashRegister = async (event) => {
-    event.preventDefault();
-    if (!openingPin.trim() || !storeId || !userId || !selectedCashier) return;
-    if (!navigator.onLine) {
-      setPinError("Connexion Internet nécessaire pour vérifier le PIN.");
-      return;
-    }
-    setPinChecking(true);
-    setPinError("");
+    setOpeningAmountError("");
+    setOpeningCash(true);
+
     try {
-      // Même vérification pour ouvrir et déverrouiller la caisse.
-      await verifyCashierPin(userId, userRole, openingPin);
-      if (cashSession) throw new Error("Une caisse est déjà ouverte.");
+      // Vérification serveur pour éviter deux caisses ouvertes pour le même employé.
       const alreadyOpen = await getDocsFromServer(query(
         collection(db, "cashSessions"),
         where("storeId", "==", storeId),
         where("userId", "==", userId),
         where("status", "==", "open")
       ));
-      if (!alreadyOpen.empty) throw new Error("Cet utilisateur a déjà une caisse ouverte.");
-      const amount = Number(openingAmount.trim().replace(",", "."));
-      if (!Number.isFinite(amount) || amount < 0) throw new Error("Fonds initial invalide.");
-      setOpeningCash(true);
 
-      const cashSessionsRef =
-        collection(db, "cashSessions");
+      if (!alreadyOpen.empty) {
+        throw new Error("Cet utilisateur a déjà une caisse ouverte.");
+      }
 
       const newCashSession = {
         storeId,
@@ -677,11 +659,10 @@ useEffect(() => {
         createdAt: serverTimestamp(),
       };
 
-      const documentReference =
-        await addDoc(
-          cashSessionsRef,
-          newCashSession
-        );
+      const documentReference = await addDoc(
+        collection(db, "cashSessions"),
+        newCashSession
+      );
 
       setCashSession({
         id: documentReference.id,
@@ -690,18 +671,14 @@ useEffect(() => {
       });
 
       setOpeningAmount("");
-      setPinModalOpen(false);
+      setOpeningAmountError("");
     } catch (error) {
-      console.error(
-        "Erreur ouverture caisse :",
-        error
+      console.error("Erreur ouverture caisse :", error);
+      setOpeningAmountError(
+        error.message || "Impossible d'ouvrir la caisse."
       );
-
-      setPinError(error.message || "Impossible d'ouvrir la caisse.");
     } finally {
       setOpeningCash(false);
-      setPinChecking(false);
-      setOpeningPin("");
     }
   };
 
@@ -2517,27 +2494,6 @@ useEffect(() => {
               ? "Ouverture..."
               : "Ouvrir la caisse"}
           </button>
-          {pinModalOpen && (
-            <div role="dialog" aria-modal="true" aria-label="Confirmer le code PIN"
-              style={{ position: "fixed", inset: 0, background: "#0009", display: "grid", placeItems: "center", zIndex: 9999, padding: 16 }}>
-              <form onSubmit={confirmOpenCashRegister}
-                style={{ width: "100%", maxWidth: 380, background: "white", borderRadius: 14, padding: 24, textAlign: "left" }}>
-                <h2>Confirmation du PIN</h2>
-                <p>Confirmez le code personnel de {userName} pour ouvrir sa caisse.</p>
-                <input autoFocus type="password" inputMode="numeric" autoComplete="off"
-                  value={openingPin} onChange={e => { setOpeningPin(e.target.value); setPinError(""); }}
-                  placeholder="Code PIN personnel" required disabled={pinChecking}
-                  style={{ width: "100%", padding: 12, marginBottom: 12, border: "1px solid #ccc", borderRadius: 8 }}/>
-                {pinError && <p role="alert" style={{ color: "#b91c1c" }}>{pinError}</p>}
-                <div style={{ display: "flex", gap: 10 }}>
-                  <button type="button" disabled={pinChecking} onClick={() => { setPinModalOpen(false); setOpeningPin(""); setPinError(""); }}>Annuler</button>
-                  <button type="submit" disabled={pinChecking || !openingPin.trim()}>
-                    {pinChecking ? "Vérification..." : "Confirmer et ouvrir"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
         </div>
       </div>
     );
