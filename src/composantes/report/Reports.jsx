@@ -2,17 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
 
-  collection,
+  collection,
 
-  onSnapshot,
+  onSnapshot,
 
-  addDoc,
+  addDoc,
 
-  serverTimestamp,
+  serverTimestamp,
 
-  query,
+  query,
 
-  where,
+  where,
 
 } from "firebase/firestore";
 
@@ -26,45 +26,47 @@ import styles from "./reports.module.css";
 
 function Reports() {
 
-  const [sales, setSales] = useState([]);
+  const [sales, setSales] = useState([]);
 
-  const [expenses, setExpenses] = useState([]);
+  const [expenses, setExpenses] = useState([]);
 
-  const [offlineSales, setOfflineSales] = useState([]);
-
-
-
-  const [period, setPeriod] = useState("today");
-
-  const [startDate, setStartDate] = useState("");
-
-  const [endDate, setEndDate] = useState("");
+  const [offlineSales, setOfflineSales] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState("all");
 
 
 
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [period, setPeriod] = useState("today");
 
-  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [startDate, setStartDate] = useState("");
 
-
-
-  const [expenseForm, setExpenseForm] = useState({
-
-    label: "",
-
-    amount: "",
-
-    date: new Date().toISOString().split("T")[0],
-
-  });
+  const [endDate, setEndDate] = useState("");
 
 
 
-  const [loadingSales, setLoadingSales] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
-  const [loadingExpenses, setLoadingExpenses] = useState(true);
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
 
-  // =========================================================
+
+
+  const [expenseForm, setExpenseForm] = useState({
+
+    label: "",
+
+    amount: "",
+
+    date: new Date().toISOString().split("T")[0],
+
+  });
+
+
+
+  const [loadingSales, setLoadingSales] = useState(true);
+
+  const [loadingExpenses, setLoadingExpenses] = useState(true);
+
+  // =========================================================
 
 // SESSION MAGASIN
 
@@ -74,29 +76,29 @@ function Reports() {
 
 const storeSession = useMemo(() => {
 
-  try {
+  try {
 
-    return JSON.parse(
+    return JSON.parse(
 
-      localStorage.getItem("storeSession") || "{}"
+      localStorage.getItem("storeSession") || "{}"
 
-    );
+    );
 
-  } catch (error) {
+  } catch (error) {
 
-    console.error(
+    console.error(
 
-      "Erreur lecture session magasin :",
+      "Erreur lecture session magasin :",
 
-      error
+      error
 
-    );
+    );
 
 
 
-    return {};
+    return {};
 
-  }
+  }
 
 }, []);
 
@@ -106,23 +108,88 @@ const storeId = storeSession?.storeId || "";
 
 
 
-  // =========================================================
+  
+const connectedUserId =
+  storeSession?.uid || storeSession?.userId || null;
+const connectedUserName =
+  storeSession?.userName ||
+  storeSession?.name ||
+  storeSession?.displayName ||
+  "Administrateur";
+const connectedRole =
+  storeSession?.role || storeSession?.userRole || "";
+const isAdmin = connectedRole === "admin";
 
-  // CHARGEMENT DES VENTES
+// =========================================================
+// CHARGEMENT DES EMPLOYÉS (ADMIN UNIQUEMENT)
+// =========================================================
 
-  // =========================================================
+useEffect(() => {
+  if (!storeId || !isAdmin) {
+    setEmployees([]);
+    setSelectedEmployeeId("all");
+    return;
+  }
+
+  const employeesRef = query(
+    collection(db, "users"),
+    where("storeId", "==", storeId)
+  );
+
+  const unsubscribe = onSnapshot(
+    employeesRef,
+    (snapshot) => {
+      const users = snapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      }));
+
+      // L'administrateur connecté peut ne pas avoir de document users.
+      const adminExists = users.some((user) => user.id === connectedUserId);
+      const list = [...users];
+
+      if (connectedUserId && !adminExists) {
+        list.unshift({
+          id: connectedUserId,
+          name: connectedUserName,
+          role: "admin",
+          status: "active",
+        });
+      }
+
+      setEmployees(
+        list.filter((user) =>
+          user.role === "admin" ||
+          user.role === "manager" ||
+          user.role === "cashier"
+        )
+      );
+    },
+    (error) => {
+      console.error("Erreur chargement employés :", error);
+      setEmployees([]);
+    }
+  );
+
+  return () => unsubscribe();
+}, [storeId, isAdmin, connectedUserId, connectedUserName]);
+// =========================================================
+
+  // CHARGEMENT DES VENTES
+
+  // =========================================================
 
 
 
-  useEffect(() => {
+  useEffect(() => {
 
-    if (!storeId) {
+    if (!storeId) {
 
-  setSales([]);
+  setSales([]);
 
-  setLoadingSales(false);
+  setLoadingSales(false);
 
-  return;
+  return;
 
 }
 
@@ -130,55 +197,55 @@ const storeId = storeSession?.storeId || "";
 
 const salesRef = query(
 
-  collection(db, "sales"),
+  collection(db, "sales"),
 
-  where("storeId", "==", storeId)
+  where("storeId", "==", storeId)
 
 );
 
 
 
-    const unsubscribe = onSnapshot(
+    const unsubscribe = onSnapshot(
 
-      salesRef,
+      salesRef,
 
-      (snapshot) => {
+      (snapshot) => {
 
-        const data = snapshot.docs.map((doc) => ({
+        const data = snapshot.docs.map((doc) => ({
 
-          id: doc.id,
+          id: doc.id,
 
-          ...doc.data(),
+          ...doc.data(),
 
-        }));
-
-
-
-        setSales(data);
-
-        setLoadingSales(false);
-
-      },
-
-      (error) => {
-
-        console.error("Erreur chargement ventes :", error);
-
-        setLoadingSales(false);
-
-      }
-
-    );
+        }));
 
 
 
-    return () => unsubscribe();
+        setSales(data);
 
-  }, [storeId]);
+        setLoadingSales(false);
+
+      },
+
+      (error) => {
+
+        console.error("Erreur chargement ventes :", error);
+
+        setLoadingSales(false);
+
+      }
+
+    );
 
 
 
-  // =========================================================
+    return () => unsubscribe();
+
+  }, [storeId]);
+
+
+
+  // =========================================================
 
 // CHARGEMENT DES VENTES HORS CONNEXION
 
@@ -188,119 +255,119 @@ const salesRef = query(
 
 useEffect(() => {
 
-  const loadOfflineSales = () => {
+  const loadOfflineSales = () => {
 
-    try {
+    try {
 
-      const saved = localStorage.getItem(
+      const saved = localStorage.getItem(
 
-        "stockManagerOfflineSales"
+        "stockManagerOfflineSales"
 
-      );
-
-
-
-      const data = saved
-
-        ? JSON.parse(saved)
-
-        : [];
+      );
 
 
 
-      setOfflineSales(
+      const data = saved
 
-        Array.isArray(data) ? data : []
+        ? JSON.parse(saved)
 
-      );
-
-    } catch (error) {
-
-      console.error(
-
-        "Erreur chargement ventes hors connexion :",
-
-        error
-
-      );
+        : [];
 
 
 
-      setOfflineSales([]);
+      setOfflineSales(
 
-    }
+        Array.isArray(data) ? data : []
 
-  };
+      );
 
+    } catch (error) {
 
+      console.error(
 
-  loadOfflineSales();
+        "Erreur chargement ventes hors connexion :",
 
+        error
 
-
-  window.addEventListener(
-
-    "storage",
-
-    loadOfflineSales
-
-  );
+      );
 
 
 
-  window.addEventListener(
+      setOfflineSales([]);
 
-    "focus",
+    }
 
-    loadOfflineSales
-
-  );
+  };
 
 
 
-  return () => {
-
-    window.removeEventListener(
-
-      "storage",
-
-      loadOfflineSales
-
-    );
+  loadOfflineSales();
 
 
 
-    window.removeEventListener(
+  window.addEventListener(
 
-      "focus",
+    "storage",
 
-      loadOfflineSales
+    loadOfflineSales
 
-    );
+  );
 
-  };
+
+
+  window.addEventListener(
+
+    "focus",
+
+    loadOfflineSales
+
+  );
+
+
+
+  return () => {
+
+    window.removeEventListener(
+
+      "storage",
+
+      loadOfflineSales
+
+    );
+
+
+
+    window.removeEventListener(
+
+      "focus",
+
+      loadOfflineSales
+
+    );
+
+  };
 
 }, []);
 
 
 
-  // =========================================================
+  // =========================================================
 
-  // CHARGEMENT DES DEPENSES
+  // CHARGEMENT DES DEPENSES
 
-  // =========================================================
+  // =========================================================
 
 
 
-  useEffect(() => {
+  useEffect(() => {
 
-    if (!storeId) {
+    if (!storeId) {
 
-  setExpenses([]);
+  setExpenses([]);
 
-  setLoadingExpenses(false);
+  setLoadingExpenses(false);
 
-  return;
+  return;
 
 }
 
@@ -308,231 +375,231 @@ useEffect(() => {
 
 const expensesRef = query(
 
-  collection(db, "expenses"),
+  collection(db, "expenses"),
 
-  where("storeId", "==", storeId)
+  where("storeId", "==", storeId)
 
 );
 
 
 
-    const unsubscribe = onSnapshot(
+    const unsubscribe = onSnapshot(
 
-      expensesRef,
+      expensesRef,
 
-      (snapshot) => {
+      (snapshot) => {
 
-        const data = snapshot.docs.map((doc) => ({
+        const data = snapshot.docs.map((doc) => ({
 
-          id: doc.id,
+          id: doc.id,
 
-          ...doc.data(),
+          ...doc.data(),
 
-        }));
+        }));
 
 
 
-        setExpenses(data);
+        setExpenses(data);
 
-        setLoadingExpenses(false);
+        setLoadingExpenses(false);
 
-      },
+      },
 
-      (error) => {
+      (error) => {
 
-        console.error("Erreur chargement dépenses :", error);
+        console.error("Erreur chargement dépenses :", error);
 
-        setLoadingExpenses(false);
+        setLoadingExpenses(false);
 
-      }
+      }
 
-    );
+    );
 
 
 
-    return () => unsubscribe();
+    return () => unsubscribe();
 
-  }, [storeId]);
+  }, [storeId]);
 
 
 
-  // =========================================================
+  // =========================================================
 
-  // UTILITAIRES DATES
+  // UTILITAIRES DATES
 
-  // =========================================================
+  // =========================================================
 
 
 
-  const getDate = (value) => {
+  const getDate = (value) => {
 
-    if (!value) return null;
+    if (!value) return null;
 
 
 
-    if (value?.toDate) {
+    if (value?.toDate) {
 
-      return value.toDate();
+      return value.toDate();
 
-    }
+    }
 
 
 
-    if (value instanceof Date) {
+    if (value instanceof Date) {
 
-      return value;
+      return value;
 
-    }
+    }
 
 
 
-    const date = new Date(value);
+    const date = new Date(value);
 
 
 
-    if (Number.isNaN(date.getTime())) {
+    if (Number.isNaN(date.getTime())) {
 
-      return null;
+      return null;
 
-    }
+    }
 
 
 
-    return date;
+    return date;
 
-  };
+  };
 
 
 
-  const startOfDay = (date) => {
+  const startOfDay = (date) => {
 
-    const result = new Date(date);
+    const result = new Date(date);
 
-    result.setHours(0, 0, 0, 0);
+    result.setHours(0, 0, 0, 0);
 
-    return result;
+    return result;
 
-  };
+  };
 
 
 
-  const endOfDay = (date) => {
+  const endOfDay = (date) => {
 
-    const result = new Date(date);
+    const result = new Date(date);
 
-    result.setHours(23, 59, 59, 999);
+    result.setHours(23, 59, 59, 999);
 
-    return result;
+    return result;
 
-  };
+  };
 
 
 
-  // =========================================================
+  // =========================================================
 
-  // PERIODE
+  // PERIODE
 
-  // =========================================================
+  // =========================================================
 
 
 
-  const selectedPeriod = useMemo(() => {
+  const selectedPeriod = useMemo(() => {
 
-    const now = new Date();
+    const now = new Date();
 
 
 
-    let start;
+    let start;
 
-    let end;
+    let end;
 
 
 
-    if (period === "today") {
+    if (period === "today") {
 
-      start = startOfDay(now);
+      start = startOfDay(now);
 
-      end = endOfDay(now);
+      end = endOfDay(now);
 
-    }
+    }
 
 
 
-    if (period === "week") {
+    if (period === "week") {
 
-      const currentDay = now.getDay();
+      const currentDay = now.getDay();
 
-      const difference = currentDay === 0 ? 6 : currentDay - 1;
+      const difference = currentDay === 0 ? 6 : currentDay - 1;
 
 
 
-      start = new Date(now);
+      start = new Date(now);
 
-      start.setDate(now.getDate() - difference);
+      start.setDate(now.getDate() - difference);
 
-      start = startOfDay(start);
+      start = startOfDay(start);
 
 
 
-      end = endOfDay(now);
+      end = endOfDay(now);
 
-    }
+    }
 
 
 
-    if (period === "month") {
+    if (period === "month") {
 
-      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      start = startOfDay(start);
+      start = startOfDay(start);
 
 
 
-      end = endOfDay(now);
+      end = endOfDay(now);
 
-    }
+    }
 
 
 
-    if (period === "custom") {
+    if (period === "custom") {
 
-      if (!startDate || !endDate) {
+      if (!startDate || !endDate) {
 
-        return null;
+        return null;
 
-      }
+      }
 
 
 
-      start = startOfDay(new Date(`${startDate}T00:00:00`));
+      start = startOfDay(new Date(`${startDate}T00:00:00`));
 
-      end = endOfDay(new Date(`${endDate}T00:00:00`));
+      end = endOfDay(new Date(`${endDate}T00:00:00`));
 
-    }
+    }
 
 
 
-    if (!start || !end) {
+    if (!start || !end) {
 
-      return null;
+      return null;
 
-    }
+    }
 
 
 
-    return {
+    return {
 
-      start,
+      start,
 
-      end,
+      end,
 
-    };
+    };
 
-  }, [period, startDate, endDate]);
+  }, [period, startDate, endDate]);
 
 
 
-  // =========================================================
+  // =========================================================
 
 // TOUTES LES VENTES
 
@@ -544,68 +611,63 @@ const expensesRef = query(
 
 const allSales = useMemo(() => {
 
-  const firebaseOfflineIds = new Set(
+  const firebaseOfflineIds = new Set(
 
-    sales
+    sales
 
-      .map((sale) => sale.offlineSaleId)
+      .map((sale) => sale.offlineSaleId)
 
-      .filter(Boolean)
+      .filter(Boolean)
 
-  );
-
-
-
-  // Évite de compter deux fois une vente qui vient
-
-  // juste d'être synchronisée avec Firebase.
-
-  const pendingOfflineSales =
-
-    offlineSales.filter(
-
-      (sale) =>
-
-        !firebaseOfflineIds.has(
-
-          sale.offlineSaleId
-
-        )
-
-    );
+  );
 
 
 
-  return [
+  // Évite de compter deux fois une vente qui vient
 
-    ...sales,
+  // juste d'être synchronisée avec Firebase.
 
-    ...pendingOfflineSales,
+  const pendingOfflineSales =
 
-  ];
+    offlineSales.filter(
+
+      (sale) =>
+
+        !firebaseOfflineIds.has(
+
+          sale.offlineSaleId
+
+        )
+
+    );
+
+
+
+  return [
+
+    ...sales,
+
+    ...pendingOfflineSales,
+
+  ];
 
 }, [sales, offlineSales]);
 
 
 
-  // =========================================================
+  // =========================================================
 
-  // VENTES DE LA PERIODE
+  // VENTES DE LA PERIODE
 
-  // =========================================================
+  // =========================================================
 
 
 
-  const filteredSales = useMemo(() => {
+  const periodSales = useMemo(() => {
   if (!selectedPeriod) return [];
 
   return allSales.filter((sale) => {
-    // Une vente annulée ne doit plus être comptée
-    // dans le chiffre d'affaires, bénéfice,
-    // articles vendus et nombre de ventes.
-    if (sale.status === "cancelled") {
-      return false;
-    }
+    if (sale.status === "cancelled") return false;
 
     const date = getDate(
       sale.offlineCreatedAt ||
@@ -615,2368 +677,2392 @@ const allSales = useMemo(() => {
 
     if (!date) return false;
 
-    return (
-      date >= selectedPeriod.start &&
-      date <= selectedPeriod.end
-    );
+    return date >= selectedPeriod.start && date <= selectedPeriod.end;
   });
 }, [allSales, selectedPeriod]);
 
-  // =========================================================
+// Le rapport général inclut toutes les ventes.
+// Le filtre individuel utilise l'identifiant réellement enregistré sur la vente.
+const filteredSales = useMemo(() => {
+  if (!isAdmin || selectedEmployeeId === "all") return periodSales;
 
-  // DEPENSES DE LA PERIODE
+  return periodSales.filter((sale) => sale.userId === selectedEmployeeId);
+}, [periodSales, isAdmin, selectedEmployeeId]);
 
-  // =========================================================
+  // =========================================================
 
+  // DEPENSES DE LA PERIODE
 
+  // =========================================================
 
-  const filteredExpenses = useMemo(() => {
 
-    if (!selectedPeriod) return [];
 
+  const filteredExpenses = useMemo(() => {
 
+    if (!selectedPeriod) return [];
 
-    return expenses.filter((expense) => {
 
-      const date = getDate(
 
-        expense.createdAt || expense.date
+    return expenses.filter((expense) => {
 
-      );
+      const date = getDate(
 
+        expense.createdAt || expense.date
 
+      );
 
-      if (!date) return false;
 
 
+      if (!date) return false;
 
-      return (
 
-        date >= selectedPeriod.start &&
 
-        date <= selectedPeriod.end
+      return (
 
-      );
+        date >= selectedPeriod.start &&
 
-    });
+        date <= selectedPeriod.end
 
-  }, [expenses, selectedPeriod]);
+      );
 
+    });
 
+  }, [expenses, selectedPeriod]);
 
-  // =========================================================
 
-  // CHIFFRE D'AFFAIRES
 
-  // =========================================================
+  // =========================================================
 
+  // CHIFFRE D'AFFAIRES
 
+  // =========================================================
 
-  const totalSales = useMemo(() => {
 
-    return filteredSales.reduce((total, sale) => {
 
-      return total + Number(sale.total || 0);
+  const totalSales = useMemo(() => {
 
-    }, 0);
+    return filteredSales.reduce((total, sale) => {
 
-  }, [filteredSales]);
+      return total + Number(sale.total || 0);
 
+    }, 0);
 
+  }, [filteredSales]);
 
-  // =========================================================
 
-  // PRODUITS REGROUPES
 
-  // =========================================================
+  // =========================================================
 
+  // PRODUITS REGROUPES
 
+  // =========================================================
 
-  const productReports = useMemo(() => {
 
-    const productsMap = {};
 
+  const productReports = useMemo(() => {
 
+    const productsMap = {};
 
-    filteredSales.forEach((sale) => {
 
-      if (!Array.isArray(sale.items)) return;
 
+    filteredSales.forEach((sale) => {
 
+      if (!Array.isArray(sale.items)) return;
 
-      sale.items.forEach((item) => {
 
-        const productId =
 
-          item.productId ||
+      sale.items.forEach((item) => {
 
-          item.id ||
+        const productId =
 
-          `${item.name || "Produit"}`;
+          item.productId ||
 
+          item.id ||
 
+          `${item.name || "Produit"}`;
 
-        const productName =
 
-          item.name ||
 
-          item.productName ||
+        const productName =
 
-          "Produit";
+          item.name ||
 
+          item.productName ||
 
+          "Produit";
 
-        const category =
 
-          item.categoryName ||
 
-          item.category ||
+        const category =
 
-          "Non classé";
+          item.categoryName ||
 
+          item.category ||
 
+          "Non classé";
 
-        const variantType =
 
-          item.variantType ||
 
-          item.type ||
+        const variantType =
 
-          item.stockUnit ||
+          item.variantType ||
 
-          "Unité";
+          item.type ||
 
+          item.stockUnit ||
 
+          "Unité";
 
-        const quantity = Number(item.quantity || 0);
 
 
+        const quantity = Number(item.quantity || 0);
 
-        const sellingPrice = Number(
 
-          item.price ||
 
-          item.sellingPrice ||
+        const sellingPrice = Number(
 
-          0
+          item.price ||
 
-        );
+          item.sellingPrice ||
 
+          0
 
+        );
 
-        const purchasePrice = Number(
 
-          item.purchasePrice || 0
 
-        );
+        const purchasePrice = Number(
 
+          item.purchasePrice || 0
 
+        );
 
-        const amountSold =
 
-          sellingPrice * quantity;
 
+        const amountSold =
 
+          sellingPrice * quantity;
 
-        const profit =
 
-          (sellingPrice - purchasePrice) *
 
-          quantity;
+        const profit =
 
+          (sellingPrice - purchasePrice) *
 
+          quantity;
 
-        if (!productsMap[productId]) {
 
-          productsMap[productId] = {
 
-            id: productId,
+        if (!productsMap[productId]) {
 
-            name: productName,
+          productsMap[productId] = {
 
-            category,
+            id: productId,
 
-            quantity: 0,
+            name: productName,
 
-            amountSold: 0,
+            category,
 
-            profit: 0,
+            quantity: 0,
 
-            variants: {},
+            amountSold: 0,
 
-          };
+            profit: 0,
 
-        }
+            variants: {},
 
+          };
 
+        }
 
-        productsMap[productId].quantity += quantity;
 
-        productsMap[productId].amountSold += amountSold;
 
-        productsMap[productId].profit += profit;
+        productsMap[productId].quantity += quantity;
 
+        productsMap[productId].amountSold += amountSold;
 
+        productsMap[productId].profit += profit;
 
-        // -----------------------------------------------------
 
-        // DETAIL VARIANTE
 
-        // -----------------------------------------------------
+        // -----------------------------------------------------
 
+        // DETAIL VARIANTE
 
+        // -----------------------------------------------------
 
-        const variantKey = variantType;
 
 
+        const variantKey = variantType;
 
-        if (
 
-          !productsMap[productId].variants[variantKey]
 
-        ) {
+        if (
 
-          productsMap[productId].variants[variantKey] = {
+          !productsMap[productId].variants[variantKey]
 
-            type: variantType,
+        ) {
 
-            quantity: 0,
+          productsMap[productId].variants[variantKey] = {
 
-            purchasePrice: 0,
+            type: variantType,
 
-            sellingPrice: sellingPrice,
+            quantity: 0,
 
-            amountSold: 0,
+            purchasePrice: 0,
 
-            profit: 0,
+            sellingPrice: sellingPrice,
 
-          };
+            amountSold: 0,
 
-        }
+            profit: 0,
 
+          };
 
+        }
 
-        const variant =
 
-          productsMap[productId].variants[variantKey];
 
+        const variant =
 
+          productsMap[productId].variants[variantKey];
 
-        variant.quantity += quantity;
 
 
+        variant.quantity += quantity;
 
-        variant.purchasePrice = purchasePrice;
 
-        variant.sellingPrice = sellingPrice;
 
+        variant.purchasePrice = purchasePrice;
 
+        variant.sellingPrice = sellingPrice;
 
-        variant.amountSold += amountSold;
 
-        variant.profit += profit;
 
-      });
+        variant.amountSold += amountSold;
 
-    });
+        variant.profit += profit;
 
+      });
 
+    });
 
-    return Object.values(productsMap).map((product) => ({
 
-      ...product,
 
-      variants: Object.values(product.variants),
+    return Object.values(productsMap).map((product) => ({
 
-    }));
+      ...product,
 
-  }, [filteredSales]);
+      variants: Object.values(product.variants),
 
+    }));
 
+  }, [filteredSales]);
 
-  // =========================================================
 
-  // BENEFICE GLOBAL
 
-  // =========================================================
+  // =========================================================
 
+  // BENEFICE GLOBAL
 
+  // =========================================================
 
-  const totalProfit = useMemo(() => {
 
-    return productReports.reduce((total, product) => {
 
-      return total + Number(product.profit || 0);
+  const totalProfit = useMemo(() => {
 
-    }, 0);
+    return productReports.reduce((total, product) => {
 
-  }, [productReports]);
+      return total + Number(product.profit || 0);
 
+    }, 0);
 
+  }, [productReports]);
 
-  // =========================================================
 
-  // DEPENSES
 
-  // =========================================================
+  // =========================================================
 
+  // DEPENSES
 
+  // =========================================================
 
-  const totalExpenses = useMemo(() => {
 
-    return filteredExpenses.reduce((total, expense) => {
 
-      return total + Number(expense.amount || 0);
+  const totalExpenses = useMemo(() => {
 
-    }, 0);
+    return filteredExpenses.reduce((total, expense) => {
 
-  }, [filteredExpenses]);
+      return total + Number(expense.amount || 0);
 
+    }, 0);
 
+  }, [filteredExpenses]);
 
-  // =========================================================
 
-  // RESULTAT FINAL
 
-  // =========================================================
+  // =========================================================
 
+  // RESULTAT FINAL
 
+  // =========================================================
 
-  const finalResult =
 
-    totalProfit - totalExpenses;
 
+  const finalResult =
 
+    totalProfit - totalExpenses;
 
-  // =========================================================
 
-  // ARTICLES VENDUS
 
-  // =========================================================
+  // =========================================================
 
+  // ARTICLES VENDUS
 
+  // =========================================================
 
-  const totalItems = useMemo(() => {
 
-    return productReports.reduce((total, product) => {
 
-      return total + Number(product.quantity || 0);
+  const totalItems = useMemo(() => {
 
-    }, 0);
+    return productReports.reduce((total, product) => {
 
-  }, [productReports]);
+      return total + Number(product.quantity || 0);
 
+    }, 0);
 
+  }, [productReports]);
 
-  // =========================================================
 
-  // PRODUIT LE PLUS VENDU
 
-  // =========================================================
+  // =========================================================
 
+  // PRODUIT LE PLUS VENDU
 
+  // =========================================================
 
-  const bestSellingProduct = useMemo(() => {
 
-    if (productReports.length === 0) {
 
-      return null;
+  const bestSellingProduct = useMemo(() => {
 
-    }
+    if (productReports.length === 0) {
 
+      return null;
 
+    }
 
-    return [...productReports].sort(
 
-      (a, b) => b.quantity - a.quantity
 
-    )[0];
+    return [...productReports].sort(
 
-  }, [productReports]);
+      (a, b) => b.quantity - a.quantity
 
+    )[0];
 
+  }, [productReports]);
 
-  // =========================================================
 
-  // DEPENSE
 
-  // =========================================================
+  // =========================================================
 
+  // DEPENSE
 
+  // =========================================================
 
-  const handleExpenseChange = (e) => {
 
-    const { name, value } = e.target;
 
+  const handleExpenseChange = (e) => {
 
+    const { name, value } = e.target;
 
-    setExpenseForm((prev) => ({
 
-      ...prev,
 
-      [name]: value,
+    setExpenseForm((prev) => ({
 
-    }));
+      ...prev,
 
-  };
+      [name]: value,
 
+    }));
 
+  };
 
-  const handleAddExpense = async (e) => {
 
-    e.preventDefault();
 
+  const handleAddExpense = async (e) => {
 
+    e.preventDefault();
 
-    const label = expenseForm.label.trim();
 
-    const amount = Number(expenseForm.amount);
 
+    const label = expenseForm.label.trim();
 
+    const amount = Number(expenseForm.amount);
 
-    if (!label) {
 
-      alert("Veuillez entrer le nom de la dépense.");
 
-      return;
+    if (!label) {
 
-    }
+      alert("Veuillez entrer le nom de la dépense.");
 
+      return;
 
+    }
 
-    if (!amount || amount <= 0) {
 
-      alert("Veuillez entrer un montant valide.");
 
-      return;
+    if (!amount || amount <= 0) {
 
-    }
+      alert("Veuillez entrer un montant valide.");
 
+      return;
 
+    }
 
-    if (!expenseForm.date) {
 
-      alert("Veuillez sélectionner une date.");
 
-      return;
+    if (!expenseForm.date) {
 
-    }
+      alert("Veuillez sélectionner une date.");
 
+      return;
 
+    }
 
-    try {
 
-      await addDoc(collection(db, "expenses"), {
 
-  storeId,
+    try {
 
-  label,
+      await addDoc(collection(db, "expenses"), {
 
-  amount,
+  storeId,
 
-  date: expenseForm.date,
+  label,
 
-  createdAt: serverTimestamp(),
+  amount,
+
+  date: expenseForm.date,
+
+  createdAt: serverTimestamp(),
 
 });
 
 
 
-      setExpenseForm({
+      setExpenseForm({
 
-        label: "",
+        label: "",
 
-        amount: "",
+        amount: "",
 
-        date: new Date()
+        date: new Date()
 
-          .toISOString()
+          .toISOString()
 
-          .split("T")[0],
+          .split("T")[0],
 
-      });
+      });
 
 
 
-      setShowExpenseModal(false);
+      setShowExpenseModal(false);
 
-    } catch (error) {
+    } catch (error) {
 
-      console.error(
+      console.error(
 
-        "Erreur ajout dépense :",
+        "Erreur ajout dépense :",
 
-        error
+        error
 
-      );
+      );
 
 
 
-      alert(
+      alert(
 
-        "Impossible d'enregistrer la dépense."
+        "Impossible d'enregistrer la dépense."
 
-      );
+      );
 
-    }
+    }
 
-  };
+  };
 
 
 
-  // =========================================================
+  // =========================================================
 
-  // FORMAT MONNAIE
+  // FORMAT MONNAIE
 
-  // =========================================================
+  // =========================================================
 
 
 
-  const formatMoney = (amount) => {
+  const formatMoney = (amount) => {
 
-    return `${Number(amount || 0).toLocaleString(
+    return `${Number(amount || 0).toLocaleString(
 
-      "fr-FR"
+      "fr-FR"
 
-    )} FC`;
+    )} FC`;
 
-  };
+  };
 
 
 
-  // =========================================================
+  // =========================================================
 
-  // FORMAT DATE
+  // FORMAT DATE
 
-  // =========================================================
+  // =========================================================
 
 
 
-  const formatDate = (value) => {
+  const formatDate = (value) => {
 
-    const date = getDate(value);
+    const date = getDate(value);
 
 
 
-    if (!date) return "-";
+    if (!date) return "-";
 
 
 
-    return date.toLocaleDateString("fr-FR");
+    return date.toLocaleDateString("fr-FR");
 
-  };
+  };
 
 
 
-  // =========================================================
+  // =========================================================
 
-  // CHARGEMENT
+  // CHARGEMENT
 
-  // =========================================================
+  // =========================================================
 
 
 
-  if (loadingSales || loadingExpenses) {
+  if (loadingSales || loadingExpenses) {
 
-    return (
+    return (
 
-      <div className={styles.loadingPage}>
+      <div className={styles.loadingPage}>
 
-        <div className={styles.loader}></div>
+        <div className={styles.loader}></div>
 
-        <p>Chargement des rapports...</p>
+        <p>Chargement des rapports...</p>
 
-      </div>
+      </div>
 
-    );
+    );
 
-  }
+  }
 
 
 
-  // =========================================================
+  // =========================================================
 
-  // AFFICHAGE
+  // AFFICHAGE
 
-  // =========================================================
+  // =========================================================
 
 
 
-  return (
+  return (
 
-    <div className={styles.reports}>
+    <div className={styles.reports}>
 
 
 
-      {/* =====================================================
+      {/* =====================================================
 
-          HEADER
+          HEADER
 
-      ===================================================== */}
+      ===================================================== */}
 
 
 
-      <header className={styles.header}>
+      <header className={styles.header}>
 
-        <div>
+        <div>
 
-          <span className={styles.pageLabel}>
+          <span className={styles.pageLabel}>
 
-            ANALYSE
+            ANALYSE
 
-          </span>
+          </span>
 
 
 
-          <h1>Rapports</h1>
+          <h1>Rapports</h1>
 
 
 
-          <p>
+          <p>
 
-            Suivez les performances de votre magasin.
+            Suivez les performances de votre magasin.
 
-          </p>
+          </p>
 
-        </div>
+        </div>
 
 
 
-        <button
+        <button
 
-          className={styles.expenseButton}
+          className={styles.expenseButton}
 
-          onClick={() =>
+          onClick={() =>
 
-            setShowExpenseModal(true)
+            setShowExpenseModal(true)
 
-          }
+          }
 
-        >
+        >
 
-          <span>+</span>
+          <span>+</span>
 
-          Ajouter une dépense
+          Ajouter une dépense
 
-        </button>
+        </button>
 
-      </header>
+      </header>
 
 
 
-      {/* =====================================================
+      {/* =====================================================
 
-          FILTRES
+          FILTRES
 
-      ===================================================== */}
+      ===================================================== */}
 
 
 
-      <section className={styles.periodSection}>
+      <section className={styles.periodSection}>
 
 
 
-        <div className={styles.periodTitle}>
+        <div className={styles.periodTitle}>
 
 
 
-          <div>
+          <div>
 
-            <strong>Période du rapport</strong>
+            <strong>Période du rapport</strong>
 
-            <small>
+            <small>
 
-              Choisissez la période à analyser
+              Choisissez la période à analyser
 
-            </small>
+            </small>
 
-          </div>
+          </div>
 
-        </div>
+        </div>
 
 
 
-        <div className={styles.periodButtons}>
+        <div className={styles.periodButtons}>
 
 
 
-          <button
+          <button
 
-            className={
+            className={
 
-              period === "today"
+              period === "today"
 
-                ? styles.periodActive
+                ? styles.periodActive
 
-                : styles.periodButton
+                : styles.periodButton
 
-            }
+            }
 
-            onClick={() => setPeriod("today")}
+            onClick={() => setPeriod("today")}
 
-          >
+          >
 
-            Aujourd'hui
+            Aujourd'hui
 
-          </button>
+          </button>
 
 
 
-          <button
+          <button
 
-            className={
+            className={
 
-              period === "week"
+              period === "week"
 
-                ? styles.periodActive
+                ? styles.periodActive
 
-                : styles.periodButton
+                : styles.periodButton
 
-            }
+            }
 
-            onClick={() => setPeriod("week")}
+            onClick={() => setPeriod("week")}
 
-          >
+          >
 
-            Cette semaine
+            Cette semaine
 
-          </button>
+          </button>
 
 
 
-          <button
+          <button
 
-            className={
+            className={
 
-              period === "month"
+              period === "month"
 
-                ? styles.periodActive
+                ? styles.periodActive
 
-                : styles.periodButton
+                : styles.periodButton
 
-            }
+            }
 
-            onClick={() => setPeriod("month")}
+            onClick={() => setPeriod("month")}
 
-          >
+          >
 
-            Ce mois
+            Ce mois
 
-          </button>
+          </button>
 
 
 
-          <button
+          <button
 
-            className={
+            className={
 
-              period === "custom"
+              period === "custom"
 
-                ? styles.periodActive
+                ? styles.periodActive
 
-                : styles.periodButton
+                : styles.periodButton
 
-            }
+            }
 
-            onClick={() => setPeriod("custom")}
+            onClick={() => setPeriod("custom")}
 
-          >
+          >
 
-            Période personnalisée
+            Période personnalisée
 
-          </button>
+          </button>
 
 
 
-        </div>
+        </div>
 
 
 
-        {period === "custom" && (
+        {isAdmin && (
+          <div className={styles.employeeFilter}>
+            <label htmlFor="reportEmployee">Rapport par employé</label>
+            <select
+              id="reportEmployee"
+              value={selectedEmployeeId}
+              onChange={(e) => setSelectedEmployeeId(e.target.value)}
+            >
+              <option value="all">Tous les employés — rapport général</option>
+              {employees.map((employee) => (
+                <option key={employee.id} value={employee.id}>
+                  {employee.name || employee.userName || "Employé sans nom"}
+                  {employee.role === "admin" ? " (Administrateur)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-          <div className={styles.customDates}>
+        {period === "custom" && (
 
+          <div className={styles.customDates}>
 
 
-            <div>
 
-              <label>
+            <div>
 
-                Date de début
+              <label>
 
-              </label>
+                Date de début
 
+              </label>
 
 
-              <input
 
-                type="date"
+              <input
 
-                value={startDate}
+                type="date"
 
-                onChange={(e) =>
+                value={startDate}
 
-                  setStartDate(e.target.value)
+                onChange={(e) =>
 
-                }
+                  setStartDate(e.target.value)
 
-              />
+                }
 
-            </div>
+              />
 
+            </div>
 
 
-            <div>
 
-              <label>
+            <div>
 
-                Date de fin
+              <label>
 
-              </label>
+                Date de fin
 
+              </label>
 
 
-              <input
 
-                type="date"
+              <input
 
-                value={endDate}
+                type="date"
 
-                onChange={(e) =>
+                value={endDate}
 
-                  setEndDate(e.target.value)
+                onChange={(e) =>
 
-                }
+                  setEndDate(e.target.value)
 
-              />
+                }
 
-            </div>
+              />
 
+            </div>
 
 
-          </div>
 
-        )}
+          </div>
 
+        )}
 
 
-      </section>
 
+      </section>
 
 
-      {/* =====================================================
 
-          STATISTIQUES
+      {/* =====================================================
 
-      ===================================================== */}
+          STATISTIQUES
 
+      ===================================================== */}
 
 
-      <section className={styles.statsGrid}>
 
+      <section className={styles.statsGrid}>
 
 
-        <div className={styles.statCard}>
 
-          <div>
+        <div className={styles.statCard}>
 
-            <span>Chiffre d'affaires</span>
+          <div>
 
-            <strong>
+            <span>Chiffre d'affaires</span>
 
-              {formatMoney(totalSales)}
+            <strong>
 
-            </strong>
+              {formatMoney(totalSales)}
 
-          </div>
+            </strong>
 
-        </div>
+          </div>
 
+        </div>
 
 
-        <div className={styles.statCard}>
-          <div>
 
-            <span>Bénéfice généré</span>
+        <div className={styles.statCard}>
+          <div>
 
-            <strong>
+            <span>Bénéfice généré</span>
 
-              {formatMoney(totalProfit)}
+            <strong>
 
-            </strong>
+              {formatMoney(totalProfit)}
 
-          </div>
+            </strong>
 
-        </div>
+          </div>
 
+        </div>
 
 
-        <div className={styles.statCard}>
-          <div>
 
-            <span>Dépenses</span>
+        <div className={styles.statCard}>
+          <div>
 
-            <strong>
+            <span>Dépenses</span>
 
-              {formatMoney(totalExpenses)}
+            <strong>
 
-            </strong>
+              {formatMoney(totalExpenses)}
 
-          </div>
+            </strong>
 
-        </div>
+          </div>
 
+        </div>
 
 
-        <div className={styles.statCard}>
 
-          <div>
+        <div className={styles.statCard}>
 
-            <span>Ventes effectuées</span>
+          <div>
 
-            <strong>
+            <span>Ventes effectuées</span>
 
-              {filteredSales.length}
+            <strong>
 
-            </strong>
+              {filteredSales.length}
 
-          </div>
+            </strong>
 
-        </div>
+          </div>
 
+        </div>
 
 
-      </section>
 
+      </section>
 
 
-      {/* =====================================================
 
-          INFOS RAPIDES
+      {/* =====================================================
 
-      ===================================================== */}
+          INFOS RAPIDES
 
+      ===================================================== */}
 
 
-      <section className={styles.quickStats}>
 
+      <section className={styles.quickStats}>
 
 
-        <div>
 
-          <span>Articles vendus</span>
+        <div>
 
-          <strong>{totalItems}</strong>
+          <span>Articles vendus</span>
 
-        </div>
+          <strong>{totalItems}</strong>
 
+        </div>
 
 
-        <div>
 
-          <span>Produits vendus</span>
+        <div>
 
-          <strong>
+          <span>Produits vendus</span>
 
-            {productReports.length}
+          <strong>
 
-          </strong>
+            {productReports.length}
 
-        </div>
+          </strong>
 
+        </div>
 
 
-        <div>
 
-          <span>Produit le plus vendu</span>
+        <div>
 
+          <span>Produit le plus vendu</span>
 
 
-          <strong>
 
-            {bestSellingProduct
+          <strong>
 
-              ? bestSellingProduct.name
+            {bestSellingProduct
 
-              : "Aucun"}
+              ? bestSellingProduct.name
 
-          </strong>
+              : "Aucun"}
 
+          </strong>
 
 
-          {bestSellingProduct && (
 
-            <small>
+          {bestSellingProduct && (
 
-              {bestSellingProduct.quantity} article(s)
+            <small>
 
-            </small>
+              {bestSellingProduct.quantity} article(s)
 
-          )}
+            </small>
 
-        </div>
+          )}
 
+        </div>
 
 
-      </section>
 
+      </section>
 
 
-      {/* =====================================================
 
-          TABLEAU PRODUITS
+      {/* =====================================================
 
-      ===================================================== */}
+          TABLEAU PRODUITS
 
+      ===================================================== */}
 
 
-      <section className={styles.productsSection}>
 
+      <section className={styles.productsSection}>
 
 
-        <div className={styles.sectionHeader}>
 
-          <div>
+        <div className={styles.sectionHeader}>
 
-            <span className={styles.sectionLabel}>
+          <div>
 
-              PERFORMANCES
+            <span className={styles.sectionLabel}>
 
-            </span>
+              PERFORMANCES
 
+            </span>
 
 
-            <h2>Ventes par produit</h2>
 
+            <h2>Ventes par produit</h2>
 
 
-            <p>
 
-              Cliquez sur un produit pour voir
+            <p>
 
-              le détail de ses variantes.
+              Cliquez sur un produit pour voir
 
-            </p>
+              le détail de ses variantes.
 
-          </div>
+            </p>
 
+          </div>
 
 
-          <span className={styles.productCount}>
 
-            {productReports.length} produit
+          <span className={styles.productCount}>
 
-            {productReports.length > 1
+            {productReports.length} produit
 
-              ? "s"
+            {productReports.length > 1
 
-              : ""}
+              ? "s"
 
-          </span>
+              : ""}
 
-        </div>
+          </span>
 
+        </div>
 
 
-        {productReports.length === 0 ? (
 
-          <div className={styles.emptyState}>
+        {productReports.length === 0 ? (
 
-            <h3>
+          <div className={styles.emptyState}>
 
-              Aucune vente pour cette période
+            <h3>
 
-            </h3>
+              Aucune vente pour cette période
 
+            </h3>
 
 
-            <p>
 
-              Les produits vendus apparaîtront
+            <p>
 
-              ici automatiquement.
+              Les produits vendus apparaîtront
 
-            </p>
+              ici automatiquement.
 
-          </div>
+            </p>
 
-        ) : (
+          </div>
 
-          <div className={styles.tableWrapper}>
+        ) : (
 
+          <div className={styles.tableWrapper}>
 
 
-            <table className={styles.productsTable}>
 
+            <table className={styles.productsTable}>
 
 
-              <thead>
 
-                <tr>
+              <thead>
 
-                  <th>Produit</th>
+                <tr>
 
-                  <th>Catégorie</th>
+                  <th>Produit</th>
 
-                  <th>Quantité</th>
+                  <th>Catégorie</th>
 
-                  <th>Montant vendu</th>
+                  <th>Quantité</th>
 
-                  <th>Bénéfice</th>
+                  <th>Montant vendu</th>
 
-                </tr>
+                  <th>Bénéfice</th>
 
-              </thead>
+                </tr>
 
+              </thead>
 
 
-              <tbody>
 
+              <tbody>
 
 
-                {productReports.map((product) => (
 
-                  <tr
+                {productReports.map((product) => (
 
-                    key={product.id}
+                  <tr
 
-                    onClick={() =>
+                    key={product.id}
 
-                      setSelectedProduct(product)
+                    onClick={() =>
 
-                    }
+                      setSelectedProduct(product)
 
-                    className={styles.clickableRow}
+                    }
 
-                  >
+                    className={styles.clickableRow}
 
+                  >
 
 
-                    <td>
 
-                      <div
+                    <td>
 
-                        className={
+                      <div
 
-                          styles.productNameCell
+                        className={
 
-                        }
+                          styles.productNameCell
 
-                      >
+                        }
 
-                        
+                      >
 
+                        
 
 
-                        <div>
 
-                          <strong>
+                        <div>
 
-                            {product.name}
+                          <strong>
 
-                          </strong>
+                            {product.name}
 
+                          </strong>
 
 
-                          {product.variants.length >
 
-                            1 && (
+                          {product.variants.length >
 
-                            <small>
+                            1 && (
 
-                              {
+                            <small>
 
-                                product.variants
+                              {
 
-                                  .length
+                                product.variants
 
-                              } variantes
+                                  .length
 
-                            </small>
+                              } variantes
 
-                          )}
+                            </small>
 
-                        </div>
+                          )}
 
-                      </div>
+                        </div>
 
-                    </td>
+                      </div>
 
+                    </td>
 
 
-                    <td>
 
-                      <span
+                    <td>
 
-                        className={
+                      <span
 
-                          styles.categoryBadge
+                        className={
 
-                        }
+                          styles.categoryBadge
 
-                      >
+                        }
 
-                        {product.category}
+                      >
 
-                      </span>
+                        {product.category}
 
-                    </td>
+                      </span>
 
+                    </td>
 
 
-                    <td>
 
-                      <strong>
+                    <td>
 
-                        {product.quantity}
+                      <strong>
 
-                      </strong>
+                        {product.quantity}
 
-                    </td>
+                      </strong>
 
+                    </td>
 
 
-                    <td>
 
-                      <strong>
+                    <td>
 
-                        {formatMoney(
+                      <strong>
 
-                          product.amountSold
+                        {formatMoney(
 
-                        )}
+                          product.amountSold
 
-                      </strong>
+                        )}
 
-                    </td>
+                      </strong>
 
+                    </td>
 
 
-                    <td>
 
-                      <strong
+                    <td>
 
-                        className={
+                      <strong
 
-                          product.profit >= 0
+                        className={
 
-                            ? styles.profitPositive
+                          product.profit >= 0
 
-                            : styles.profitNegative
+                            ? styles.profitPositive
 
-                        }
+                            : styles.profitNegative
 
-                      >
+                        }
 
-                        {formatMoney(
+                      >
 
-                          product.profit
+                        {formatMoney(
 
-                        )}
+                          product.profit
 
-                      </strong>
+                        )}
 
-                    </td>
+                      </strong>
 
+                    </td>
 
 
-                  </tr>
 
-                ))}
+                  </tr>
 
+                ))}
 
 
-              </tbody>
 
+              </tbody>
 
 
-            </table>
 
+            </table>
 
 
-          </div>
 
-        )}
+          </div>
 
+        )}
 
 
-      </section>
 
+      </section>
 
 
-      {/* =====================================================
 
-          DEPENSES
+      {/* =====================================================
 
-      ===================================================== */}
+          DEPENSES
 
+      ===================================================== */}
 
 
-      <section className={styles.expensesSection}>
 
+      <section className={styles.expensesSection}>
 
 
-        <div className={styles.sectionHeader}>
 
-          <div>
+        <div className={styles.sectionHeader}>
 
-            <span className={styles.sectionLabel}>
+          <div>
 
-              CHARGES
+            <span className={styles.sectionLabel}>
 
-            </span>
+              CHARGES
 
+            </span>
 
 
-            <h2>Dépenses</h2>
 
+            <h2>Dépenses</h2>
 
 
-            <p>
 
-              Dépenses enregistrées pendant
+            <p>
 
-              la période sélectionnée.
+              Dépenses enregistrées pendant
 
-            </p>
+              la période sélectionnée.
 
-          </div>
+            </p>
 
+          </div>
 
 
-          <button
 
-            className={styles.smallAddButton}
+          <button
 
-            onClick={() =>
+            className={styles.smallAddButton}
 
-              setShowExpenseModal(true)
+            onClick={() =>
 
-            }
+              setShowExpenseModal(true)
 
-          >
+            }
 
-            + Ajouter
+          >
 
-          </button>
+            + Ajouter
 
-        </div>
+          </button>
 
+        </div>
 
 
-        {filteredExpenses.length === 0 ? (
 
-          <div className={styles.emptyExpense}>
+        {filteredExpenses.length === 0 ? (
 
-            Aucune dépense enregistrée
+          <div className={styles.emptyExpense}>
 
-            pour cette période.
+            Aucune dépense enregistrée
 
-          </div>
+            pour cette période.
 
-        ) : (
+          </div>
 
-          <div className={styles.expenseTable}>
+        ) : (
 
+          <div className={styles.expenseTable}>
 
 
-            <div
 
-              className={
+            <div
 
-                styles.expenseTableHeader
+              className={
 
-              }
+                styles.expenseTableHeader
 
-            >
+              }
 
-              <span>Date</span>
+            >
 
-              <span>Dépense</span>
+              <span>Date</span>
 
-              <span>Montant</span>
+              <span>Dépense</span>
 
-            </div>
+              <span>Montant</span>
 
+            </div>
 
 
-            {filteredExpenses.map((expense) => (
 
-              <div
+            {filteredExpenses.map((expense) => (
 
-                className={styles.expenseRow}
+              <div
 
-                key={expense.id}
+                className={styles.expenseRow}
 
-              >
+                key={expense.id}
 
+              >
 
 
-                <span>
 
-                  {formatDate(
+                <span>
 
-                    expense.createdAt ||
+                  {formatDate(
 
-                      expense.date
+                    expense.createdAt ||
 
-                  )}
+                      expense.date
 
-                </span>
+                  )}
 
+                </span>
 
 
-                <strong>
 
-                  {expense.label}
+                <strong>
 
-                </strong>
+                  {expense.label}
 
+                </strong>
 
 
-                <strong className={styles.expenseAmount}>
 
-                  {formatMoney(
+                <strong className={styles.expenseAmount}>
 
-                    expense.amount
+                  {formatMoney(
 
-                  )}
+                    expense.amount
 
-                </strong>
+                  )}
 
+                </strong>
 
 
-              </div>
 
-            ))}
+              </div>
 
+            ))}
 
 
-          </div>
 
-        )}
+          </div>
 
+        )}
 
 
-      </section>
 
+      </section>
 
 
-      {/* =====================================================
 
-          BILAN FINAL
+      {/* =====================================================
 
-      ===================================================== */}
+          BILAN FINAL
 
+      ===================================================== */}
 
 
-      <section className={styles.balanceSection}>
 
+      <section className={styles.balanceSection}>
 
 
-        <div className={styles.balanceTop}>
 
+        <div className={styles.balanceTop}>
 
 
-          <div>
 
-            <span className={styles.sectionLabel}>
+          <div>
 
-              RÉSULTAT
+            <span className={styles.sectionLabel}>
 
-            </span>
+              RÉSULTAT
 
+            </span>
 
 
-            <h2>Bilan final</h2>
 
+            <h2>Bilan final</h2>
 
 
-            <p>
 
-              Bénéfice généré après déduction
+            <p>
 
-              des dépenses.
+              Bénéfice généré après déduction
 
-            </p>
+              des dépenses.
 
-          </div>
+            </p>
 
+          </div>
 
 
-          <div className={styles.balanceIcon}>
 
-            📊
+          <div className={styles.balanceIcon}>
 
-          </div>
+            📊
 
+          </div>
 
 
-        </div>
 
+        </div>
 
 
-        <div className={styles.balanceContent}>
 
+        <div className={styles.balanceContent}>
 
 
-          <div className={styles.balanceLine}>
 
-            <span>Chiffre d'affaires</span>
+          <div className={styles.balanceLine}>
 
+            <span>Chiffre d'affaires</span>
 
 
-            <strong>
 
-              {formatMoney(totalSales)}
+            <strong>
 
-            </strong>
+              {formatMoney(totalSales)}
 
-          </div>
+            </strong>
 
+          </div>
 
 
-          <div className={styles.balanceLine}>
 
-            <span>Bénéfice généré</span>
+          <div className={styles.balanceLine}>
 
+            <span>Bénéfice généré</span>
 
 
-            <strong>
 
-              {formatMoney(totalProfit)}
+            <strong>
 
-            </strong>
+              {formatMoney(totalProfit)}
 
-          </div>
+            </strong>
 
+          </div>
 
 
-          <div
 
-            className={
+          <div
 
-              styles.balanceLine
+            className={
 
-            }
+              styles.balanceLine
 
-          >
+            }
 
-            <span>Moins dépenses</span>
+          >
 
+            <span>Moins dépenses</span>
 
 
-            <strong className={styles.expenseText}>
 
-              - {formatMoney(totalExpenses)}
+            <strong className={styles.expenseText}>
 
-            </strong>
+              - {formatMoney(totalExpenses)}
 
-          </div>
+            </strong>
 
+          </div>
 
 
-          <div
 
-            className={
+          <div
 
-              finalResult >= 0
+            className={
 
-                ? styles.resultGain
+              finalResult >= 0
 
-                : styles.resultLoss
+                ? styles.resultGain
 
-            }
+                : styles.resultLoss
 
-          >
+            }
 
+          >
 
 
-            <div>
 
-              <span>
+            <div>
 
-                {finalResult >= 0
+              <span>
 
-                  ? "GAIN FINAL"
+                {finalResult >= 0
 
-                  : "PERTE FINALE"}
+                  ? "GAIN FINAL"
 
-              </span>
+                  : "PERTE FINALE"}
 
+              </span>
 
 
-              <small>
 
-                Résultat de la période
+              <small>
 
-              </small>
+                Résultat de la période
 
-            </div>
+              </small>
 
+            </div>
 
 
-            <strong>
 
-              {formatMoney(
+            <strong>
 
-                Math.abs(finalResult)
+              {formatMoney(
 
-              )}
+                Math.abs(finalResult)
 
-            </strong>
+              )}
 
+            </strong>
 
 
-          </div>
 
+          </div>
 
 
-        </div>
 
+        </div>
 
 
-      </section>
 
+      </section>
 
 
-      {/* =====================================================
 
-          MODAL DETAIL PRODUIT
+      {/* =====================================================
 
-      ===================================================== */}
+          MODAL DETAIL PRODUIT
 
+      ===================================================== */}
 
 
-      {selectedProduct && (
 
-        <div
+      {selectedProduct && (
 
-          className={styles.modalOverlay}
+        <div
 
-          onClick={() =>
+          className={styles.modalOverlay}
 
-            setSelectedProduct(null)
+          onClick={() =>
 
-          }
+            setSelectedProduct(null)
 
-        >
+          }
 
+        >
 
 
-          <div
 
-            className={
+          <div
 
-              styles.productDetailModal
+            className={
 
-            }
+              styles.productDetailModal
 
-            onClick={(e) =>
+            }
 
-              e.stopPropagation()
+            onClick={(e) =>
 
-            }
+              e.stopPropagation()
 
-          >
+            }
 
+          >
 
 
-            <div
 
-              className={
+            <div
 
-                styles.modalProductHeader
+              className={
 
-              }
+                styles.modalProductHeader
 
-            >
+              }
 
+            >
 
 
-              <div>
 
-                <span
+              <div>
 
-                  className={
+                <span
 
-                    styles.sectionLabel
+                  className={
 
-                  }
+                    styles.sectionLabel
 
-                >
+                  }
 
-                  DÉTAIL DU PRODUIT
+                >
 
-                </span>
+                  DÉTAIL DU PRODUIT
 
+                </span>
 
 
-                <h2>
 
-                  {selectedProduct.name}
+                <h2>
 
-                </h2>
+                  {selectedProduct.name}
 
+                </h2>
 
 
-                <p>
 
-                  {selectedProduct.category}
+                <p>
 
-                </p>
+                  {selectedProduct.category}
 
-              </div>
+                </p>
 
+              </div>
 
 
-              <button
 
-                className={styles.closeButton}
+              <button
 
-                onClick={() =>
+                className={styles.closeButton}
 
-                  setSelectedProduct(null)
+                onClick={() =>
 
-                }
+                  setSelectedProduct(null)
 
-              >
+                }
 
-                ✕
+              >
 
-              </button>
+                ✕
 
+              </button>
 
 
-            </div>
 
+            </div>
 
 
-            <div
 
-              className={
+            <div
 
-                styles.productSummary
+              className={
 
-              }
+                styles.productSummary
 
-            >
+              }
 
+            >
 
 
-              <div>
 
-                <span>
+              <div>
 
-                  Quantité totale
+                <span>
 
-                </span>
+                  Quantité totale
 
+                </span>
 
 
-                <strong>
 
-                  {selectedProduct.quantity}
+                <strong>
 
-                </strong>
+                  {selectedProduct.quantity}
 
-              </div>
+                </strong>
 
+              </div>
 
 
-              <div>
 
-                <span>
+              <div>
 
-                  Montant vendu
+                <span>
 
-                </span>
+                  Montant vendu
 
+                </span>
 
 
-                <strong>
 
-                  {formatMoney(
+                <strong>
 
-                    selectedProduct.amountSold
+                  {formatMoney(
 
-                  )}
+                    selectedProduct.amountSold
 
-                </strong>
+                  )}
 
-              </div>
+                </strong>
 
+              </div>
 
 
-              <div>
 
-                <span>
+              <div>
 
-                  Bénéfice
+                <span>
 
-                </span>
+                  Bénéfice
 
+                </span>
 
 
-                <strong
 
-                  className={
+                <strong
 
-                    styles.profitPositive
+                  className={
 
-                  }
+                    styles.profitPositive
 
-                >
+                  }
 
-                  {formatMoney(
+                >
 
-                    selectedProduct.profit
+                  {formatMoney(
 
-                  )}
+                    selectedProduct.profit
 
-                </strong>
+                  )}
 
-              </div>
+                </strong>
 
+              </div>
 
 
-            </div>
 
+            </div>
 
 
-            <div
 
-              className={
+            <div
 
-                styles.variantDetailTitle
+              className={
 
-              }
+                styles.variantDetailTitle
 
-            >
+              }
 
-              <h3>
+            >
 
-                Détail par variante
+              <h3>
 
-              </h3>
+                Détail par variante
 
+              </h3>
 
 
-              <span>
 
-                {selectedProduct.variants.length}{" "}
+              <span>
 
-                variante
+                {selectedProduct.variants.length}{" "}
 
-                {selectedProduct.variants.length >
+                variante
 
-                1
+                {selectedProduct.variants.length >
 
-                  ? "s"
+                1
 
-                  : ""}
+                  ? "s"
 
-              </span>
+                  : ""}
 
-            </div>
+              </span>
 
+            </div>
 
 
-            <div
 
-              className={
+            <div
 
-                styles.variantTableWrapper
+              className={
 
-              }
+                styles.variantTableWrapper
 
-            >
+              }
 
+            >
 
 
-              <table
 
-                className={
+              <table
 
-                  styles.variantTable
+                className={
 
-                }
+                  styles.variantTable
 
-              >
+                }
 
+              >
 
 
-                <thead>
 
-                  <tr>
+                <thead>
 
-                    <th>Variante</th>
+                  <tr>
 
-                    <th>Prix achat</th>
+                    <th>Variante</th>
 
-                    <th>Prix vente</th>
+                    <th>Prix achat</th>
 
-                    <th>Qté</th>
+                    <th>Prix vente</th>
 
-                    <th>Montant</th>
+                    <th>Qté</th>
 
-                    <th>Bénéfice</th>
+                    <th>Montant</th>
 
-                  </tr>
+                    <th>Bénéfice</th>
 
-                </thead>
+                  </tr>
 
+                </thead>
 
 
-                <tbody>
 
+                <tbody>
 
 
-                  {selectedProduct.variants.map(
 
-                    (variant, index) => (
+                  {selectedProduct.variants.map(
 
-                      <tr key={index}>
+                    (variant, index) => (
 
+                      <tr key={index}>
 
 
-                        <td>
 
-                          <strong>
+                        <td>
 
-                            {variant.type}
+                          <strong>
 
-                          </strong>
+                            {variant.type}
 
-                        </td>
+                          </strong>
 
+                        </td>
 
 
-                        <td>
 
-                          {formatMoney(
+                        <td>
 
-                            variant.purchasePrice
+                          {formatMoney(
 
-                          )}
+                            variant.purchasePrice
 
-                        </td>
+                          )}
 
+                        </td>
 
 
-                        <td>
 
-                          {formatMoney(
+                        <td>
 
-                            variant.sellingPrice
+                          {formatMoney(
 
-                          )}
+                            variant.sellingPrice
 
-                        </td>
+                          )}
 
+                        </td>
 
 
-                        <td>
 
-                          {variant.quantity}
+                        <td>
 
-                        </td>
+                          {variant.quantity}
 
+                        </td>
 
 
-                        <td>
 
-                          {formatMoney(
+                        <td>
 
-                            variant.amountSold
+                          {formatMoney(
 
-                          )}
+                            variant.amountSold
 
-                        </td>
+                          )}
 
+                        </td>
 
 
-                        <td>
 
-                          <strong
+                        <td>
 
-                            className={
+                          <strong
 
-                              variant.profit >= 0
+                            className={
 
-                                ? styles.profitPositive
+                              variant.profit >= 0
 
-                                : styles.profitNegative
+                                ? styles.profitPositive
 
-                            }
+                                : styles.profitNegative
 
-                          >
+                            }
 
-                            {formatMoney(
+                          >
 
-                              variant.profit
+                            {formatMoney(
 
-                            )}
+                              variant.profit
 
-                          </strong>
+                            )}
 
-                        </td>
+                          </strong>
 
+                        </td>
 
 
-                      </tr>
 
-                    )
+                      </tr>
 
-                  )}
+                    )
 
+                  )}
 
 
-                </tbody>
 
+                </tbody>
 
 
-              </table>
 
+              </table>
 
 
-            </div>
 
+            </div>
 
 
-            <div
 
-              className={
+            <div
 
-                styles.modalFooter
+              className={
 
-              }
+                styles.modalFooter
 
-            >
+              }
 
-              <button
+            >
 
-                onClick={() =>
+              <button
 
-                  setSelectedProduct(null)
+                onClick={() =>
 
-                }
+                  setSelectedProduct(null)
 
-              >
+                }
 
-                Fermer
+              >
 
-              </button>
+                Fermer
 
-            </div>
+              </button>
 
+            </div>
 
 
-          </div>
 
+          </div>
 
 
-        </div>
 
-      )}
+        </div>
 
+      )}
 
 
-      {/* =====================================================
 
-          MODAL AJOUT DEPENSE
+      {/* =====================================================
 
-      ===================================================== */}
+          MODAL AJOUT DEPENSE
 
+      ===================================================== */}
 
 
-      {showExpenseModal && (
 
-        <div
+      {showExpenseModal && (
 
-          className={styles.modalOverlay}
+        <div
 
-          onClick={() =>
+          className={styles.modalOverlay}
 
-            setShowExpenseModal(false)
+          onClick={() =>
 
-          }
+            setShowExpenseModal(false)
 
-        >
+          }
 
+        >
 
 
-          <div
 
-            className={
+          <div
 
-              styles.expenseModal
+            className={
 
-            }
+              styles.expenseModal
 
-            onClick={(e) =>
+            }
 
-              e.stopPropagation()
+            onClick={(e) =>
 
-            }
+              e.stopPropagation()
 
-          >
+            }
 
+          >
 
 
-            <div
 
-              className={
+            <div
 
-                styles.modalProductHeader
+              className={
 
-              }
+                styles.modalProductHeader
 
-            >
+              }
 
+            >
 
 
-              <div>
 
-                <span
+              <div>
 
-                  className={
+                <span
 
-                    styles.sectionLabel
+                  className={
 
-                  }
+                    styles.sectionLabel
 
-                >
+                  }
 
-                  NOUVELLE DÉPENSE
+                >
 
-                </span>
+                  NOUVELLE DÉPENSE
 
+                </span>
 
 
-                <h2>
 
-                  Ajouter une dépense
+                <h2>
 
-                </h2>
+                  Ajouter une dépense
 
+                </h2>
 
 
-                <p>
 
-                  Enregistrez une dépense
+                <p>
 
-                  du magasin.
+                  Enregistrez une dépense
 
-                </p>
+                  du magasin.
 
-              </div>
+                </p>
 
+              </div>
 
 
-              <button
 
-                className={styles.closeButton}
+              <button
 
-                onClick={() =>
+                className={styles.closeButton}
 
-                  setShowExpenseModal(false)
+                onClick={() =>
 
-                }
+                  setShowExpenseModal(false)
 
-              >
+                }
 
-                ✕
+              >
 
-              </button>
+                ✕
 
+              </button>
 
 
-            </div>
 
+            </div>
 
 
-            <form
 
-              className={styles.expenseForm}
+            <form
 
-              onSubmit={handleAddExpense}
+              className={styles.expenseForm}
 
-            >
+              onSubmit={handleAddExpense}
 
+            >
 
 
-              <div>
 
-                <label>
+              <div>
 
-                  Libellé de la dépense
+                <label>
 
-                </label>
+                  Libellé de la dépense
 
+                </label>
 
 
-                <input
 
-                  type="text"
+                <input
 
-                  name="label"
+                  type="text"
 
-                  placeholder="Ex : Transport"
+                  name="label"
 
-                  value={
+                  placeholder="Ex : Transport"
 
-                    expenseForm.label
+                  value={
 
-                  }
+                    expenseForm.label
 
-                  onChange={
+                  }
 
-                    handleExpenseChange
+                  onChange={
 
-                  }
+                    handleExpenseChange
 
-                />
+                  }
 
-              </div>
+                />
 
+              </div>
 
 
-              <div>
 
-                <label>
+              <div>
 
-                  Montant
+                <label>
 
-                </label>
+                  Montant
 
+                </label>
 
 
-                <input
 
-                  type="number"
+                <input
 
-                  name="amount"
+                  type="number"
 
-                  min="0"
+                  name="amount"
 
-                  placeholder="Ex : 5000"
+                  min="0"
 
-                  value={
+                  placeholder="Ex : 5000"
 
-                    expenseForm.amount
+                  value={
 
-                  }
+                    expenseForm.amount
 
-                  onChange={
+                  }
 
-                    handleExpenseChange
+                  onChange={
 
-                  }
+                    handleExpenseChange
 
-                />
+                  }
 
-              </div>
+                />
 
+              </div>
 
 
-              <div>
 
-                <label>
+              <div>
 
-                  Date
+                <label>
 
-                </label>
+                  Date
 
+                </label>
 
 
-                <input
 
-                  type="date"
+                <input
 
-                  name="date"
+                  type="date"
 
-                  value={
+                  name="date"
 
-                    expenseForm.date
+                  value={
 
-                  }
+                    expenseForm.date
 
-                  onChange={
+                  }
 
-                    handleExpenseChange
+                  onChange={
 
-                  }
+                    handleExpenseChange
 
-                />
+                  }
 
-              </div>
+                />
 
+              </div>
 
 
-              <div
 
-                className={
+              <div
 
-                  styles.formActions
+                className={
 
-                }
+                  styles.formActions
 
-              >
+                }
 
+              >
 
 
-                <button
 
-                  type="button"
+                <button
 
-                  onClick={() =>
+                  type="button"
 
-                    setShowExpenseModal(
+                  onClick={() =>
 
-                      false
+                    setShowExpenseModal(
 
-                    )
+                      false
 
-                  }
+                    )
 
-                >
+                  }
 
-                  Annuler
+                >
 
-                </button>
+                  Annuler
 
+                </button>
 
 
-                <button type="submit">
 
-                  Enregistrer
+                <button type="submit">
 
-                </button>
+                  Enregistrer
 
+                </button>
 
 
-              </div>
 
+              </div>
 
 
-            </form>
 
+            </form>
 
 
-          </div>
 
+          </div>
 
 
-        </div>
 
-      )}
+        </div>
 
+      )}
 
 
-    </div>
 
-  );
+    </div>
+
+  );
 
 }
 
