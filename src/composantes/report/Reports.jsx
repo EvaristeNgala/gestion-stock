@@ -1467,7 +1467,7 @@ const filteredSales = useMemo(() => {
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
             >
-              <option value="all">Tous les employés — rapport général</option>
+              <option value="all">Tous les employés </option>
               {employees.map((employee) => (
                 <option key={employee.id} value={employee.id}>
                   {employee.name || employee.userName || "Employé sans nom"}
