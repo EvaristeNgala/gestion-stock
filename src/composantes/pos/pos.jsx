@@ -92,8 +92,6 @@ function POS({ onLock }) {
   const [printerNotice, setPrinterNotice] = useState("");
   const [autoPrint, setAutoPrint] = useState(false);
   const [leavingStore, setLeavingStore] = useState(false);
-  const [logoutPin, setLogoutPin] = useState("");
-  const [logoutError, setLogoutError] = useState("");
   const [logoutBusy, setLogoutBusy] = useState(false);
   // Verrouillage automatique après cinq minutes sans activité.
 const POS_INACTIVITY_TIME = 5 * 60 * 1000;
@@ -359,41 +357,52 @@ useEffect(() => {
     } finally { setPrinterBusy(false); }
   };
 
-  // Déconnexion complète du magasin, réservée à l'administrateur.
-  // Ne jamais effacer les données locales de ventes, même après synchronisation.
-  const disconnectStore = async (event) => {
-    event.preventDefault();
+    // Déconnexion du magasin réservée à l'administrateur.
+  // Les ventes hors connexion et l'historique local sont conservés.
+  const disconnectStore = async () => {
     if (!isAdminSession || logoutBusy) return;
+
+    // Ne pas quitter pendant qu'un ticket non validé est en cours.
+    if (ticket.length > 0 || showTicket) {
+      alert("Terminez ou enregistrez le ticket en cours avant de quitter le magasin.");
+      return;
+    }
+
+    // L'administrateur doit d'abord clôturer sa propre caisse.
+    if (cashSession?.id) {
+      alert("Clôturez d'abord votre caisse avant de quitter le magasin.");
+      return;
+    }
+
+    const pendingCount = getOfflineSales().length;
+    const warning = pendingCount > 0
+      ? `\n\nAttention : ${pendingCount} vente(s) hors connexion resteront conservées sur cet appareil. Elles ne seront pas supprimées, mais devront être synchronisées ultérieurement.`
+      : "";
+
+    const confirmed = window.confirm(
+      `Voulez-vous vous déconnecter de ce magasin et revenir à la page de connexion ?${warning}`
+    );
+    if (!confirmed) return;
+
     setLogoutBusy(true);
-    setLogoutError("");
     try {
-      if (!navigator.onLine) throw new Error("Connexion Internet nécessaire pour quitter le magasin.");
-      if (syncBusyRef.current || getOfflineSales().length > 0) {
-        throw new Error("Synchronisez d'abord toutes les ventes hors connexion.");
-      }
-      if (ticket.length > 0 || showTicket) throw new Error("Terminez ou videz le ticket en cours.");
-      // Contrôle serveur de toutes les caisses du magasin, pas uniquement de celle affichée.
-      const openSessions = await getDocsFromServer(query(
-        collection(db, "cashSessions"), where("storeId", "==", storeId), where("status", "==", "open")
-      ));
-      if (!openSessions.empty) throw new Error("Une caisse est encore ouverte dans ce magasin. Clôturez-la avant de vous déconnecter.");
-      const settingsSnap = await getDoc(doc(db, "settings", storeId));
-      const expectedPin = String(settingsSnap.data()?.adminPosCode ?? "").trim();
-      if (!/^\d{4}$/.test(logoutPin) || !expectedPin || logoutPin !== expectedPin) {
-        throw new Error("Code PIN administrateur incorrect.");
-      }
-      if (!window.confirm("Quitter complètement ce magasin sur ce terminal ? Une nouvelle connexion email et mot de passe sera nécessaire.")) return;
       await signOut(auth);
+
       localStorage.removeItem("stockManagerDeviceStore");
       localStorage.removeItem("storeSession");
       localStorage.removeItem("stockManagerActiveCashier");
+      localStorage.removeItem(POS_UNLOCK_REQUEST_KEY);
+
+      // Ne pas supprimer stockManagerOfflineSales ni stockManagerLocalSalesHistory.
       setLeavingStore(false);
       navigate("/", { replace: true });
     } catch (error) {
-      setLogoutError(error?.message || "Déconnexion impossible.");
-    } finally { setLogoutBusy(false); }
+      console.error("Erreur déconnexion magasin :", error);
+      alert(error?.message || "Impossible de se déconnecter du magasin.");
+    } finally {
+      setLogoutBusy(false);
+    }
   };
-
 
   // Identité POS : toujours celle de la session connectée.
   // Ne jamais réutiliser l'ancien caissier sauvegardé sur cet appareil.
@@ -2530,16 +2539,54 @@ useEffect(() => {
           <div style={{marginTop:18}}><button type="button" onClick={() => setShowPrinterSettings(false)}>Fermer</button></div>
         </section>
       </div>}
-      {leavingStore && <div role="dialog" aria-modal="true" aria-label="Quitter le magasin" style={{position:"fixed",inset:0,zIndex:10001,background:"#000a",display:"grid",placeItems:"center",padding:16}}>
-        <form onSubmit={disconnectStore} style={{width:"100%",maxWidth:400,background:"#fff",color:"#111827",borderRadius:16,padding:20}}>
-          <h2>Se déconnecter du magasin</h2>
-          <p>Cette action nécessite la clôture de toutes les caisses et la synchronisation des ventes.</p>
-          <label htmlFor="logout-admin-pin">Code PIN administrateur</label>
-          <input id="logout-admin-pin" type="password" inputMode="numeric" maxLength={4} autoComplete="off" value={logoutPin} onChange={e => setLogoutPin(e.target.value.replace(/\D/g,"").slice(0,4))} style={{display:"block",width:"100%",padding:12,margin:"8px 0 12px"}} />
-          {logoutError && <p role="alert" style={{color:"#b91c1c"}}>{logoutError}</p>}
-          <div style={{display:"flex",gap:10}}><button type="button" disabled={logoutBusy} onClick={() => setLeavingStore(false)}>Annuler</button><button type="submit" disabled={logoutBusy || logoutPin.length!==4}>{logoutBusy ? "Vérification..." : "Quitter le magasin"}</button></div>
-        </form>
-      </div>}
+      {leavingStore && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Se déconnecter du magasin"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10001,
+            background: "#000a",
+            display: "grid",
+            placeItems: "center",
+            padding: 16
+          }}
+        >
+          <section style={{
+            width: "100%",
+            maxWidth: 400,
+            background: "#fff",
+            color: "#111827",
+            borderRadius: 16,
+            padding: 20
+          }}>
+            <h2>Se déconnecter du magasin</h2>
+            <p>
+              Vous allez revenir à la page de connexion pour pouvoir accéder
+              à un autre magasin. Les ventes hors connexion et l'historique
+              local ne seront pas supprimés.
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                disabled={logoutBusy}
+                onClick={() => setLeavingStore(false)}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={logoutBusy}
+                onClick={disconnectStore}
+              >
+                {logoutBusy ? "Déconnexion..." : "Confirmer la déconnexion"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* HEADER */}
 
@@ -2621,7 +2668,7 @@ useEffect(() => {
       <button type="button" onClick={openPrinterSettings}>
         <div><strong>🖨️ Configuration imprimante</strong><small>Bluetooth, sélection et ticket de test</small></div>
       </button>
-      {isAdminSession && <button type="button" onClick={() => { setShowPosMenu(false); setLogoutPin(""); setLogoutError(""); setLeavingStore(true); }}>
+      {isAdminSession && <button type="button" onClick={() => { setShowPosMenu(false); setLeavingStore(true); }}>
         <div><strong>🚪 Se déconnecter du magasin</strong><small>Retour à la connexion email / mot de passe</small></div>
       </button>}
 
