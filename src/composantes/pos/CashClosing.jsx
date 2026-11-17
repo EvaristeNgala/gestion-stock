@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { signOut } from "firebase/auth";
+import { auth } from "../../firebase";
 
 import { useNavigate } from "react-router-dom";
 
@@ -1072,11 +1074,25 @@ function CashClosing() {
 
       });
 
-      localStorage.removeItem("stockManagerActiveCashier");
-        localStorage.removeItem("posRequireSelection");
-        localStorage.removeItem("posActiveUser");
-        localStorage.removeItem("storeSession");
+      const logoutAfterClosing =
+        localStorage.getItem("stockManagerLogoutAfterCashClosing") === "true";
+
+      localStorage.removeItem("stockManagerActiveCashier");
+      localStorage.removeItem("posRequireSelection");
+      localStorage.removeItem("posActiveUser");
+      localStorage.removeItem("storeSession");
+
+      if (logoutAfterClosing) {
+        // La clôture est enregistrée : terminer maintenant la déconnexion.
+        await signOut(auth);
+        localStorage.removeItem("stockManagerDeviceStore");
+        localStorage.removeItem("stockManagerLogoutAfterCashClosing");
+        // Conserver stockManagerOfflineSales et stockManagerLocalSalesHistory.
+        navigate("/", { replace: true });
+      } else {
+        // Clôture normale : retour au parcours PIN habituel.
         navigate("/pin", { replace: true });
+      }
 
     } catch (error) {
 

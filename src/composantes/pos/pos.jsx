@@ -359,40 +359,65 @@ useEffect(() => {
 
     // Déconnexion du magasin réservée à l'administrateur.
   // Les ventes hors connexion et l'historique local sont conservés.
+  // Déconnexion admin : si sa caisse est ouverte, passer d'abord par la clôture.
+  // Les ventes hors connexion et l'historique local ne sont jamais supprimés.
   const disconnectStore = async () => {
     if (!isAdminSession || logoutBusy) return;
 
-    // Ne pas quitter pendant qu'un ticket non validé est en cours.
-    if (ticket.length > 0 || showTicket) {
-      alert("Terminez ou enregistrez le ticket en cours avant de quitter le magasin.");
+    if (cashLoading) {
+      alert("Patientez pendant la vérification de l'état de la caisse.");
       return;
     }
 
-    // L'administrateur doit d'abord clôturer sa propre caisse.
-    if (cashSession?.id) {
-      alert("Clôturez d'abord votre caisse avant de quitter le magasin.");
+    if (ticket.length > 0 || showTicket) {
+      alert("Terminez ou enregistrez le ticket en cours avant de vous déconnecter.");
       return;
     }
 
     const pendingCount = getOfflineSales().length;
-    const warning = pendingCount > 0
-      ? `\n\nAttention : ${pendingCount} vente(s) hors connexion resteront conservées sur cet appareil. Elles ne seront pas supprimées, mais devront être synchronisées ultérieurement.`
-      : "";
 
+    if (cashSession?.id) {
+      if (syncBusyRef.current || pendingCount > 0) {
+        setLeavingStore(false);
+        setShowSyncCenter(true);
+        alert("Synchronisez toutes les ventes hors connexion avant de clôturer la caisse et de vous déconnecter.");
+        return;
+      }
+
+      if (!navigator.onLine) {
+        alert("Une connexion Internet est nécessaire pour clôturer la caisse avant la déconnexion.");
+        return;
+      }
+
+      try {
+        localStorage.setItem("stockManagerLogoutAfterCashClosing", "true");
+        setLeavingStore(false);
+        setShowPosMenu(false);
+        navigate("/cash-closing");
+      } catch (error) {
+        localStorage.removeItem("stockManagerLogoutAfterCashClosing");
+        console.error("Impossible de préparer la déconnexion :", error);
+        alert("Impossible de préparer la clôture. Réessayez.");
+      }
+      return;
+    }
+
+    const warning = pendingCount > 0
+      ? `\\n\\nAttention : ${pendingCount} vente(s) hors connexion resteront conservées sur cet appareil et devront être synchronisées ultérieurement.`
+      : "";
     const confirmed = window.confirm(
-      `Voulez-vous vous déconnecter de ce magasin et revenir à la page de connexion ?${warning}`
+      `Voulez-vous vous déconnecter et revenir à la page de connexion ?${warning}`
     );
     if (!confirmed) return;
 
     setLogoutBusy(true);
     try {
       await signOut(auth);
-
       localStorage.removeItem("stockManagerDeviceStore");
       localStorage.removeItem("storeSession");
       localStorage.removeItem("stockManagerActiveCashier");
       localStorage.removeItem(POS_UNLOCK_REQUEST_KEY);
-
+      localStorage.removeItem("stockManagerLogoutAfterCashClosing");
       // Ne pas supprimer stockManagerOfflineSales ni stockManagerLocalSalesHistory.
       setLeavingStore(false);
       navigate("/", { replace: true });
@@ -2564,9 +2589,10 @@ useEffect(() => {
           }}>
             <h2>Se déconnecter du magasin</h2>
             <p>
-              Vous allez revenir à la page de connexion pour pouvoir accéder
-              à un autre magasin. Les ventes hors connexion et l'historique
-              local ne seront pas supprimés.
+              {cashSession?.id
+                ? "Votre caisse est ouverte : vous serez envoyé vers la clôture. Après une clôture réussie, la session sera fermée et vous reviendrez à la page de connexion."
+                : "Vous allez revenir à la page de connexion pour accéder à un autre magasin."}
+              {" "}Les ventes hors connexion et l'historique local ne seront pas supprimés.
             </p>
             <div style={{ display: "flex", gap: 10 }}>
               <button
