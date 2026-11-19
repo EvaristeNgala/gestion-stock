@@ -1,4 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import {
+  collection,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
+
+import { db } from "../../firebase";
 
 import { useNavigate } from "react-router-dom";
 
@@ -19,6 +28,11 @@ function Dashboard() {
   const [showAccountInfo, setShowAccountInfo] = useState(false);
 
   const [showStoreInfo, setShowStoreInfo] = useState(false);
+
+  // ALERTES DE STOCK (ADMIN UNIQUEMENT)
+  const [stockAlertProducts, setStockAlertProducts] = useState([]);
+  const [showStockAlerts, setShowStockAlerts] = useState(false);
+  const [stockAlertsLoading, setStockAlertsLoading] = useState(false);
 
   // ==============================
 
@@ -114,6 +128,52 @@ function Dashboard() {
 
   const isAdmin = role === "admin" && session?.loginMode === "admin";
   const access = (key) => isAdmin || session?.permissions?.[key] === true;
+
+  // ==============================
+  // SURVEILLER LES PRODUITS EN ALERTE
+  // ADMIN UNIQUEMENT
+  // ==============================
+  useEffect(() => {
+    if (!isAdmin || !storeId) {
+      setStockAlertProducts([]);
+      setStockAlertsLoading(false);
+      return;
+    }
+
+    setStockAlertsLoading(true);
+
+    const productsQuery = query(
+      collection(db, "products"),
+      where("storeId", "==", storeId)
+    );
+
+    const unsubscribe = onSnapshot(
+      productsQuery,
+      (snapshot) => {
+        const alertProducts = snapshot.docs
+          .map((productDoc) => ({
+            id: productDoc.id,
+            ...productDoc.data(),
+          }))
+          .filter((product) => {
+            if (product.isActive === false) return false;
+            const currentStock = Number(product.stock || 0);
+            const minimumStock = Number(product.alertStock || 0);
+            return minimumStock > 0 && currentStock <= minimumStock;
+          })
+          .sort((a, b) => Number(a.stock || 0) - Number(b.stock || 0));
+
+        setStockAlertProducts(alertProducts);
+        setStockAlertsLoading(false);
+      },
+      (error) => {
+        console.error("Erreur chargement des alertes de stock :", error);
+        setStockAlertsLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [isAdmin, storeId]);
   const cards = [
 
     {
@@ -314,6 +374,25 @@ function Dashboard() {
 
         </h1>
 
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setShowStockAlerts(true)}
+            aria-label={`Voir les produits en alerte : ${stockAlertProducts.length}`}
+            title="Produits en alerte"
+            className={`${styles.stockAlertButton} ${
+              stockAlertProducts.length > 0 ? styles.stockAlertButtonActive : ""
+            }`}
+          >
+            🔔
+            {stockAlertProducts.length > 0 && (
+              <span className={styles.stockAlertBadge}>
+                {stockAlertProducts.length > 99 ? "99+" : stockAlertProducts.length}
+              </span>
+            )}
+          </button>
+        )}
+
         <button
 
           type="button"
@@ -422,6 +501,75 @@ function Dashboard() {
       </section>
 
       {/* ============================== */}
+
+      {/* FENÊTRE DES ALERTES DE STOCK — ADMIN UNIQUEMENT */}
+      {isAdmin && showStockAlerts && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Produits en alerte de stock"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setShowStockAlerts(false);
+          }}
+          className={styles.stockAlertsOverlay}
+        >
+          <section className={styles.stockAlertsModal}>
+            <div className={styles.stockAlertsHeader}>
+              <div>
+                <h2>🔔 Alertes de stock</h2>
+                <p>
+                  {stockAlertProducts.length} produit(s) nécessitent votre attention.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowStockAlerts(false)}
+                aria-label="Fermer"
+                className={styles.stockAlertsClose}
+              >✕</button>
+            </div>
+
+            {stockAlertsLoading ? (
+              <p className={styles.stockAlertsLoading}>Chargement des produits...</p>
+            ) : stockAlertProducts.length === 0 ? (
+              <div className={styles.stockAlertsEmpty}>
+                <div className={styles.stockAlertsCheck}>✓</div>
+                <strong>Aucun produit en alerte</strong>
+                <p>
+                  Tous les stocks sont au-dessus de leur seuil d'alerte.
+                </p>
+              </div>
+            ) : (
+              <div className={styles.stockAlertsList}>
+                {stockAlertProducts.map((product) => (
+                  <article
+                    key={product.id}
+                    className={styles.stockAlertProduct}
+                  >
+                    <strong className={styles.stockAlertProductName}>
+                      {product.productName || product.name || "Produit sans nom"}
+                    </strong>
+                    <div className={styles.stockAlertProductDetails}>
+                      <span>Stock actuel : <strong className={styles.stockAlertCurrentStock}>
+                        {Number(product.stock || 0)} {product.stockUnit || ""}
+                      </strong></span>
+                      <span>Seuil d'alerte : <strong>
+                        {Number(product.alertStock || 0)} {product.stockUnit || ""}
+                      </strong></span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowStockAlerts(false)}
+              className={styles.stockAlertsDone}
+            >Fermer</button>
+          </section>
+        </div>
+      )}
 
       {/* FOND SOMBRE DU MENU */}
 

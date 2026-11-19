@@ -2194,33 +2194,95 @@ useEffect(() => {
   const printReceipt = async () => {
     if (!lastSale) return;
 
+    // Récupérer les coordonnées du magasin connecté.
+    // Le cache local permet aussi d'imprimer si Internet est indisponible.
+    const defaultStoreInfo = {
+      storeName: "STOCK MANAGER",
+      phone: "",
+      address: "",
+      currency: "FC",
+    };
+
+    let storeInfo = { ...defaultStoreInfo };
+    const storeSettingsKey = `stockManagerStoreSettings:${storeId}`;
+
+    try {
+      const cachedSettings = localStorage.getItem(storeSettingsKey);
+      if (cachedSettings) {
+        const parsed = JSON.parse(cachedSettings);
+        storeInfo = {
+          ...defaultStoreInfo,
+          ...parsed,
+          storeName: parsed.storeName?.trim() || defaultStoreInfo.storeName,
+          phone: parsed.phone?.trim() || "",
+          address: parsed.address?.trim() || "",
+          currency: parsed.currency?.trim() || defaultStoreInfo.currency,
+        };
+      }
+    } catch (error) {
+      console.warn("Cache des paramètres du magasin illisible :", error);
+    }
+
+    try {
+      if (storeId) {
+        const settingsSnapshot = await getDoc(doc(db, "settings", storeId));
+        if (settingsSnapshot.exists()) {
+          const settings = settingsSnapshot.data();
+          storeInfo = {
+            ...defaultStoreInfo,
+            storeName: settings.storeName?.trim() || defaultStoreInfo.storeName,
+            phone: settings.phone?.trim() || "",
+            address: settings.address?.trim() || "",
+            currency: settings.currency?.trim() || defaultStoreInfo.currency,
+          };
+          try {
+            localStorage.setItem(storeSettingsKey, JSON.stringify(storeInfo));
+          } catch (cacheError) {
+            console.warn("Impossible de mettre en cache les paramètres du magasin :", cacheError);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn("Paramètres du magasin indisponibles, utilisation du cache local :", error);
+    }
+
+    const currency = storeInfo.currency || "FC";
+    const formatMoney = (value) =>
+      `${Number(value || 0).toLocaleString("fr-FR")} ${currency}`;
     const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
     })[char]);
-    const fc = (value) => `${Number(value || 0).toLocaleString("fr-FR")} FC`;
+
     const rows = (lastSale.items || []).map((item) => {
       const quantity = Number(item.quantity || 0);
       const price = Number(item.price || 0);
-      return `<div class="item"><b>${escapeHtml(item.name)}</b><div class="line"><span>${quantity} x ${fc(price)}${item.variantType ? ` (${escapeHtml(item.variantType)})` : ""}</span><b>${fc(quantity * price)}</b></div></div>`;
+      return `<div class="item"><b>${escapeHtml(item.name)}</b><div class="line"><span>${quantity} x ${formatMoney(price)}${item.variantType ? ` (${escapeHtml(item.variantType)})` : ""}</span><b>${formatMoney(quantity * price)}</b></div></div>`;
     }).join("");
+
+    const storeContact = [
+      storeInfo.phone ? `<div class="center">Tél : ${escapeHtml(storeInfo.phone)}</div>` : "",
+      storeInfo.address ? `<div class="center">${escapeHtml(storeInfo.address)}</div>` : "",
+    ].join("");
+
     const html = `<!doctype html><html><head><meta charset="UTF-8"/><style>
       @page { size: 58mm auto; margin: 0; }
       html, body { margin: 0; padding: 0; background: white; color: black; }
       body { width: 54mm; padding: 2mm; font: 11px monospace; }
-      h2, .center { text-align: center; } h2 { font-size: 14px; margin: 4px 0; }
+      h2, .center { text-align: center; } h2 { font-size: 14px; margin: 4px 0; overflow-wrap: anywhere; }
       .line { display: flex; justify-content: space-between; gap: 5px; }
       .item { margin: 6px 0; overflow-wrap: anywhere; }
       hr { border: 0; border-top: 1px dashed #333; margin: 7px 0; }
       .total { font-weight: bold; font-size: 13px; }
     </style></head><body>
-      <h2>STOCK MANAGER</h2>
+      <h2>${escapeHtml(storeInfo.storeName)}</h2>
+      ${storeContact}
       <div class="center">Ticket de caisse</div>
       <div class="center">${escapeHtml(new Date().toLocaleString("fr-FR"))}</div>
       <div>Caissier : ${escapeHtml(userName)}</div>
       <hr/>${rows}<hr/>
-      <div class="line total"><span>TOTAL</span><span>${fc(lastSale.total)}</span></div>
-      <div class="line"><span>Espèces</span><span>${fc(lastSale.received)}</span></div>
-      <div class="line"><span>Monnaie</span><span>${fc(lastSale.changeAmount)}</span></div>
+      <div class="line total"><span>TOTAL</span><span>${formatMoney(lastSale.total)}</span></div>
+      <div class="line"><span>Espèces</span><span>${formatMoney(lastSale.received)}</span></div>
+      <div class="line"><span>Monnaie</span><span>${formatMoney(lastSale.changeAmount)}</span></div>
       <hr/><div class="center">Merci pour votre achat !</div>
     </body></html>`;
 
@@ -2237,7 +2299,8 @@ useEffect(() => {
         const clean = (value) => String(value ?? "")
           .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
           .replace(/[^\x20-\x7E]/g, "?");
-        const money = (value) => `${Math.round(Number(value || 0)).toLocaleString("en-US").replace(/,/g, " ")} FC`;
+        const money = (value) =>
+          `${Math.round(Number(value || 0)).toLocaleString("en-US").replace(/,/g, " ")} ${currency}`;
         const width = 32;
         const line = (left, right) => {
           const a = clean(left);
@@ -2263,8 +2326,11 @@ useEffect(() => {
           if (current) lines.push(current);
           return lines.join("\n") + "\n";
         };
+
         const receiptLines = [
-          "STOCK MANAGER",
+          wrap(storeInfo.storeName).trimEnd(),
+          ...(storeInfo.phone ? [wrap(`Tel: ${storeInfo.phone}`).trimEnd()] : []),
+          ...(storeInfo.address ? [wrap(storeInfo.address).trimEnd()] : []),
           "TICKET DE CAISSE",
           clean(new Date().toLocaleString("fr-FR")),
           "--------------------------------",

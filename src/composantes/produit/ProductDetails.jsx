@@ -288,16 +288,6 @@ function ProductDetails() {
                 />
               ) : null}
 
-              <div
-                className={styles.imageFallback}
-                style={{
-                  display: product.image
-                    ? "none"
-                    : "flex",
-                }}
-              >
-                📦
-              </div>
 
             </div>
 
@@ -368,6 +358,19 @@ function ProductDetails() {
 
           <div className={styles.infoGrid}>
 
+            {/*Montant total payé*/}
+
+            <div className={styles.infoItem}>
+              <span>Montant total payé</span>
+
+              <strong>
+                {formatPrice(
+                  product.totalPurchaseAmount
+                )}
+              </strong>
+
+            </div>
+
             {/* PRIX ACHAT */}
 
             <div className={styles.infoItem}>
@@ -378,6 +381,17 @@ function ProductDetails() {
                   product.purchasePrice
                 )}
               </strong>
+            </div>
+
+            {/*Quantité de cet achat*/}
+
+            <div className={styles.infoItem}>
+                <span>Quantité de cet achat</span>
+
+                <strong>
+                  {product.calculatedPurchaseBaseQuantity}{" "}
+                  {product.stockUnit || ""}
+                </strong>
             </div>
 
             {/* STOCK */}
