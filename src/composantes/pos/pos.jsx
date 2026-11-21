@@ -2194,114 +2194,122 @@ useEffect(() => {
   const printReceipt = async () => {
     if (!lastSale) return;
 
-    // Récupérer les coordonnées du magasin connecté.
-    // Le cache local permet aussi d'imprimer si Internet est indisponible.
     const defaultStoreInfo = {
-      storeName: "STOCK MANAGER",
+      storeName: session?.storeName?.trim() || "MON MAGASIN",
       phone: "",
       address: "",
       currency: "FC",
     };
-
     let storeInfo = { ...defaultStoreInfo };
     const storeSettingsKey = `stockManagerStoreSettings:${storeId}`;
 
+    // Utiliser d'abord le cache : l'impression reste possible hors connexion.
     try {
       const cachedSettings = localStorage.getItem(storeSettingsKey);
       if (cachedSettings) {
         const parsed = JSON.parse(cachedSettings);
         storeInfo = {
-          ...defaultStoreInfo,
+          ...storeInfo,
           ...parsed,
           storeName: parsed.storeName?.trim() || defaultStoreInfo.storeName,
           phone: parsed.phone?.trim() || "",
           address: parsed.address?.trim() || "",
-          currency: parsed.currency?.trim() || defaultStoreInfo.currency,
+          currency: parsed.currency?.trim() || "FC",
         };
       }
     } catch (error) {
       console.warn("Cache des paramètres du magasin illisible :", error);
     }
 
+    // Actualiser les informations depuis Firebase lorsque la connexion existe.
     try {
-      if (storeId) {
-        const settingsSnapshot = await getDoc(doc(db, "settings", storeId));
-        if (settingsSnapshot.exists()) {
-          const settings = settingsSnapshot.data();
-          storeInfo = {
-            ...defaultStoreInfo,
-            storeName: settings.storeName?.trim() || defaultStoreInfo.storeName,
-            phone: settings.phone?.trim() || "",
-            address: settings.address?.trim() || "",
-            currency: settings.currency?.trim() || defaultStoreInfo.currency,
-          };
-          try {
-            localStorage.setItem(storeSettingsKey, JSON.stringify(storeInfo));
-          } catch (cacheError) {
-            console.warn("Impossible de mettre en cache les paramètres du magasin :", cacheError);
-          }
-        }
+      if (storeId && navigator.onLine) {
+        const [settingsSnapshot, userSnapshot] = await Promise.all([
+          getDoc(doc(db, "settings", storeId)),
+          connectedUserId ? getDoc(doc(db, "users", connectedUserId)) : Promise.resolve(null),
+        ]);
+        const settings = settingsSnapshot?.exists() ? settingsSnapshot.data() : {};
+        const userData = userSnapshot?.exists() ? userSnapshot.data() : {};
+        storeInfo = {
+          storeName: userData.storeName?.trim() || settings.storeName?.trim() || session?.storeName?.trim() || defaultStoreInfo.storeName,
+          phone: settings.phone?.trim() || userData.phone?.trim() || "",
+          address: settings.address?.trim() || userData.address?.trim() || "",
+          currency: settings.currency?.trim() || "FC",
+        };
+        localStorage.setItem(storeSettingsKey, JSON.stringify(storeInfo));
       }
     } catch (error) {
-      console.warn("Paramètres du magasin indisponibles, utilisation du cache local :", error);
+      console.warn("Informations du magasin indisponibles, utilisation du cache :", error);
+      // Si Firebase ne répond pas, conserver le nom commercial de la session.
+      if (!storeInfo.storeName || storeInfo.storeName === "MON MAGASIN") {
+        storeInfo.storeName = session?.storeName?.trim() || defaultStoreInfo.storeName;
+      }
     }
 
     const currency = storeInfo.currency || "FC";
-    const formatMoney = (value) =>
-      `${Number(value || 0).toLocaleString("fr-FR")} ${currency}`;
+    const formatMoney = (value) => `${Number(value || 0).toLocaleString("fr-FR")} ${currency}`;
     const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
     })[char]);
-
+    const now = new Date();
+    const dateText = now.toLocaleDateString("fr-FR");
+    const timeText = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const transactionNumber = String(lastSale.offlineSaleId || lastSale.saleId || `V-${now.getTime()}`).slice(-14).toUpperCase();
     const rows = (lastSale.items || []).map((item) => {
       const quantity = Number(item.quantity || 0);
       const price = Number(item.price || 0);
-      return `<div class="item"><b>${escapeHtml(item.name)}</b><div class="line"><span>${quantity} x ${formatMoney(price)}${item.variantType ? ` (${escapeHtml(item.variantType)})` : ""}</span><b>${formatMoney(quantity * price)}</b></div></div>`;
+      const label = `${quantity} x ${item.name || "Article"}${item.variantType ? ` (${item.variantType})` : ""}`;
+      return `<div class="item"><div class="item-name">${escapeHtml(label)}</div><div class="line"><span>${formatMoney(price)} / unité</span><b>${formatMoney(quantity * price)}</b></div></div>`;
     }).join("");
-
     const storeContact = [
-      storeInfo.phone ? `<div class="center">Tél : ${escapeHtml(storeInfo.phone)}</div>` : "",
       storeInfo.address ? `<div class="center">${escapeHtml(storeInfo.address)}</div>` : "",
+      storeInfo.phone ? `<div class="center">Tél : ${escapeHtml(storeInfo.phone)}</div>` : "",
     ].join("");
-
     const html = `<!doctype html><html><head><meta charset="UTF-8"/><style>
       @page { size: 58mm auto; margin: 0; }
-      html, body { margin: 0; padding: 0; background: white; color: black; }
-      body { width: 54mm; padding: 2mm; font: 11px monospace; }
-      h2, .center { text-align: center; } h2 { font-size: 14px; margin: 4px 0; overflow-wrap: anywhere; }
-      .line { display: flex; justify-content: space-between; gap: 5px; }
-      .item { margin: 6px 0; overflow-wrap: anywhere; }
-      hr { border: 0; border-top: 1px dashed #333; margin: 7px 0; }
-      .total { font-weight: bold; font-size: 13px; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; width: 58mm; background: #fff; color: #000; }
+      body { width: 58mm; padding: 3mm 2.5mm; font: 10.5px/1.35 "Courier New", monospace; }
+      .center { text-align: center; }
+      .store-name { text-align: center; font-size: 15px; font-weight: 900; margin: 2px 0 5px; overflow-wrap: anywhere; }
+      .muted { color: #333; }
+      .line { display: flex; justify-content: space-between; align-items: flex-start; gap: 5px; }
+      .line span:last-child, .line b { text-align: right; white-space: nowrap; }
+      .meta { margin: 2px 0; }
+      .item { margin: 5px 0; }
+      .item-name { font-weight: 700; overflow-wrap: anywhere; }
+      hr { border: 0; border-top: 1px dashed #555; margin: 7px 0; }
+      .total { font-size: 14px; font-weight: 900; margin: 7px 0; }
+      .thanks { font-weight: 700; margin-top: 10px; }
     </style></head><body>
-      <h2>${escapeHtml(storeInfo.storeName)}</h2>
+      <div class="store-name">${escapeHtml(storeInfo.storeName)}</div>
       ${storeContact}
-      <div class="center">Ticket de caisse</div>
-      <div class="center">${escapeHtml(new Date().toLocaleString("fr-FR"))}</div>
-      <div>Caissier : ${escapeHtml(userName)}</div>
+      <hr/>
+      <div class="line meta"><span>DATE : ${escapeHtml(dateText)}</span><span>HEURE : ${escapeHtml(timeText)}</span></div>
+      <div class="meta">CAISSIER : ${escapeHtml(userName)}</div>
+      <div class="meta">N° TRANSACTION : ${escapeHtml(transactionNumber)}</div>
       <hr/>${rows}<hr/>
       <div class="line total"><span>TOTAL</span><span>${formatMoney(lastSale.total)}</span></div>
-      <div class="line"><span>Espèces</span><span>${formatMoney(lastSale.received)}</span></div>
-      <div class="line"><span>Monnaie</span><span>${formatMoney(lastSale.changeAmount)}</span></div>
-      <hr/><div class="center">Merci pour votre achat !</div>
+      <div class="line"><span>REÇU</span><span>${formatMoney(lastSale.received)}</span></div>
+      <div class="line"><span>MONNAIE</span><span>${formatMoney(lastSale.changeAmount)}</span></div>
+      <hr/><div class="center thanks">MERCI POUR VOTRE ACHAT !</div>
+      <div class="center">À bientôt !</div>
+      <div class="center muted" style="margin-top:8px">${escapeHtml(transactionNumber)}</div>
     </body></html>`;
 
     try {
       if (Capacitor.isNativePlatform()) {
         const address = localStorage.getItem(`stockManagerBluetoothPrinter:${storeId}`);
         if (!address) {
-          window.alert("Aucune imprimante Bluetooth sélectionnée. Ouvrez Paramètres > Imprimante Bluetooth, puis choisissez IposPrinter.");
+          window.alert("Aucune imprimante Bluetooth sélectionnée. Ouvrez Paramètres > Imprimante Bluetooth pour la choisir.");
           return;
         }
-
-        // ESC/POS sur papier 58 mm : 32 caractères environ par ligne.
-        // Le texte est préparé sans caractères accentués pour le test Q2i.
+        // Ticket ESC/POS pour rouleau thermique de 58 mm (environ 32 caractères).
         const clean = (value) => String(value ?? "")
           .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
           .replace(/[^\x20-\x7E]/g, "?");
-        const money = (value) =>
-          `${Math.round(Number(value || 0)).toLocaleString("en-US").replace(/,/g, " ")} ${currency}`;
         const width = 32;
+        const money = (value) => `${Math.round(Number(value || 0)).toLocaleString("en-US").replace(/,/g, " ")} ${currency}`;
         const line = (left, right) => {
           const a = clean(left);
           const b = clean(right);
@@ -2314,48 +2322,57 @@ useEffect(() => {
           let current = "";
           for (const word of words) {
             if (!word) continue;
-            if (current && (current.length + word.length + 1 > width)) {
+            if (current && current.length + word.length + 1 > width) {
               lines.push(current);
               current = "";
             }
             if (word.length > width) {
-              if (current) { lines.push(current); current = ""; }
+              if (current) lines.push(current);
+              current = "";
               for (let i = 0; i < word.length; i += width) lines.push(word.slice(i, i + width));
             } else current = current ? `${current} ${word}` : word;
           }
           if (current) lines.push(current);
-          return lines.join("\n") + "\n";
+          return lines.join("\n");
         };
-
+        const separator = "--------------------------------";
         const receiptLines = [
-          wrap(storeInfo.storeName).trimEnd(),
-          ...(storeInfo.phone ? [wrap(`Tel: ${storeInfo.phone}`).trimEnd()] : []),
-          ...(storeInfo.address ? [wrap(storeInfo.address).trimEnd()] : []),
-          "TICKET DE CAISSE",
-          clean(new Date().toLocaleString("fr-FR")),
-          "--------------------------------",
-          wrap(`Caissier: ${userName}`).trimEnd(),
-          "--------------------------------",
+          wrap(storeInfo.storeName),
+          ...(storeInfo.address ? [wrap(storeInfo.address)] : []),
+          ...(storeInfo.phone ? [wrap(`Tel: ${storeInfo.phone}`)] : []),
+          separator,
+          line(`DATE: ${dateText}`, `HEURE: ${timeText}`),
+          wrap(`CAISSIER: ${userName}`),
+          wrap(`TRANS #: ${transactionNumber}`),
+          separator,
         ];
         for (const item of lastSale.items || []) {
-          receiptLines.push(wrap(`${item.name}${item.variantType ? ` (${item.variantType})` : ""}`).trimEnd());
-          receiptLines.push(line(`${Number(item.quantity || 0)} x ${money(item.price)}`, money(Number(item.quantity || 0) * Number(item.price || 0))).trimEnd());
+          const quantity = Number(item.quantity || 0);
+          const price = Number(item.price || 0);
+          receiptLines.push(wrap(`${quantity} x ${item.name || "Article"}${item.variantType ? ` (${item.variantType})` : ""}`));
+          receiptLines.push(line(money(price), money(quantity * price)));
         }
-        receiptLines.push("--------------------------------");
-        receiptLines.push(line("TOTAL", money(lastSale.total)).trimEnd());
-        receiptLines.push(line("Especes", money(lastSale.received)).trimEnd());
-        receiptLines.push(line("Monnaie", money(lastSale.changeAmount)).trimEnd());
-        receiptLines.push("--------------------------------", "Merci pour votre achat !", "", "", "");
-        await ReceiptPrinter.printBluetoothReceipt({
-          address,
-          text: receiptLines.join("\n"),
-        });
+        receiptLines.push(separator);
+        receiptLines.push(line("TOTAL", money(lastSale.total)));
+        receiptLines.push(line("RECU", money(lastSale.received)));
+        receiptLines.push(line("MONNAIE", money(lastSale.changeAmount)));
+        receiptLines.push(separator, "", "       MERCI POUR VOTRE", "            ACHAT !", "", wrap(transactionNumber), "", "", "");
+        await ReceiptPrinter.printBluetoothReceipt({ address, text: receiptLines.join("\n") });
       } else {
-        window.print();
+        const printWindow = window.open("", "_blank", "width=420,height=700");
+        if (!printWindow) {
+          window.alert("Autorisez les fenêtres pop-up pour imprimer le ticket.");
+          return;
+        }
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.onload = () => printWindow.print();
       }
     } catch (error) {
-      console.error("Impression Bluetooth impossible :", error);
-      window.alert((error?.message || "Impression Bluetooth impossible.") + "\nVérifiez le Bluetooth et l'imprimante sélectionnée dans Paramètres.");
+      console.error("Impression du ticket impossible :", error);
+      window.alert((error?.message || "Impression impossible.") + "\nVérifiez l'imprimante et les paramètres Bluetooth.");
     }
   };
 
