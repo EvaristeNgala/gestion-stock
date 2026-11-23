@@ -741,13 +741,34 @@ const filteredSales = useMemo(() => {
 
 
   const totalSales = useMemo(() => {
+    return filteredSales.reduce((total, sale) => total + Number(sale.total || 0), 0);
+  }, [filteredSales]);
 
-    return filteredSales.reduce((total, sale) => {
-
-      return total + Number(sale.total || 0);
-
+  // Argent réellement reçu : les ventes à crédit non encore réglées ne sont pas encaissées.
+  const totalCollected = useMemo(() => {
+    if (!selectedPeriod) return 0;
+    return allSales.reduce((total, sale) => {
+      if (sale.status === "cancelled") return total;
+      if (isAdmin && selectedEmployeeId !== "all" && sale.userId !== selectedEmployeeId) return total;
+      if (Array.isArray(sale.paymentHistory)) {
+        const paymentsInPeriod = sale.paymentHistory.reduce((sum, payment) => {
+          const paidAt = getDate(payment.paidAt);
+          if (!paidAt || paidAt < selectedPeriod.start || paidAt > selectedPeriod.end) return sum;
+          return sum + Number(payment.amount || 0);
+        }, 0);
+        return total + paymentsInPeriod;
+      }
+      const saleDate = getDate(sale.offlineCreatedAt || sale.createdAt || sale.date);
+      if (!saleDate || saleDate < selectedPeriod.start || saleDate > selectedPeriod.end) return total;
+      return total + Number(sale.amountReceived ?? sale.cashReceived ?? sale.total ?? 0);
     }, 0);
+  }, [allSales, selectedPeriod, isAdmin, selectedEmployeeId]);
 
+  const totalOutstanding = useMemo(() => {
+    return filteredSales.reduce((total, sale) => {
+      const remaining = sale.remainingAmount ?? Math.max(0, Number(sale.total || 0) - Number(sale.amountReceived ?? sale.cashReceived ?? sale.total ?? 0));
+      return total + Number(remaining || 0);
+    }, 0);
   }, [filteredSales]);
 
 
@@ -1522,7 +1543,7 @@ const filteredSales = useMemo(() => {
 
           <div>
 
-            <span>Chiffre d'affaires</span>
+            <span>Valeur totale des ventes</span>
 
             <strong>
 
@@ -1535,6 +1556,20 @@ const filteredSales = useMemo(() => {
         </div>
 
 
+
+        <div className={styles.statCard}>
+          <div>
+            <span>Montant encaissé</span>
+            <strong>{formatMoney(totalCollected)}</strong>
+          </div>
+        </div>
+
+        <div className={styles.statCard}>
+          <div>
+            <span>Reste à encaisser</span>
+            <strong>{formatMoney(totalOutstanding)}</strong>
+          </div>
+        </div>
 
         <div className={styles.statCard}>
           <div>

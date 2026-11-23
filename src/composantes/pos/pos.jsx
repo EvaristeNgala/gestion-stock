@@ -155,6 +155,9 @@ const POS_INACTIVITY_TIME = 5 * 60 * 1000;
   // Étapes du ticket : ticket -> paiement -> reçu
   const [ticketStep, setTicketStep] = useState("ticket");
   const [cashReceived, setCashReceived] = useState("");
+  const [showCreditForm, setShowCreditForm] = useState(false);
+  const [creditCustomerName, setCreditCustomerName] = useState("");
+  const [creditCustomerPhone, setCreditCustomerPhone] = useState("");
   const [lastSale, setLastSale] = useState(null);
   const [savingTicket, setSavingTicket] = useState(false);
 
@@ -1440,6 +1443,9 @@ useEffect(() => {
   const openTicket = () => {
     setTicketStep("ticket");
     setCashReceived("");
+    setShowCreditForm(false);
+    setCreditCustomerName("");
+    setCreditCustomerPhone("");
     setLastSale(null);
     setShowTicket(true);
   };
@@ -1495,7 +1501,7 @@ useEffect(() => {
 // VALIDER UNE VENTE HORS CONNEXION
 // ==============================
 
-const handleOfflinePayment = async (received) => {
+const handleOfflinePayment = async (received, creditCustomer = null) => {
 if (!cashSession?.id) {
     return false;
   }
@@ -1508,8 +1514,12 @@ if (!cashSession?.id) {
     return false;
   }
 
-  if (!Number.isFinite(received) || received < total) {
+  if (!Number.isFinite(received) || received < 0 || (!creditCustomer && received < total)) {
+    return false;
+  }
 
+  if (creditCustomer && !String(creditCustomer.name || "").trim()) {
+    alert("Le nom du client est obligatoire pour une vente non encaissée.");
     return false;
   }
 
@@ -1632,8 +1642,9 @@ if (!cashSession?.id) {
     const totalProfit =
       total - totalPurchaseCost;
 
-    const changeAmount =
-      received - total;
+    const changeAmount = creditCustomer ? 0 : received - total;
+    const initialCollected = creditCustomer ? 0 : total;
+    const remainingAmount = Math.max(0, total - initialCollected);
 
     // ==============================
     // IDENTIFIANT LOCAL UNIQUE
@@ -1676,10 +1687,13 @@ if (!cashSession?.id) {
       totalPurchaseCost,
       profit: totalProfit,
 
-      paymentMethod: "cash",
-
-      amountReceived: received,
-
+      paymentMethod: creditCustomer ? "credit" : "cash",
+      customerName: creditCustomer ? String(creditCustomer.name).trim() : "",
+      customerPhone: creditCustomer ? String(creditCustomer.phone || "").trim() : "",
+      amountReceived: initialCollected,
+      remainingAmount,
+      paymentStatus: creditCustomer ? "unpaid" : "paid",
+      paymentHistory: creditCustomer ? [] : [{ amount: total, method: "cash", paidAt: new Date().toISOString(), userId, userName, cashSessionId: cashSession.id }],
       changeAmount,
 
       status: "pending_sync",
@@ -1739,8 +1753,11 @@ if (!cashSession?.id) {
 
     setLastSale({
       total,
-      received,
+      received: initialCollected,
       changeAmount,
+      customerName: creditCustomer?.name || "",
+      remainingAmount,
+      paymentStatus: creditCustomer ? "unpaid" : "paid",
 
       items: [...ticket],
 
@@ -1751,6 +1768,9 @@ if (!cashSession?.id) {
       offlineSaleId,
     });
 
+    setShowCreditForm(false);
+    setCreditCustomerName("");
+    setCreditCustomerPhone("");
     setTicketStep("receipt");
 
     console.log(
@@ -2008,10 +2028,12 @@ const syncOfflineSales = async () => {
                   "cash",
 
                 amountReceived:
-                  Number(
-                    sale.amountReceived ||
-                      0
-                  ),
+                  Number(sale.amountReceived || 0),
+                remainingAmount: Number(sale.remainingAmount ?? Math.max(0, Number(sale.total || 0) - Number(sale.amountReceived || 0))),
+                paymentStatus: sale.paymentStatus || (Number(sale.amountReceived || 0) >= Number(sale.total || 0) ? "paid" : "unpaid"),
+                customerName: sale.customerName || "",
+                customerPhone: sale.customerPhone || "",
+                paymentHistory: Array.isArray(sale.paymentHistory) ? sale.paymentHistory : [],
 
                 changeAmount:
                   Number(
@@ -2052,9 +2074,7 @@ const syncOfflineSales = async () => {
                     cashSnapshot.data()
                       .totalSales || 0
                   ) +
-                  Number(
-                    sale.total || 0
-                  ),
+                  Number(sale.amountReceived || 0),
 
                 numberOfSales:
                   Number(
@@ -2183,9 +2203,28 @@ useEffect(() => {
     }
   };
 
+  const handleCreditSale = async () => {
+    if (paying) return;
+    const name = creditCustomerName.trim();
+    if (!name) {
+      alert("Veuillez saisir le nom du client.");
+      return;
+    }
+    const saved = await handleOfflinePayment(0, {
+      name,
+      phone: creditCustomerPhone,
+    });
+    if (saved && navigator.onLine) {
+      setTimeout(() => syncOfflineSales(), 0);
+    }
+  };
+
   const startNewSale = () => {
     setTicket([]);
     setCashReceived("");
+    setShowCreditForm(false);
+    setCreditCustomerName("");
+    setCreditCustomerPhone("");
     setLastSale(null);
     setTicketStep("ticket");
     setShowTicket(false);
@@ -2290,7 +2329,9 @@ useEffect(() => {
       <div class="meta">N° TRANSACTION : ${escapeHtml(transactionNumber)}</div>
       <hr/>${rows}<hr/>
       <div class="line total"><span>TOTAL</span><span>${formatMoney(lastSale.total)}</span></div>
-      <div class="line"><span>REÇU</span><span>${formatMoney(lastSale.received)}</span></div>
+      ${lastSale.customerName ? `<div class="line"><span>CLIENT</span><span>${lastSale.customerName}</span></div>` : ""}
+      <div class="line"><span>ENCAISSÉ</span><span>${formatMoney(lastSale.received)}</span></div>
+      ${lastSale.remainingAmount > 0 ? `<div class="line"><span>RESTE À PAYER</span><span>${formatMoney(lastSale.remainingAmount)}</span></div>` : ""}
       <div class="line"><span>MONNAIE</span><span>${formatMoney(lastSale.changeAmount)}</span></div>
       <hr/><div class="center thanks">MERCI POUR VOTRE ACHAT !</div>
       <div class="center">À bientôt !</div>
@@ -2354,7 +2395,9 @@ useEffect(() => {
         }
         receiptLines.push(separator);
         receiptLines.push(line("TOTAL", money(lastSale.total)));
-        receiptLines.push(line("RECU", money(lastSale.received)));
+        if (lastSale.customerName) receiptLines.push(line("CLIENT", lastSale.customerName));
+        receiptLines.push(line("ENCAISSE", money(lastSale.received)));
+        if (lastSale.remainingAmount > 0) receiptLines.push(line("RESTE A PAYER", money(lastSale.remainingAmount)));
         receiptLines.push(line("MONNAIE", money(lastSale.changeAmount)));
         receiptLines.push(separator, "", "       MERCI POUR VOTRE", "            ACHAT !", "", wrap(transactionNumber), "", "", "");
         await ReceiptPrinter.printBluetoothReceipt({ address, text: receiptLines.join("\n") });
@@ -3734,7 +3777,7 @@ Clôture de caisse
                   </div>
 
                   <label className={styles.cashReceivedField}>
-                    <span>Espèces reçues</span>
+                    <span>Montant encaissé</span>
                     <input
                       type="number"
                       min="0"
@@ -3773,6 +3816,38 @@ Clôture de caisse
                   <button
                     type="button"
                     className={styles.cardMethodButton}
+                    onClick={() => setShowCreditForm((value) => !value)}
+                    disabled={paying}
+                  >
+                    <span className={styles.paymentMethodIcon}>📝</span>
+                    <div>
+                      <strong>VENTE NON ENCAISSÉE</strong>
+                      <small>Enregistrer une dette client</small>
+                    </div>
+                  </button>
+
+                  {showCreditForm && (
+                    <div style={{ marginTop: 14, padding: 14, border: "1px solid #dbe3ef", borderRadius: 12, background: "#f8fafc" }}>
+                      <strong>Informations du client</strong>
+                      <label style={{ display: "block", marginTop: 10 }}>
+                        <span>Nom du client *</span>
+                        <input type="text" value={creditCustomerName} onChange={(e) => setCreditCustomerName(e.target.value)} placeholder="Nom complet du client" />
+                      </label>
+                      <label style={{ display: "block", marginTop: 10 }}>
+                        <span>Téléphone (facultatif)</span>
+                        <input type="tel" value={creditCustomerPhone} onChange={(e) => setCreditCustomerPhone(e.target.value)} placeholder="Numéro de téléphone" />
+                      </label>
+                      <p style={{ margin: "10px 0", color: "#92400e", fontSize: 13 }}>Aucun paiement ne sera ajouté à la caisse. Le client pourra payer en une ou plusieurs fois depuis l'historique des ventes.</p>
+                      <button type="button" className={styles.cashMethodButton} disabled={paying || !creditCustomerName.trim()} onClick={handleCreditSale}>
+                        <span className={styles.paymentMethodIcon}>✓</span>
+                        <div><strong>{paying ? "ENREGISTREMENT..." : "CONFIRMER LA VENTE À CRÉDIT"}</strong></div>
+                      </button>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    className={styles.cardMethodButton}
                     disabled
                   >
                     <span className={styles.paymentMethodIcon}>💳</span>
@@ -3789,8 +3864,8 @@ Clôture de caisse
               <>
                 <div className={styles.receiptHeader}>
                   <div className={styles.receiptSuccess}>✓</div>
-                  <h2>Paiement effectué</h2>
-                  <p>La vente a été enregistrée avec succès.</p>
+                  <h2>{lastSale.paymentStatus === "unpaid" ? "Vente enregistrée" : "Paiement effectué"}</h2>
+                  <p>{lastSale.paymentStatus === "unpaid" ? `Vente à crédit enregistrée pour ${lastSale.customerName}.` : "La vente a été enregistrée avec succès."}</p>
                 </div>
 
                 <div className={styles.receiptContent}>
@@ -3802,11 +3877,14 @@ Clôture de caisse
                       </strong>
                     </div>
                     <div>
-                      <span>Espèces reçues</span>
+                      <span>Montant encaissé</span>
                       <strong>
                         {lastSale.received.toLocaleString("fr-FR")} FC
                       </strong>
                     </div>
+                    {lastSale.paymentStatus === "unpaid" && (
+                      <div><span>Reste à payer</span><strong>{lastSale.remainingAmount.toLocaleString("fr-FR")} FC</strong></div>
+                    )}
                     <div className={styles.changeAmountRow}>
                       <span>Monnaie à rendre</span>
                       <strong>

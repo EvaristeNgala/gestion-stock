@@ -12,6 +12,8 @@ import {
 
   getDoc,
 
+  getDocsFromServer,
+
   onSnapshot,
 
   query,
@@ -50,6 +52,8 @@ function SalesHistory() {
 
   const [selectedSale, setSelectedSale] = useState(null);
   const [printing, setPrinting] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [savingPayment, setSavingPayment] = useState(false);
 
 
 
@@ -457,14 +461,118 @@ function SalesHistory() {
 
 
   const totalToday = activeSales.reduce(
-
-    (sum, sale) => sum + Number(sale.total || 0),
-
-    0
-
+    (sum, sale) => sum + Number(sale.total || 0), 0
   );
+  const collectedToday = allSales.reduce((sum, sale) => {
+    if (sale.status === "cancelled") return sum;
+    if (Array.isArray(sale.paymentHistory)) {
+      return sum + sale.paymentHistory.reduce((paymentSum, payment) => {
+        return paymentSum + (isToday(payment.paidAt) ? Number(payment.amount || 0) : 0);
+      }, 0);
+    }
+    return sum + (isToday(sale.offlineCreatedAt || sale.createdAt || sale.paidAt)
+      ? Number(sale.amountReceived ?? sale.cashReceived ?? sale.total ?? 0)
+      : 0);
+  }, 0);
 
+  // Dettes encore ouvertes, y compris les ventes des jours précédents.
+  // Cela permet d'enregistrer un paiement lorsque le client revient plus tard.
+  const outstandingSales = useMemo(() => {
+    return allSales.filter((sale) => {
+      if (sale.status === "cancelled" || sale.isPendingLocal) return false;
+      const remaining = Number(
+        sale.remainingAmount ??
+        Math.max(0, Number(sale.total || 0) - Number(
+          sale.amountReceived ?? sale.cashReceived ?? (sale.paymentStatus ? 0 : sale.total)
+        ))
+      );
+      return remaining > 0 && ["unpaid", "partial"].includes(sale.paymentStatus);
+    });
+  }, [allSales]);
 
+  // Enregistrer un paiement total ou partiel sur une vente à crédit.
+  const recordCustomerPayment = async () => {
+    if (!selectedSale || savingPayment) return;
+    if (!navigator.onLine) {
+      alert("Une connexion Internet est nécessaire pour enregistrer un paiement client.");
+      return;
+    }
+    const amount = Number(paymentAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      alert("Saisissez un montant valide.");
+      return;
+    }
+    setSavingPayment(true);
+    try {
+      const openCashSnapshot = await getDocsFromServer(query(
+        collection(db, "cashSessions"),
+        where("storeId", "==", storeId),
+        where("userId", "==", userId),
+        where("status", "==", "open")
+      ));
+      if (openCashSnapshot.empty) throw new Error("NO_OPEN_CASH");
+      const activeCashSessionId = openCashSnapshot.docs[0].id;
+      const saleRef = doc(db, "sales", selectedSale.id);
+      await runTransaction(db, async (transaction) => {
+        const saleSnapshot = await transaction.get(saleRef);
+        if (!saleSnapshot.exists()) throw new Error("SALE_NOT_FOUND");
+        const current = saleSnapshot.data();
+        if (current.storeId !== storeId) throw new Error("INVALID_STORE");
+        if (current.status === "cancelled") throw new Error("SALE_CANCELLED");
+        const total = Number(current.total || 0);
+        const alreadyReceived = Number(current.amountReceived ?? current.cashReceived ?? 0);
+        const remaining = Math.max(0, total - alreadyReceived);
+        if (amount > remaining) throw new Error("PAYMENT_TOO_HIGH");
+        const nextReceived = alreadyReceived + amount;
+        const nextRemaining = Math.max(0, total - nextReceived);
+        const nextStatus = nextRemaining === 0 ? "paid" : "partial";
+        const cashRef = doc(db, "cashSessions", activeCashSessionId);
+        const cashSnapshot = await transaction.get(cashRef);
+        if (!cashSnapshot.exists()) throw new Error("NO_OPEN_CASH");
+        transaction.update(saleRef, {
+          amountReceived: nextReceived,
+          remainingAmount: nextRemaining,
+          paymentStatus: nextStatus,
+          paymentMethod: current.paymentMethod === "credit" ? "cash" : (current.paymentMethod || "cash"),
+          paymentHistory: [...(Array.isArray(current.paymentHistory) ? current.paymentHistory : []), {
+            amount,
+            method: "cash",
+            paidAt: new Date().toISOString(),
+            userId,
+            userName,
+            cashSessionId: activeCashSessionId,
+          }],
+          lastPaymentAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        const cashData = cashSnapshot.data();
+        transaction.update(cashRef, {
+          totalSales: Number(cashData.totalSales || 0) + amount,
+          updatedAt: serverTimestamp(),
+        });
+      });
+      setSelectedSale((current) => current ? {
+        ...current,
+        amountReceived: Number(current.amountReceived || 0) + amount,
+        remainingAmount: Math.max(0, Number(current.total || 0) - Number(current.amountReceived || 0) - amount),
+        paymentStatus: Number(current.total || 0) - Number(current.amountReceived || 0) - amount <= 0 ? "paid" : "partial",
+      } : current);
+      setPaymentAmount("");
+      alert("Paiement client enregistré avec succès.");
+    } catch (error) {
+      console.error("Erreur enregistrement paiement client :", error);
+      const messages = {
+        SALE_NOT_FOUND: "Cette vente est introuvable.",
+        INVALID_STORE: "Cette vente n'appartient pas à ce magasin.",
+        SALE_CANCELLED: "Impossible d'encaisser une vente annulée.",
+        PAYMENT_TOO_HIGH: "Le montant dépasse le reste à payer.",
+        NO_OPEN_CASH: "Ouvrez votre caisse avant d'enregistrer un paiement client.",
+      };
+      alert(messages[error.message] || "Impossible d'enregistrer le paiement.");
+    } finally {
+      setSavingPayment(false);
+    }
+  };
 
   // Réimpression à partir de la vente sélectionnée, jamais du ticket courant.
   const reprintSale = async (sale) => {
@@ -487,9 +595,12 @@ function SalesHistory() {
       lines.push(clean(`${Number(item.quantity || 0)} x ${money(item.price)} = ${money(Number(item.quantity || 0) * Number(item.price || 0))}`));
     }
     lines.push("--------------------------------", `TOTAL: ${money(sale.total)}`);
+    if (sale.customerName) lines.push(`Client: ${clean(sale.customerName)}`);
     const received = sale.amountReceived ?? sale.cashReceived ?? sale.received;
+    const remaining = sale.remainingAmount ?? Math.max(0, Number(sale.total || 0) - Number(received || 0));
     const change = sale.change ?? sale.changeAmount;
-    if (received != null) lines.push(`Recu: ${money(received)}`);
+    if (received != null) lines.push(`Encaisse: ${money(received)}`);
+    if (remaining > 0) lines.push(`Reste a payer: ${money(remaining)}`);
     if (change != null) lines.push(`Monnaie: ${money(change)}`);
     if (["cancelled", "canceled", "annulled"].includes(sale.status)) lines.push("*** VENTE ANNULEE ***");
     if (sale.isPendingLocal) lines.push("*** EN ATTENTE DE SYNCHRO ***");
@@ -912,33 +1023,26 @@ function SalesHistory() {
 
 
 
-        let cashSessionRef = null;
-
-        let cashSnapshot = null;
-
-
-
-        if (currentSale.cashSessionId) {
-
-          cashSessionRef = doc(
-
-            db,
-
-            "cashSessions",
-
-            currentSale.cashSessionId
-
-          );
-
-
-
-          cashSnapshot =
-
-            await transaction.get(cashSessionRef);
-
+        // Répartir les montants encaissés entre les caisses qui les ont reçus.
+        // Les paiements partiels peuvent avoir été réalisés pendant des sessions différentes.
+        const paymentTotalsBySession = {};
+        if (Array.isArray(currentSale.paymentHistory) && currentSale.paymentHistory.length > 0) {
+          currentSale.paymentHistory.forEach((payment) => {
+            const sessionId = payment.cashSessionId || currentSale.cashSessionId;
+            if (!sessionId) return;
+            paymentTotalsBySession[sessionId] = Number(paymentTotalsBySession[sessionId] || 0) + Number(payment.amount || 0);
+          });
+        } else if (currentSale.cashSessionId) {
+          const received = Number((currentSale.amountReceived ?? currentSale.cashReceived ?? (currentSale.paymentStatus ? 0 : currentSale.total)) || 0);
+          paymentTotalsBySession[currentSale.cashSessionId] = received;
         }
 
-
+        const cashSessionReads = [];
+        for (const [sessionId, collectedAmount] of Object.entries(paymentTotalsBySession)) {
+          const cashRef = doc(db, "cashSessions", sessionId);
+          const cashSnapshot = await transaction.get(cashRef);
+          cashSessionReads.push({ sessionId, cashRef, cashSnapshot, collectedAmount });
+        }
 
         // ==========================================
 
@@ -1000,79 +1104,20 @@ function SalesHistory() {
 
 
 
-        if (
-
-          cashSessionRef &&
-
-          cashSnapshot &&
-
-          cashSnapshot.exists()
-
-        ) {
-
+        for (const { sessionId, cashRef, cashSnapshot, collectedAmount } of cashSessionReads) {
+          if (!cashSnapshot.exists()) continue;
           const cashData = cashSnapshot.data();
-
-
-
-          const currentTotalSales = Number(
-
-            cashData.totalSales || 0
-
-          );
-
-
-
-          const currentNumberOfSales = Number(
-
-            cashData.numberOfSales || 0
-
-          );
-
-
-
-          transaction.update(cashSessionRef, {
-
-            totalSales: Math.max(
-
-              0,
-
-              currentTotalSales -
-
-                Number(currentSale.total || 0)
-
-            ),
-
-            numberOfSales: Math.max(
-
-              0,
-
-              currentNumberOfSales - 1
-
-            ),
-
-            cancelledSalesAmount:
-
-              Number(
-
-                cashData.cancelledSalesAmount || 0
-
-              ) + Number(currentSale.total || 0),
-
-            cancelledSalesCount:
-
-              Number(
-
-                cashData.cancelledSalesCount || 0
-
-              ) + 1,
-
+          const isOriginalSaleSession = sessionId === currentSale.cashSessionId;
+          transaction.update(cashRef, {
+            totalSales: Math.max(0, Number(cashData.totalSales || 0) - Number(collectedAmount || 0)),
+            ...(isOriginalSaleSession ? {
+              numberOfSales: Math.max(0, Number(cashData.numberOfSales || 0) - 1),
+              cancelledSalesCount: Number(cashData.cancelledSalesCount || 0) + 1,
+            } : {}),
+            cancelledSalesAmount: Number(cashData.cancelledSalesAmount || 0) + Number(collectedAmount || 0),
             updatedAt: serverTimestamp(),
-
           });
-
         }
-
-
 
         transaction.update(saleRef, {
 
@@ -1305,6 +1350,11 @@ function SalesHistory() {
 
 
           <div className={styles.summaryCard}>
+            <span>Montant encaissé</span>
+            <strong>{formatMoney(collectedToday)}</strong>
+          </div>
+
+          <div className={styles.summaryCard}>
 
             <span>Annulées</span>
 
@@ -1502,6 +1552,10 @@ function SalesHistory() {
 
                           : sale.isPendingLocal
                           ? "EN ATTENTE DE SYNCHRO"
+                          : sale.paymentStatus === "unpaid"
+                          ? "NON ENCAISSÉE"
+                          : sale.paymentStatus === "partial"
+                          ? "PARTIELLEMENT PAYÉE"
                           : "PAYÉE"}
 
                       </span>
@@ -1520,6 +1574,49 @@ function SalesHistory() {
 
         </section>
 
+        <section className={styles.salesSection} style={{ marginTop: 20 }}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2>Clients à crédit</h2>
+              <p>Ventes non réglées ou partiellement réglées, même si elles datent d'un autre jour.</p>
+            </div>
+            <span>{outstandingSales.length} dette(s)</span>
+          </div>
+
+          {outstandingSales.length === 0 ? (
+            <div className={styles.message}>Aucun montant restant à encaisser.</div>
+          ) : (
+            <div className={styles.salesList}>
+              {outstandingSales.map((sale) => {
+                const remaining = Number(
+                  sale.remainingAmount ??
+                  Math.max(0, Number(sale.total || 0) - Number(sale.amountReceived || 0))
+                );
+                return (
+                  <button
+                    type="button"
+                    key={sale.id}
+                    className={styles.saleCard}
+                    onClick={() => { setSelectedSale(sale); setPaymentAmount(""); }}
+                  >
+                    <div className={styles.saleTop}>
+                      <div>
+                        <strong>{sale.customerName || "Client sans nom"}</strong>
+                        <span>Vente #{sale.saleNumber || sale.id.slice(0, 6)} • {formatDate(sale.offlineCreatedAt || sale.createdAt || sale.paidAt)}</span>
+                        {sale.customerPhone && <span>{sale.customerPhone}</span>}
+                      </div>
+                      <strong className={styles.saleAmount}>{formatMoney(remaining)}</strong>
+                    </div>
+                    <div className={styles.saleBottom}>
+                      <span>Reste à payer</span>
+                      <span className={styles.paidStatus}>{sale.paymentStatus === "partial" ? "PARTIELLEMENT PAYÉE" : "NON ENCAISSÉE"}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
       </main>
 
 
@@ -1619,19 +1716,24 @@ function SalesHistory() {
 
 
 
+                {selectedSale.customerName && (
+                  <div>
+                    <span>Client</span>
+                    <strong>{selectedSale.customerName}</strong>
+                    {selectedSale.customerPhone && <small>{selectedSale.customerPhone}</small>}
+                  </div>
+                )}
                 <div>
 
                   <span>Paiement</span>
 
                   <strong>
 
-                    {selectedSale.paymentMethod === "cash"
-
+                    {selectedSale.paymentStatus === "unpaid"
+                      ? "Vente à crédit"
+                      : selectedSale.paymentMethod === "cash"
                       ? "Espèces"
-
-                      : selectedSale.paymentMethod ||
-
-                        "Espèces"}
+                      : selectedSale.paymentMethod || "Espèces"}
 
                   </strong>
 
@@ -1749,7 +1851,7 @@ function SalesHistory() {
 
                         selectedSale.cashReceived ??
 
-                        selectedSale.total
+                        (selectedSale.paymentStatus ? 0 : selectedSale.total)
 
                     )}
 
@@ -1758,6 +1860,11 @@ function SalesHistory() {
                 </div>
 
 
+
+                <div>
+                  <span>Reste à payer</span>
+                  <strong>{formatMoney(selectedSale.remainingAmount ?? Math.max(0, Number(selectedSale.total || 0) - Number(selectedSale.amountReceived ?? selectedSale.cashReceived ?? (selectedSale.paymentStatus ? 0 : selectedSale.total))))}</strong>
+                </div>
 
                 <div>
 
@@ -1782,6 +1889,18 @@ function SalesHistory() {
               </div>
 
 
+
+              {Array.isArray(selectedSale.paymentHistory) && selectedSale.paymentHistory.length > 0 && (
+                <div style={{ marginTop: 14, padding: 12, background: "#f8fafc", borderRadius: 10 }}>
+                  <strong>Historique des paiements</strong>
+                  {selectedSale.paymentHistory.map((payment, index) => (
+                    <div key={`${payment.paidAt || index}-${index}`} style={{ display: "flex", justifyContent: "space-between", gap: 12, paddingTop: 8, fontSize: 13 }}>
+                      <span>{formatDate(payment.paidAt)} {payment.userName ? `• ${payment.userName}` : ""}</span>
+                      <strong>{formatMoney(payment.amount)}</strong>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {selectedSale.status === "cancelled" && (
 
@@ -1832,6 +1951,26 @@ function SalesHistory() {
             </div>
 
 
+
+            {selectedSale.status !== "cancelled" && !selectedSale.isPendingLocal && Number(selectedSale.remainingAmount ?? Math.max(0, Number(selectedSale.total || 0) - Number(selectedSale.amountReceived ?? selectedSale.cashReceived ?? (selectedSale.paymentStatus ? 0 : selectedSale.total)))) > 0 && (
+              <div style={{ margin: "0 16px 16px", padding: 14, border: "1px solid #fed7aa", background: "#fff7ed", borderRadius: 12 }}>
+                <strong>Enregistrer un paiement client</strong>
+                <p style={{ margin: "6px 0 10px", fontSize: 13 }}>Le client peut régler sa dette en plusieurs fois.</p>
+                <input
+                  type="number"
+                  min="1"
+                  max={Number(selectedSale.remainingAmount ?? Math.max(0, Number(selectedSale.total || 0) - Number(selectedSale.amountReceived || 0)))}
+                  inputMode="numeric"
+                  value={paymentAmount}
+                  onChange={(event) => setPaymentAmount(event.target.value)}
+                  placeholder="Montant reçu en FC"
+                  style={{ width: "100%", padding: 11, border: "1px solid #cbd5e1", borderRadius: 8, boxSizing: "border-box" }}
+                />
+                <button type="button" className={styles.closeModalButton} onClick={recordCustomerPayment} disabled={savingPayment || !paymentAmount || Number(paymentAmount) <= 0} style={{ marginTop: 10, width: "100%" }}>
+                  {savingPayment ? "Enregistrement..." : "Enregistrer le paiement"}
+                </button>
+              </div>
+            )}
 
             <div className={styles.modalFooter}>
 
