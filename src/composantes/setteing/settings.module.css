@@ -1,47 +1,75 @@
-
 /* =========================================
-   CONTENEUR PRINCIPAL
+   PARAMÈTRES — STYLE GÉNÉRAL
 ========================================= */
 
 .settings {
   width: 100%;
   min-height: 100vh;
-  padding: 24px;
-  background: #f5f7fb;
+  padding: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.055), transparent 28%),
+    #f5f7fb;
   box-sizing: border-box;
-}
-
-.showCodeButton{
-  border-radius: 4px;
-  padding: 8px;
-  margin-top: 8px;
-  margin-bottom: 8px;
-  color: #d1d5db;
-  background-color: #2563eb;
-  border: none;
+  color: #172033;
 }
 
 /* =========================================
-   HEADER
+   EN-TÊTE
 ========================================= */
 
 .header {
-  width: 100%;
-  max-width: 1200px;
+
+  max-width: 1250px;
+
   margin: 0 auto 24px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 10px;
+
+}
+
+.backButton {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5eaf2;
+  border-radius: 13px;
+  background: #ffffff;
+  color: #172033;
+  font-size: 23px;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.055);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.backButton:hover {
+  background: #eff6ff;
+  box-shadow: 0 5px 14px rgba(37, 99, 235, 0.12);
+  transform: translateX(-2px);
 }
 
 .header h1 {
   margin: 0;
   color: #172033;
-  font-size: 30px;
-  font-weight: 700;
+  font-size: 29px;
+  line-height: 1.2;
+  font-weight: 750;
+  letter-spacing: -0.6px;
 }
 
-.header p {
-  margin: 7px 0 0;
-  color: #6b7280;
-  font-size: 15px;
+.settings > p {
+  margin: 0 0 26px 60px;
+  color: #778196;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 /* =========================================
@@ -52,12 +80,12 @@
 .errorMessage {
   width: 100%;
   max-width: 1200px;
-  margin: 0 auto 20px;
-  padding: 13px 16px;
-  border-radius: 10px;
+  margin: 0 auto 18px;
+  padding: 14px 16px;
+  border-radius: 12px;
   box-sizing: border-box;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .successMessage {
@@ -67,13 +95,13 @@
 }
 
 .errorMessage {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
 }
 
 /* =========================================
-   GRILLE
+   GRILLE ET CARTES
 ========================================= */
 
 .settingsGrid {
@@ -85,17 +113,21 @@
   gap: 20px;
 }
 
-/* =========================================
-   CARDS
-========================================= */
-
 .settingsCard {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 22px;
+  min-width: 0;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e7ebf2;
+  border-radius: 17px;
   box-sizing: border-box;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.045);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.settingsCard:hover {
+  border-color: #d9e3f3;
+  box-shadow: 0 9px 24px rgba(15, 23, 42, 0.065);
+  transform: translateY(-1px);
 }
 
 .cardHeader {
@@ -103,35 +135,41 @@
   align-items: center;
   gap: 13px;
   margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eef1f6;
 }
 
 .cardIcon {
-  width: 43px;
-  height: 43px;
-  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #eff6ff;
-  border-radius: 10px;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+  border-radius: 13px;
   font-size: 21px;
 }
 
 .cardHeader h2 {
   margin: 0;
   color: #172033;
-  font-size: 18px;
-  font-weight: 650;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
 }
 
 .cardHeader p {
-  margin: 4px 0 0;
-  color: #7b8494;
-  font-size: 13px;
+  margin: 5px 0 0;
+  color: #8993a5;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 /* =========================================
-   FORMULAIRE
+   FORMULAIRES
 ========================================= */
 
 .formGrid {
@@ -151,60 +189,174 @@
 }
 
 .field label {
-  margin-bottom: 7px;
-  color: #374151;
-  font-size: 13px;
-  font-weight: 600;
+  margin-bottom: 8px;
+  color: #465166;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .field input,
 .field select {
   width: 100%;
-  height: 44px;
+  height: 46px;
   padding: 0 13px;
-  border: 1px solid #d7dce5;
-  border-radius: 9px;
+  border: 1px solid #dce2eb;
+  border-radius: 10px;
   outline: none;
-  background: #ffffff;
-  color: #1f2937;
-  font-size: 14px;
+  background: #fbfcfe;
+  color: #202b3e;
+  font: inherit;
+  font-size: 13px;
   box-sizing: border-box;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.field input:hover,
+.field select:hover {
+  border-color: #bdc9da;
+  background: #ffffff;
 }
 
 .field input:focus,
 .field select:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.09);
+  border-color: #3b82f6;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.11);
 }
 
 .field input::placeholder {
-  color: #a1a8b3;
+  color: #a3acba;
+}
+
+.field input:disabled,
+.field input[readonly] {
+  background: #f1f4f8;
+  color: #7b8494;
+  cursor: not-allowed;
 }
 
 .field small {
   margin-top: 7px;
-  color: #8a93a3;
+  color: #8b95a6;
   font-size: 11px;
   line-height: 1.5;
 }
 
 /* =========================================
-   SÉCURITÉ / ACCÈS
+   SÉCURITÉ ET CODE ADMINISTRATEUR
 ========================================= */
 
+.adminCodeBox {
+  padding: 17px;
+  border: 1px solid #dbe7fb;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #f8fbff, #f1f6ff);
+}
+
+.adminCodeTitle {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.adminCodeTitle strong {
+  display: block;
+  color: #24324a;
+  font-size: 14px;
+}
+
+.adminCodeTitle p {
+  margin: 7px 0 0;
+  color: #71809a;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.adminBadge {
+  flex-shrink: 0;
+  padding: 5px 9px;
+  border-radius: 20px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+
+.adminCodeFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.passwordField {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.passwordField input {
+  min-width: 0;
+  flex: 1;
+}
+
+.showCodeButton {
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid #bfdbfe;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.showCodeButton:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.codeUsageInfo {
+  margin-top: 16px;
+  padding: 13px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid #e3ebf8;
+}
+
+.codeUsageInfo strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #475569;
+  font-size: 12px;
+}
+
+.codeUsageInfo ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #71809a;
+  font-size: 11px;
+  line-height: 1.8;
+}
+
 .securityInfo {
+  margin-top: 15px;
   padding: 15px 16px;
   background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border: 1px solid #e6ebf2;
+  border-radius: 11px;
 }
 
 .securityInfo strong {
   display: block;
   margin-bottom: 6px;
   color: #374151;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .securityInfo p {
@@ -215,32 +367,34 @@
 }
 
 /* =========================================
-   TOGGLE STOCK
+   PARAMÈTRES DE STOCK
 ========================================= */
 
 .toggleField {
-  min-height: 44px;
+  min-height: 46px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 15px;
   padding: 12px 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border: 1px solid #e5eaf1;
+  border-radius: 11px;
+  background: #fafbfd;
   box-sizing: border-box;
 }
 
 .toggleField strong {
   display: block;
   color: #374151;
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .toggleField p {
-  margin: 4px 0 0;
+  margin: 5px 0 0;
   color: #8a93a3;
   font-size: 11px;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 /* =========================================
@@ -249,37 +403,39 @@
 
 .switch {
   position: relative;
-  width: 43px;
-  height: 24px;
+  width: 44px;
+  height: 25px;
   flex-shrink: 0;
+  display: inline-block;
 }
 
 .switch input {
-  width: 0;
-  height: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
   opacity: 0;
 }
 
 .slider {
   position: absolute;
   inset: 0;
-  background: #d1d5db;
+  background: #cbd2dd;
   border-radius: 30px;
   cursor: pointer;
-  transition: 0.25s;
+  transition: background 0.25s ease;
 }
 
 .slider::before {
   content: "";
   position: absolute;
-  width: 18px;
-  height: 18px;
+  width: 19px;
+  height: 19px;
   left: 3px;
   top: 3px;
   background: #ffffff;
   border-radius: 50%;
-  transition: 0.25s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.25s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
 .switch input:checked + .slider {
@@ -288,6 +444,11 @@
 
 .switch input:checked + .slider::before {
   transform: translateX(19px);
+}
+
+.switch input:focus-visible + .slider {
+  outline: 3px solid rgba(37, 99, 235, 0.2);
+  outline-offset: 3px;
 }
 
 /* =========================================
@@ -303,16 +464,16 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 16px;
+  padding: 18px;
   background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border: 1px solid #e6ebf2;
+  border-radius: 12px;
 }
 
 .employeeContent strong {
   display: block;
-  color: #374151;
-  font-size: 14px;
+  color: #2f3b50;
+  font-size: 13px;
 }
 
 .employeeContent p {
@@ -320,64 +481,70 @@
   margin: 6px 0 0;
   color: #7b8494;
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .secondaryButton {
+  min-height: 41px;
   flex-shrink: 0;
-  height: 40px;
   padding: 0 16px;
-  border: 1px solid #2563eb;
-  border-radius: 8px;
+  border: 1px solid #c9dcff;
+  border-radius: 9px;
   background: #ffffff;
   color: #2563eb;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   cursor: pointer;
-  transition: 0.2s;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .secondaryButton:hover {
   background: #eff6ff;
+  border-color: #93baff;
+  transform: translateY(-1px);
 }
 
 /* =========================================
-   BOUTON SAUVEGARDE
+   BOUTON ENREGISTRER
 ========================================= */
 
 .saveContainer {
   width: 100%;
   max-width: 1200px;
-  margin: 25px auto 0;
+  margin: 24px auto 0;
   display: flex;
   justify-content: flex-end;
 }
 
 .saveButton {
-  min-width: 220px;
-  height: 45px;
+  min-width: 225px;
+  min-height: 47px;
   padding: 0 22px;
   border: none;
-  border-radius: 9px;
-  background: #2563eb;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  box-shadow: 0 5px 12px rgba(37, 99, 235, 0.18);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
 .saveButton:hover {
-  background: #1d4ed8;
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  box-shadow: 0 7px 16px rgba(37, 99, 235, 0.23);
+  transform: translateY(-1px);
 }
 
 .saveButton:active {
-  transform: translateY(1px);
+  transform: translateY(0);
 }
 
 .saveButton:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* =========================================
@@ -390,7 +557,7 @@
   align-items: center;
   justify-content: center;
   color: #6b7280;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 /* =========================================
@@ -399,11 +566,12 @@
 
 @media (max-width: 850px) {
   .settings {
-    padding: 20px;
+    padding: 22px;
   }
 
   .settingsGrid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .employeeCard {
@@ -417,20 +585,28 @@
 
 @media (max-width: 600px) {
   .settings {
-    padding: 15px;
+    padding: 16px 13px 24px;
   }
 
   .header {
-    margin-bottom: 18px;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .backButton {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    border-radius: 11px;
   }
 
   .header h1 {
-    font-size: 25px;
+    font-size: 24px;
   }
 
-  .header p {
-    font-size: 13px;
-    line-height: 1.5;
+  .settings > p {
+    margin: 0 0 20px 52px;
+    font-size: 12px;
   }
 
   .settingsGrid {
@@ -438,26 +614,30 @@
   }
 
   .settingsCard {
-    padding: 17px;
-    border-radius: 12px;
+    padding: 18px 15px;
+    border-radius: 14px;
   }
 
   .cardHeader {
+    gap: 11px;
     margin-bottom: 18px;
+    padding-bottom: 14px;
   }
 
   .cardIcon {
     width: 39px;
     height: 39px;
+    flex-basis: 39px;
+    border-radius: 11px;
     font-size: 19px;
   }
 
   .cardHeader h2 {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .cardHeader p {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .formGrid {
@@ -469,9 +649,20 @@
     grid-column: auto;
   }
 
+  .adminCodeBox {
+    padding: 14px;
+  }
+
+  .adminCodeFields {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
   .employeeContent {
     flex-direction: column;
     align-items: stretch;
+    gap: 14px;
+    padding: 15px;
   }
 
   .secondaryButton {
@@ -484,28 +675,36 @@
 
   .saveButton {
     width: 100%;
-  }
-}
-
-/* =========================================
-   PETIT MOBILE
-========================================= */
-
-@media (max-width: 400px) {
-  .settings {
-    padding: 12px;
-  }
-
-  .settingsCard {
-    padding: 15px;
-  }
-
-  .header h1 {
-    font-size: 23px;
-  }
-
-  .saveButton {
     min-width: 0;
   }
 }
 
+/* =========================================
+   PETITS ÉCRANS
+========================================= */
+
+@media (max-width: 400px) {
+  .settings {
+    padding: 13px 10px 20px;
+  }
+
+  .settingsCard {
+    padding: 16px 13px;
+  }
+
+  .header h1 {
+    font-size: 22px;
+  }
+
+  .adminCodeTitle {
+    flex-direction: column;
+  }
+
+  .passwordField {
+    gap: 5px;
+  }
+
+  .showCodeButton {
+    padding: 0 9px;
+  }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
 
@@ -25,6 +26,7 @@ import styles from "./reports.module.css";
 
 
 function Reports() {
+  const navigate = useNavigate();
 
   const [sales, setSales] = useState([]);
 
@@ -47,17 +49,16 @@ function Reports() {
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState(null);
 
 
 
   const [expenseForm, setExpenseForm] = useState({
-
     label: "",
-
     amount: "",
-
     date: new Date().toISOString().split("T")[0],
-
+    note: "",
+    paymentMethod: "cash",
   });
 
 
@@ -992,9 +993,10 @@ const filteredSales = useMemo(() => {
   const totalExpenses = useMemo(() => {
 
     return filteredExpenses.reduce((total, expense) => {
-
+      const status = String(expense.status || "active").toLowerCase();
+      const isCancelled = ["cancelled", "canceled", "annulled", "deleted"].includes(status);
+      if (isCancelled) return total;
       return total + Number(expense.amount || 0);
-
     }, 0);
 
   }, [filteredExpenses]);
@@ -1090,105 +1092,60 @@ const filteredSales = useMemo(() => {
 
 
   const handleAddExpense = async (e) => {
-
     e.preventDefault();
 
-
-
-    const label = expenseForm.label.trim();
-
+    const reason = expenseForm.label.trim();
     const amount = Number(expenseForm.amount);
 
-
-
-    if (!label) {
-
-      alert("Veuillez entrer le nom de la dépense.");
-
+    if (!storeId) {
+      alert("Magasin introuvable. Veuillez vous reconnecter.");
       return;
-
     }
-
-
-
-    if (!amount || amount <= 0) {
-
+    if (!reason) {
+      alert("Veuillez entrer le motif de la dépense.");
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
       alert("Veuillez entrer un montant valide.");
-
       return;
-
     }
-
-
-
     if (!expenseForm.date) {
-
       alert("Veuillez sélectionner une date.");
-
       return;
-
     }
-
-
 
     try {
-
       await addDoc(collection(db, "expenses"), {
-
-  storeId,
-
-  label,
-
-  amount,
-
-  date: expenseForm.date,
-
-  createdAt: serverTimestamp(),
-
-});
-
-
-
-      setExpenseForm({
-
-        label: "",
-
-        amount: "",
-
-        date: new Date()
-
-          .toISOString()
-
-          .split("T")[0],
-
+        storeId,
+        reason,
+        amount,
+        note: expenseForm.note.trim(),
+        paymentMethod: expenseForm.paymentMethod || "cash",
+        paymentType: expenseForm.paymentMethod || "cash",
+        cashierUserId: connectedUserId,
+        cashierName: connectedUserName,
+        userId: connectedUserId,
+        userName: connectedUserName,
+        userRole: connectedRole || "admin",
+        date: expenseForm.date,
+        createdAt: serverTimestamp(),
+        status: "active",
+        source: "reports",
       });
 
-
-
+      setExpenseForm({
+        label: "",
+        amount: "",
+        date: new Date().toISOString().split("T")[0],
+        note: "",
+        paymentMethod: "cash",
+      });
       setShowExpenseModal(false);
-
     } catch (error) {
-
-      console.error(
-
-        "Erreur ajout dépense :",
-
-        error
-
-      );
-
-
-
-      alert(
-
-        "Impossible d'enregistrer la dépense."
-
-      );
-
+      console.error("Erreur ajout dépense :", error);
+      alert("Impossible d'enregistrer la dépense.");
     }
-
   };
-
 
 
   // =========================================================
@@ -1280,34 +1237,33 @@ const filteredSales = useMemo(() => {
           HEADER
 
       ===================================================== */}
+            <header className={styles.retour}>
+        
+                <button
+                  className={styles.backButton}
+                  onClick={() =>
+                    navigate("/dashboard")
+                  }
+                >
+                  ←
+                </button>
+        
+                <h1>
+                  Rapport
+                </h1>
+        
+            </header>
 
 
+      <div className={styles.header}>
 
-      <header className={styles.header}>
-
-        <div>
-
-          <span className={styles.pageLabel}>
-
-            ANALYSE
-
-          </span>
-
-
-
-          <h1>Rapports</h1>
-
-
+            
 
           <p>
 
             Suivez les performances de votre magasin.
 
           </p>
-
-        </div>
-
-
 
         <button
 
@@ -1327,7 +1283,7 @@ const filteredSales = useMemo(() => {
 
         </button>
 
-      </header>
+      </div>
 
 
 
@@ -2086,55 +2042,30 @@ const filteredSales = useMemo(() => {
 
 
 
-            {filteredExpenses.map((expense) => (
-
-              <div
-
-                className={styles.expenseRow}
-
-                key={expense.id}
-
-              >
-
-
-
-                <span>
-
-                  {formatDate(
-
-                    expense.createdAt ||
-
-                      expense.date
-
-                  )}
-
-                </span>
-
-
-
-                <strong>
-
-                  {expense.label}
-
-                </strong>
-
-
-
-                <strong className={styles.expenseAmount}>
-
-                  {formatMoney(
-
-                    expense.amount
-
-                  )}
-
-                </strong>
-
-
-
-              </div>
-
-            ))}
+            {filteredExpenses.map((expense) => {
+              const status = String(expense.status || "active").toLowerCase();
+              const cancelled = ["cancelled", "canceled", "annulled", "deleted"].includes(status);
+              const expenseReason = expense.reason || expense.label || "Dépense sans motif";
+              return (
+                <div
+                  className={`${styles.expenseRow} ${cancelled ? styles.expenseCancelled : ""}`}
+                  key={expense.id}
+                >
+                  <span>{formatDate(expense.createdAt || expense.date)}</span>
+                  <div className={styles.expenseDescription}>
+                    <strong>{expenseReason}</strong>
+                    <small>{expense.cashierName || expense.userName || "Utilisateur non renseigné"}</small>
+                    {cancelled && <span className={styles.expenseStatus}>Annulée</span>}
+                  </div>
+                  <strong className={styles.expenseAmount}>{formatMoney(expense.amount)}</strong>
+                  <button
+                    type="button"
+                    className={styles.expenseDetailsButton}
+                    onClick={() => setSelectedExpense(expense)}
+                  >Voir détails</button>
+                </div>
+              );
+            })}
 
 
 
@@ -2769,6 +2700,38 @@ const filteredSales = useMemo(() => {
 
 
       {/* =====================================================
+          MODAL DÉTAILS D'UNE DÉPENSE
+      ===================================================== */}
+      {selectedExpense && (
+        <div className={styles.modalOverlay} onClick={() => setSelectedExpense(null)}>
+          <div className={styles.expenseDetailModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalProductHeader}>
+              <div>
+                <span className={styles.sectionLabel}>INFORMATIONS DE LA DÉPENSE</span>
+                <h2>{selectedExpense.reason || selectedExpense.label || "Dépense"}</h2>
+                <p>{formatDate(selectedExpense.createdAt || selectedExpense.date)}</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={() => setSelectedExpense(null)}>✕</button>
+            </div>
+            <div className={styles.expenseDetailGrid}>
+              <div><span>Montant</span><strong className={styles.expenseAmount}>{formatMoney(selectedExpense.amount)}</strong></div>
+              <div><span>Moyen de paiement</span><strong>{({ cash: "Espèces", mobile_money: "Mobile Money", bank: "Banque / Virement", other: "Autre" })[selectedExpense.paymentMethod] || selectedExpense.paymentMethod || "Non renseigné"}</strong></div>
+              <div><span>Employé / Caissier</span><strong>{selectedExpense.cashierName || selectedExpense.userName || "Non renseigné"}</strong></div>
+              <div><span>Identifiant utilisateur</span><strong>{selectedExpense.userId || "Non renseigné"}</strong></div>
+              <div><span>Rôle</span><strong>{selectedExpense.userRole || "Non renseigné"}</strong></div>
+              <div><span>Session de caisse</span><strong>{selectedExpense.cashSessionId || "Non associée"}</strong></div>
+              <div><span>Statut</span><strong>{["cancelled", "canceled", "annulled", "deleted"].includes(String(selectedExpense.status || "active").toLowerCase()) ? "Annulée" : "Active"}</strong></div>
+              <div><span>Enregistrée le</span><strong>{formatDate(selectedExpense.createdAt || selectedExpense.date)}</strong></div>
+              <div className={styles.expenseDetailNote}><span>Note / Justification</span><p>{selectedExpense.note || "Aucune note complémentaire."}</p></div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" onClick={() => setSelectedExpense(null)}>Fermer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
 
           MODAL AJOUT DEPENSE
 
@@ -2896,7 +2859,7 @@ const filteredSales = useMemo(() => {
 
                 <label>
 
-                  Libellé de la dépense
+                  Motif de la dépense
 
                 </label>
 
@@ -2965,6 +2928,31 @@ const filteredSales = useMemo(() => {
               </div>
 
 
+
+              <div>
+                <label>Note complémentaire</label>
+                <textarea
+                  name="note"
+                  rows="3"
+                  placeholder="Précision sur cette dépense (facultatif)"
+                  value={expenseForm.note}
+                  onChange={handleExpenseChange}
+                />
+              </div>
+
+              <div>
+                <label>Moyen de paiement</label>
+                <select
+                  name="paymentMethod"
+                  value={expenseForm.paymentMethod}
+                  onChange={handleExpenseChange}
+                >
+                  <option value="cash">Espèces</option>
+                  <option value="mobile_money">Mobile Money</option>
+                  <option value="bank">Banque / Virement</option>
+                  <option value="other">Autre</option>
+                </select>
+              </div>
 
               <div>
 

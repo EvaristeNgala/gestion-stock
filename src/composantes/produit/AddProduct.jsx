@@ -108,6 +108,30 @@ function AddProduct() {
     loadCategories();
   }, [storeId]);
 
+  // Pour un nouveau produit, reprendre le seuil général défini dans les paramètres.
+  // En mode modification, on conserve toujours le seuil propre au produit.
+  useEffect(() => {
+    const loadDefaultAlertStock = async () => {
+      if (!storeId || isEditMode) return;
+
+      try {
+        const settingsSnapshot = await getDoc(doc(db, "settings", storeId));
+        if (!settingsSnapshot.exists()) return;
+
+        const defaultValue = Number(settingsSnapshot.data()?.defaultAlertStock);
+        if (!Number.isFinite(defaultValue) || defaultValue < 0) return;
+
+        setAlertStock((currentValue) =>
+          currentValue === "" ? String(defaultValue) : currentValue
+        );
+      } catch (error) {
+        console.error("Erreur chargement du seuil général de stock :", error);
+      }
+    };
+
+    loadDefaultAlertStock();
+  }, [storeId, isEditMode]);
+
   useEffect(() => {
     const loadProduct = async () => {
       if (!isEditMode) {
@@ -836,7 +860,7 @@ function AddProduct() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Alerte stock</label>
+              <label className="form-label">Seuil d'alerte de ce produit</label>
               <input
                 type="number"
                 min="0"
@@ -846,6 +870,11 @@ function AddProduct() {
                 onChange={(e) => setAlertStock(e.target.value)}
                 className="product-input"
               />
+              <small className="field-help">
+                Une alerte sera déclenchée lorsque le stock disponible atteindra
+                ce seuil ou passera en dessous. La valeur proposée provient des
+                paramètres du magasin, mais vous pouvez la modifier pour ce produit.
+              </small>
             </div>
 
             <div className="variant-header">

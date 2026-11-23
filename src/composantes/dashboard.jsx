@@ -374,22 +374,32 @@ function Dashboard() {
 
         </h1>
 
-        {isAdmin && (
+        {isAdmin && stockAlertProducts.length > 0 && (
           <button
             type="button"
             onClick={() => setShowStockAlerts(true)}
             aria-label={`Voir les produits en alerte : ${stockAlertProducts.length}`}
             title="Produits en alerte"
-            className={`${styles.stockAlertButton} ${
-              stockAlertProducts.length > 0 ? styles.stockAlertButtonActive : ""
-            }`}
+            className={styles.stockAlertButton}
           >
-            🔔
-            {stockAlertProducts.length > 0 && (
-              <span className={styles.stockAlertBadge}>
-                {stockAlertProducts.length > 99 ? "99+" : stockAlertProducts.length}
-              </span>
-            )}
+            <svg
+              className={styles.stockAlertIcon}
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className={styles.stockAlertBadge}>
+              {stockAlertProducts.length > 99 ? "99+" : stockAlertProducts.length}
+            </span>
           </button>
         )}
 

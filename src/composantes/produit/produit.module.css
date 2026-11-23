@@ -1,785 +1,4878 @@
-
 /* ==============================
+
+
+
+
+
+
+
    CONTENEUR
-============================== */
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
 
 .container {
+
+
+
+
+
+
+
   min-height: 100vh;
+
+
+
+
+
+
+
   background: #f5f8fc;
+
+
+
+
+
+
+
   padding: 20px;
+
+
+
+
+
+
+
   box-sizing: border-box;
+
+
+
+
+
+
+
 }
+
+
+
+
+
 
 
 /* ==============================
+
+
+
+
+
+
+
    HEADER
-============================== */
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
 
 .header {
+
+
+
+
+
+
+
   display: flex;
+
+
+
+
+
+
+
   align-items: center;
+
+
+
+
+
+
+
   justify-content: space-between;
+
+
+
+
+
+
+
   margin-bottom: 25px;
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
 
 .header h1 {
+
+
+
+
+
+
+
   margin: 0;
+
+
+
+
+
+
+
   font-size: 22px;
+
+
+
+
+
+
+
   font-weight: 700;
+
+
+
+
+
+
+
   color: #172033;
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
 
 .backButton,
+
+
+
+
+
+
+
 .addButton {
+
+
+
+
+
+
+
   width: 42px;
+
+
+
+
+
+
+
   height: 42px;
+
+
+
+
+
+
+
   border: none;
+
+
+
+
+
+
+
   border-radius: 12px;
+
+
+
+
+
+
+
   cursor: pointer;
 
+
+
+
+
+
+
   display: flex;
+
+
+
+
+
+
+
   align-items: center;
+
+
+
+
+
+
+
   justify-content: center;
 
+
+
+
+
+
+
   font-size: 22px;
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
 
 .backButton {
+
+
+
+
+
+
+
   background: #ffffff;
+
+
+
+
+
+
+
   color: #172033;
 
+
+
+
+
+
+
   box-shadow:
+
+
+
+
+
+
+
     0 2px 8px rgba(0, 0, 0, 0.06);
+
+
+
+
+
+
+
 }
 
+
+
+
+
+
+
 .addButton {
+
+
+
+
+
+
+
   background: #2563eb;
+
+
+
+
+
+
+
   color: white;
+
+
+
+
+
+
 
   font-size: 28px;
 
+
+
+
+
+
+
   box-shadow:
+
+
+
+
+
+
+
     0 5px 15px rgba(37, 99, 235, 0.25);
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
 
 .backButton:hover {
+
+
+
+
+
+
+
   background: #f1f5f9;
+
+
+
+
+
+
+
 }
 
+
+
+
+
+
+
 .addButton:hover {
+
+
+
+
+
+
+
   background: #1d4ed8;
+
+
+
+
+
+
+
 }
+
+
+
+
+
 
 
 /* ==============================
+
+
+
+
+
+
+
    RECHERCHE
-============================== */
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
 
 .searchContainer {
+
+
+
+
+
+
+
   height: 48px;
 
+
+
+
+
+
+
   display: flex;
+
+
+
+
+
+
+
   align-items: center;
+
+
+
+
+
+
 
   gap: 10px;
 
+
+
+
+
+
+
   background: white;
+
+
+
+
+
+
 
   border-radius: 14px;
 
+
+
+
+
+
+
   padding: 0 15px;
+
+
+
+
+
+
 
   margin-bottom: 25px;
 
+
+
+
+
+
+
   box-sizing: border-box;
 
+
+
+
+
+
+
   border: 1px solid #e6ebf2;
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
 
 .searchContainer span {
+
+
+
+
+
+
+
   font-size: 18px;
+
+
+
+
+
+
+
 }
 
+
+
+
+
+
+
 .searchContainer input {
+
+
+
+
+
+
+
   width: 100%;
+
+
+
+
+
+
+
   height: 100%;
 
+
+
+
+
+
+
   border: none;
+
+
+
+
+
+
+
   outline: none;
+
+
+
+
+
+
 
   background: transparent;
 
+
+
+
+
+
+
   font-size: 14px;
 
+
+
+
+
+
+
   color: #172033;
+
+
+
+
+
+
+
 }
 
+
+
+
+
+
+
 .searchContainer input::placeholder {
+
+
+
+
+
+
+
   color: #9aa4b2;
+
+
+
+
+
+
+
 }
+
+
+
+
+
 
 
 /* ==============================
+
+
+
+
+
+
+
    TITRE
-============================== */
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
 
 .titleSection {
+
+
+
+
+
+
+
   display: flex;
+
+
+
+
+
+
+
   align-items: center;
+
+
+
+
+
+
+
   justify-content: space-between;
 
+
+
+
+
+
+
   margin-bottom: 15px;
+
+
+
+
+
+
+
 }
 
+
+
+
+
+
+
 .titleSection h2 {
+
+
+
+
+
+
+
   margin: 0;
+
+
+
+
+
+
 
   font-size: 17px;
 
+
+
+
+
+
+
   color: #172033;
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
 
 .titleSection p {
+
+
+
+
+
+
+
   margin: 4px 0 0;
 
+
+
+
+
+
+
   font-size: 13px;
 
+
+
+
+
+
+
   color: #64748b;
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
 
 .titleSection > span {
+
+
+
+
+
+
+
   font-size: 13px;
+
+
+
+
+
+
 
   color: #64748b;
 
+
+
+
+
+
+
   white-space: nowrap;
+
+
+
+
+
+
+
 }
+
+
+
+
+
 
 
 /* ==============================
+
+
+
+
+
+
+
    CHARGEMENT
-============================== */
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
 
 .loading {
+
+
+
+
+
+
+
   background: white;
 
+
+
+
+
+
+
   border-radius: 16px;
+
+
+
+
+
+
 
   padding: 50px 20px;
 
+
+
+
+
+
+
   text-align: center;
 
+
+
+
+
+
+
   border: 1px solid #e8edf3;
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
 
 .loading span {
+
+
+
+
+
+
+
   font-size: 35px;
+
+
+
+
+
+
+
 }
 
+
+
+
+
+
+
 .loading p {
+
+
+
+
+
+
+
   margin: 12px 0 0;
+
+
+
+
+
+
 
   color: #64748b;
 
+
+
+
+
+
+
   font-size: 14px;
+
+
+
+
+
+
+
 }
 
 
+
+
+
+
+
 /* ==============================
+
+
+
+
+
+
+
    CONTENEUR TABLEAU
-============================== */
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
 
 .tableContainer {
+
+
+
+
+
+
+
   width: 100%;
 
+
+
+
+
+
+
   overflow-x: auto;
+
+
+
+
+
+
+
   overflow-y: hidden;
+
+
+
+
+
+
 
   background: white;
 
+
+
+
+
+
+
   border-radius: 16px;
+
+
+
+
+
+
 
   border: 1px solid #e8edf3;
 
+
+
+
+
+
+
   box-sizing: border-box;
 
+
+
+
+
+
+
   box-shadow:
+
+
+
+
+
+
+
     0 2px 8px rgba(15, 23, 42, 0.03);
+
+
+
+
+
+
 
   cursor: default;
 
+
+
+
+
+
+
   scrollbar-width: thin;
 
+
+
+
+
+
+
   scrollbar-color:
+
+
+
+
+
+
+
     #cbd5e1
+
+
+
+
+
+
+
     transparent;
+
+
+
+
+
+
+
 }
 
 
+
+
+
+
+
 /* ==============================
+
+
+
+
+
+
+
    BARRE DE DEFILEMENT
-============================== */
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
 
 .tableContainer::-webkit-scrollbar {
+
+
+
+
+
+
+
   height: 8px;
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
 
 .tableContainer::-webkit-scrollbar-track {
+
+
+
+
+
+
+
   background: transparent;
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
 
 .tableContainer::-webkit-scrollbar-thumb {
+
+
+
+
+
+
+
   background: #cbd5e1;
+
+
+
+
+
+
+
   border-radius: 20px;
+
+
+
+
+
+
+
 }
 
+
+
+
+
+
+
 .tableContainer::-webkit-scrollbar-thumb:hover {
+
+
+
+
+
+
+
   background: #94a3b8;
+
+
+
+
+
+
+
 }
+
+
+
+
+
 
 
 /* ==============================
+
+
+
+
+
+
+
    TABLEAU
-============================== */
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
 
 .productTable {
+
+
+
+
+
+
+
   width: 100%;
+
+
+
+
+
+
 
   min-width: 880px;
 
+
+
+
+
+
+
   border-collapse: collapse;
 
+
+
+
+
+
+
   font-size: 14px;
+
+
+
+
+
+
+
 }
+
+
+
+
+
 
 
 /* ==============================
+
+
+
+
+
+
+
    EN-TETE TABLEAU
-============================== */
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
 
 .productTable thead {
+
+
+
+
+
+
+
   background: #f8fafc;
+
+
+
+
+
+
+
 }
 
+
+
+
+
+
+
 .productTable th {
+
+
+
+
+
+
+
   padding: 15px;
+
+
+
+
+
+
 
   text-align: left;
 
+
+
+
+
+
+
   font-size: 12px;
+
+
+
+
+
+
 
   font-weight: 700;
 
+
+
+
+
+
+
   color: #64748b;
+
+
+
+
+
+
 
   text-transform: uppercase;
 
+
+
+
+
+
+
   letter-spacing: 0.3px;
+
+
+
+
+
+
 
   white-space: nowrap;
 
+
+
+
+
+
+
   border-bottom: 1px solid #e8edf3;
+
+
+
+
+
+
+
 }
 
 
+
+
+
+
+
 /* ==============================
+
+
+
+
+
+
+
    CELLULES
-============================== */
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
 
 .productTable td {
+
+
+
+
+
+
+
   padding: 14px 15px;
+
+
+
+
+
+
 
   border-bottom: 1px solid #eef2f6;
 
+
+
+
+
+
+
   color: #172033;
 
+
+
+
+
+
+
   vertical-align: middle;
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
 
 .productTable tbody tr:last-child td {
+
+
+
+
+
+
+
   border-bottom: none;
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
 
 .productTable tbody tr:hover {
+
+
+
+
+
+
+
   background: #fafcff;
+
+
+
+
+
+
+
 }
 
 
+
+
+
+
+
 /* ==============================
+
+
+
+
+
+
+
    LIGNE PRODUIT INACTIF
-============================== */
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
 
 .inactiveRow {
+
+
+
+
+
+
+
   background: #fafafa;
+
+
+
+
+
+
+
 }
+
+
+
+
+
+
 
 .inactiveRow:hover {
+
+
+
+
+
+
+
   background: #f7f7f7 !important;
+
+
+
+
+
+
+
 }
 
+
+
+
+
+
+
 .inactiveRow .productName strong {
+
+
+
+
+
+
+
   color: #94a3b8;
+
+
+
+
+
+
+
 }
+
+
+
+
+
 
 
 /* ==============================
+
+
+
+
+
+
+
    PRODUIT
-============================== */
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
 
 .productCell {
+
+
+
+
+
+
+
   display: flex;
+
+
+
+
+
+
+
+  align-items: center;
+
+
+
+
+
+
+
+  gap: 12px;
+
+
+
+
+
+
+
+  min-width: 220px;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.productImage,
+
+
+
+
+
+
+
+.productImageFallback {
+
+
+
+
+
+
+
+  width: 48px;
+
+
+
+
+
+
+
+  height: 48px;
+
+
+
+
+
+
+
+  min-width: 48px;
+
+
+
+
+
+
+
+  border-radius: 12px;
+
+
+
+
+
+
+
+  object-fit: cover;
+
+
+
+
+
+
+
+  background: #eff6ff;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.productImageFallback {
+
+
+
+
+
+
+
+  align-items: center;
+
+
+
+
+
+
+
+  justify-content: center;
+
+
+
+
+
+
+
+  font-size: 22px;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.productName {
+
+
+
+
+
+
+
+  min-width: 0;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.productName strong {
+
+
+
+
+
+
+
+  display: block;
+
+
+
+
+
+
+
+  font-size: 14px;
+
+
+
+
+
+
+
+  font-weight: 600;
+
+
+
+
+
+
+
+  max-width: 220px;
+
+
+
+
+
+
+
+  overflow: hidden;
+
+
+
+
+
+
+
+  text-overflow: ellipsis;
+
+
+
+
+
+
+
+  white-space: nowrap;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* ==============================
+
+
+
+
+
+
+
+   CATEGORIE
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
+
+.categoryBadge {
+
+
+
+
+
+
+
+  display: inline-block;
+
+
+
+
+
+
+
+  padding: 5px 9px;
+
+
+
+
+
+
+
+  border-radius: 7px;
+
+
+
+
+
+
+
+  background: #f1f5f9;
+
+
+
+
+
+
+
+  color: #475569;
+
+
+
+
+
+
+
+  font-size: 12px;
+
+
+
+
+
+
+
+  font-weight: 600;
+
+
+
+
+
+
+
+  white-space: nowrap;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* ==============================
+
+
+
+
+
+
+
+   PRIX ACHAT
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
+
+.purchasePrice {
+
+
+
+
+
+
+
+  font-size: 13px;
+
+
+
+
+
+
+
+  font-weight: 600;
+
+
+
+
+
+
+
+  color: #172033;
+
+
+
+
+
+
+
+  white-space: nowrap;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* ==============================
+
+
+
+
+
+
+
+   STOCK NORMAL
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
+
+.stock {
+
+
+
+
+
+
+
+  display: inline-block;
+
+
+
+
+
+
+
+  font-size: 13px;
+
+
+
+
+
+
+
+  font-weight: 600;
+
+
+
+
+
+
+
+  color: #16a34a;
+
+
+
+
+
+
+
+  white-space: nowrap;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* ==============================
+
+
+
+
+
+
+
+   STOCK FAIBLE
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
+
+.lowStock {
+
+
+
+
+
+
+
+  display: inline-block;
+
+
+
+
+
+
+
+  font-size: 13px;
+
+
+
+
+
+
+
+  font-weight: 700;
+
+
+
+
+
+
+
+  color: #dc2626;
+
+
+
+
+
+
+
+  background: #fef2f2;
+
+
+
+
+
+
+
+  padding: 5px 8px;
+
+
+
+
+
+
+
+  border-radius: 7px;
+
+
+
+
+
+
+
+  white-space: nowrap;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* ==============================
+
+
+
+
+
+
+
+   ÉTAT ACTIF
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
+
+.activeStatus,
+
+
+
+
+
+
+
+.inactiveStatus {
+
+
+
+
+
+
+
+  display: inline-flex;
+
+
+
+
+
+
+
+  align-items: center;
+
+
+
+
+
+
+
+  gap: 7px;
+
+
+
+
+
+
+
+  min-height: 32px;
+
+
+
+
+
+
+
+  padding: 5px 10px;
+
+
+
+
+
+
+
+  border-radius: 20px;
+
+
+
+
+
+
+
+  border: none;
+
+
+
+
+
+
+
+  font-size: 12px;
+
+
+
+
+
+
+
+  font-weight: 700;
+
+
+
+
+
+
+
+  white-space: nowrap;
+
+
+
+
+
+
+
+  transition:
+
+
+
+
+
+
+
+    background 0.2s ease,
+
+
+
+
+
+
+
+    transform 0.15s ease;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* ==============================
+
+
+
+
+
+
+
+   ACTIF
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
+
+.activeStatus {
+
+
+
+
+
+
+
+  background: #ecfdf3;
+
+
+
+
+
+
+
+  color: #15803d;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.activeStatus:hover {
+
+
+
+
+
+
+
+  background: #dcfce7;
+
+
+
+
+
+
+
+  transform: translateY(-1px);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* ==============================
+
+
+
+
+
+
+
+   INACTIF
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
+
+.inactiveStatus {
+
+
+
+
+
+
+
+  background: #f1f5f9;
+
+
+
+
+
+
+
+  color: #64748b;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.inactiveStatus:hover {
+
+
+
+
+
+
+
+  background: #e2e8f0;
+
+
+
+
+
+
+
+  transform: translateY(-1px);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* ==============================
+
+
+
+
+
+
+
+   POINT ÉTAT
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
+
+.statusDot {
+
+
+
+
+
+
+
+  width: 7px;
+
+
+
+
+
+
+
+  height: 7px;
+
+
+
+
+
+
+
+  border-radius: 50%;
+
+
+
+
+
+
+
+  background: currentColor;
+
+
+
+
+
+
+
+  flex-shrink: 0;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* ==============================
+
+
+
+
+
+
+
+   BOUTON ÉTAT DÉSACTIVÉ
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
+
+.activeStatus:disabled,
+
+
+
+
+
+
+
+.inactiveStatus:disabled {
+
+
+
+
+
+
+
+  cursor: default;
+
+
+
+
+
+
+
+  opacity: 1;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.activeStatus:disabled:hover,
+
+
+
+
+
+
+
+.inactiveStatus:disabled:hover {
+
+
+
+
+
+
+
+  transform: none;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* ==============================
+
+
+
+
+
+
+
+   ACTIONS
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
+
+.actions {
+
+
+
+
+
+
+
+  display: flex;
+
+
+
+
+
+
+
+  align-items: center;
+
+
+
+
+
+
+
+  gap: 7px;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.editButton,
+
+
+
+
+
+
+
+.deleteButton {
+
+
+
+
+
+
+
+  padding: 5px;
+
+
+
+
+
+
+
+  border: none;
+
+
+
+
+
+
+
+  border-radius: 9px;
+
+
+
+
+
+
+
+  cursor: pointer;
+
+
+
+
+
+
+
+  display: flex;
+
+
+
+
+
+
+
+  align-items: center;
+
+
+
+
+
+
+
+  justify-content: center;
+
+
+
+
+
+
+
+  font-size: 15px;
+
+
+
+
+
+
+
+  transition:
+
+
+
+
+
+
+
+    transform 0.15s ease,
+
+
+
+
+
+
+
+    background 0.15s ease;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.editButton {
+
+
+
+
+
+
+
+  background: #eff6ff;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.deleteButton {
+
+
+
+
+
+
+
+  background: #eb6161;
+
+
+
+
+
+
+
+  color: #dbeafe;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.editButton:hover {
+
+
+
+
+
+
+
+  background: #dbeafe;
+
+
+
+
+
+
+
+  transform: translateY(-1px);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.deleteButton:hover {
+
+
+
+
+
+
+
+  background: #fee2e2;
+
+
+
+
+
+
+
+  color: #dc2626;
+
+
+
+
+
+
+
+  transform: translateY(-1px);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* ==============================
+
+
+
+
+
+
+
+   PRODUIT VIDE
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
+
+.empty {
+
+
+
+
+
+
+
+  background: white;
+
+
+
+
+
+
+
+  border-radius: 16px;
+
+
+
+
+
+
+
+  padding: 50px 20px;
+
+
+
+
+
+
+
+  text-align: center;
+
+
+
+
+
+
+
+  border: 1px solid #e8edf3;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.empty > span {
+
+
+
+
+
+
+
+  font-size: 40px;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.empty h3 {
+
+
+
+
+
+
+
+  margin: 12px 0 0;
+
+
+
+
+
+
+
+  color: #172033;
+
+
+
+
+
+
+
+  font-size: 16px;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.empty p {
+
+
+
+
+
+
+
+  margin: 8px 0 0;
+
+
+
+
+
+
+
+  color: #64748b;
+
+
+
+
+
+
+
+  font-size: 14px;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.emptyButton {
+
+
+
+
+
+
+
+  margin-top: 20px;
+
+
+
+
+
+
+
+  border: none;
+
+
+
+
+
+
+
+  background: #2563eb;
+
+
+
+
+
+
+
+  color: white;
+
+
+
+
+
+
+
+  padding: 11px 18px;
+
+
+
+
+
+
+
+  border-radius: 10px;
+
+
+
+
+
+
+
+  font-size: 14px;
+
+
+
+
+
+
+
+  font-weight: 600;
+
+
+
+
+
+
+
+  cursor: pointer;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.emptyButton:hover {
+
+
+
+
+
+
+
+  background: #1d4ed8;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* ==============================
+
+
+
+
+
+
+
+   TABLETTE / PC
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
+
+@media (min-width: 768px) {
+
+
+
+
+
+
+
+  .container {
+
+
+
+
+
+
+
+    max-width: 1200px;
+
+
+
+
+
+
+
+    margin: 0 auto;
+
+
+
+
+
+
+
+    padding: 30px;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .header h1 {
+
+
+
+
+
+
+
+    font-size: 26px;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .tableContainer {
+
+
+
+
+
+
+
+    overflow-x: auto;
+
+
+
+
+
+
+
+    overflow-y: hidden;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .productTable {
+
+
+
+
+
+
+
+    min-width: 880px;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* ==============================
+
+
+
+
+
+
+
+   PETITS ECRANS
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
+
+@media (max-width: 600px) {
+
+
+
+
+
+
+
+  .container {
+
+
+
+
+
+
+
+    padding: 15px;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .titleSection {
+
+
+
+
+
+
+
+    align-items: flex-start;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .titleSection h2 {
+
+
+
+
+
+
+
+    font-size: 16px;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .titleSection p {
+
+
+
+
+
+
+
+    font-size: 12px;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .tableContainer {
+
+
+
+
+
+
+
+    border-radius: 13px;
+
+
+
+
+
+
+
+    -webkit-overflow-scrolling: touch;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .productTable th,
+
+
+
+
+
+
+
+  .productTable td {
+
+
+
+
+
+
+
+    padding: 12px;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* ==============================
+
+
+
+
+
+
+
+   TRES PETITS ECRANS
+
+
+
+
+
+
+
+\============================== */
+
+
+
+
+
+
+
+@media (max-width: 380px) {
+
+
+
+
+
+
+
+  .header {
+
+
+
+
+
+
+
+    margin-bottom: 20px;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .header h1 {
+
+
+
+
+
+
+
+    font-size: 20px;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .backButton,
+
+
+
+
+
+
+
+  .addButton {
+
+
+
+
+
+
+
+    width: 40px;
+
+
+
+
+
+
+
+    height: 40px;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .searchContainer {
+
+
+
+
+
+
+
+    margin-bottom: 20px;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .productTable {
+
+
+
+
+
+
+
+    min-width: 840px;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.productLink {
+
+
+
+
+
+
+
+  padding: 0;
+
+
+
+
+
+
+
+  border: none;
+
+
+
+
+
+
+
+  background: transparent;
+
+
+
+
+
+
+
+  font-size: 13px;
+
+
+
+
+
+
+
+  font-weight: 700;
+
+
+
+
+
+
+
+  text-align: left;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.productLink:hover {
+
+
+
+
+
+
+
+  color: #2563eb;
+
+
+
+
+
+
+
+  text-decoration: underline;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* FILTRE PAR CATEGORIE */
+
+
+
+
+
+
+
+.filterBar {
+
+
+
+
+
+
+
+  display: flex;
+
+
+
+
+
+
+
+  flex-wrap: wrap;
+
+
+
+
+
+
+
+  align-items: center;
+
+
+
+
+
+
+
+  justify-content: space-between;
+
+
+
+
+
+
+
+  gap: 12px;
+
+
+
+
+
+
+
+  margin: 14px 0 18px;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.categorySelect {
+
+
+
+
+
+
+
+  min-width: 220px;
+
+
+
+
+
+
+
+  max-width: 100%;
+
+
+
+
+
+
+
+  padding: 11px 14px;
+
+
+
+
+
+
+
+  border: 1px solid #d1d5db;
+
+
+
+
+
+
+
+  border-radius: 10px;
+
+
+
+
+
+
+
+  background: #ffffff;
+
+
+
+
+
+
+
+  color: #374151;
+
+
+
+
+
+
+
+  font-size: 14px;
+
+
+
+
+
+
+
+  outline: none;
+
+
+
+
+
+
+
+  cursor: pointer;
+
+
+
+
+
+
+
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.categorySelect:focus {
+
+
+
+
+
+
+
+  border-color: #2563eb;
+
+
+
+
+
+
+
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.resultsCount {
+
+
+
+
+
+
+
+  color: #6b7280;
+
+
+
+
+
+
+
+  font-size: 13px;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+/* PAGINATION */
+
+
+
+
+
+
+
+.pagination {
+
+
+
+
+
+
+
+  display: flex;
+
+
+
+
+
+
+
+  align-items: center;
+
+
+
+
+
+
+
+  justify-content: center;
+
+
+
+
+
+
+
+  flex-wrap: wrap;
+
+
+
+
+
+
+
+  gap: 14px;
+
+
+
+
+
+
+
+  margin: 20px 0 10px;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.pageInfo {
+
+
+
+
+
+
+
+  color: #4b5563;
+
+
+
+
+
+
+
+  font-size: 14px;
+
+
+
+
+
+
+
+  white-space: nowrap;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.pageButton {
+
+
+
+
+
+
+
+  padding: 9px 15px;
+
+
+
+
+
+
+
+  border: 1px solid #d1d5db;
+
+
+
+
+
+
+
+  border-radius: 9px;
+
+
+
+
+
+
+
+  background: #ffffff;
+
+
+
+
+
+
+
+  color: #374151;
+
+
+
+
+
+
+
+  font-size: 13px;
+
+
+
+
+
+
+
+  font-weight: 600;
+
+
+
+
+
+
+
+  cursor: pointer;
+
+
+
+
+
+
+
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.pageButton:hover:not(:disabled) {
+
+
+
+
+
+
+
+  background: #eff6ff;
+
+
+
+
+
+
+
+  border-color: #93c5fd;
+
+
+
+
+
+
+
+  color: #1d4ed8;
+
+
+
+
+
+
+
+  transform: translateY(-1px);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.pageButton:disabled {
+
+
+
+
+
+
+
+  background: #f3f4f6;
+
+
+
+
+
+
+
+  color: #9ca3af;
+
+
+
+
+
+
+
+  border-color: #e5e7eb;
+
+
+
+
+
+
+
+  cursor: not-allowed;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+@media (max-width: 600px) {
+
+
+
+
+
+
+
+  .filterBar {
+
+
+
+
+
+
+
+    align-items: stretch;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .categorySelect {
+
+
+
+
+
+
+
+    width: 100%;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .resultsCount {
+
+
+
+
+
+
+
+    text-align: right;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .pagination {
+
+
+
+
+
+
+
+    gap: 8px;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+  .pageButton {
+
+
+
+
+
+
+
+    padding: 9px 11px;
+
+
+
+
+
+
+
+  }
+
+
+
+
+
+
+
+}
+
+
+
+
+
+/* RECHERCHE ET FILTRE SUR UNE MEME LIGNE */
+
+.filtersRow {
+
+  display: grid;
+
+  grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr);
 
   align-items: center;
 
   gap: 12px;
 
-  min-width: 220px;
+  width: 100%;
+
+  margin: 0 0 25px;
+
 }
 
-.productImage,
-.productImageFallback {
-  width: 48px;
+
+
+.filtersRow .searchContainer {
+
+  width: 100%;
+
+  min-width: 0;
+
   height: 48px;
 
-  min-width: 48px;
+  margin: 0;
 
-  border-radius: 12px;
-
-  object-fit: cover;
-
-  background: #eff6ff;
 }
 
-.productImageFallback {
-  align-items: center;
-  justify-content: center;
 
-  font-size: 22px;
-}
 
-.productName {
+.filtersRow .searchContainer input {
+
   min-width: 0;
-}
 
-.productName strong {
-  display: block;
-
-  font-size: 14px;
-
-  font-weight: 600;
-
-
-  max-width: 220px;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-
-  white-space: nowrap;
 }
 
 
-/* ==============================
-   CATEGORIE
-============================== */
 
-.categoryBadge {
-  display: inline-block;
-
-  padding: 5px 9px;
-
-  border-radius: 7px;
-
-  background: #f1f5f9;
-
-  color: #475569;
-
-  font-size: 12px;
-
-  font-weight: 600;
-
-  white-space: nowrap;
-}
-
-
-/* ==============================
-   PRIX ACHAT
-============================== */
-
-.purchasePrice {
-  font-size: 13px;
-
-  font-weight: 600;
-
-  color: #172033;
-
-  white-space: nowrap;
-}
-
-
-/* ==============================
-   STOCK NORMAL
-============================== */
-
-.stock {
-  display: inline-block;
-
-  font-size: 13px;
-
-  font-weight: 600;
-
-  color: #16a34a;
-
-  white-space: nowrap;
-}
-
-
-/* ==============================
-   STOCK FAIBLE
-============================== */
-
-.lowStock {
-  display: inline-block;
-
-  font-size: 13px;
-
-  font-weight: 700;
-
-  color: #dc2626;
-
-  background: #fef2f2;
-
-  padding: 5px 8px;
-
-  border-radius: 7px;
-
-  white-space: nowrap;
-}
-
-
-/* ==============================
-   ÉTAT ACTIF
-============================== */
-
-.activeStatus,
-.inactiveStatus {
-  display: inline-flex;
-
-  align-items: center;
-
-  gap: 7px;
-
-  min-height: 32px;
-
-  padding: 5px 10px;
-
-  border-radius: 20px;
-
-  border: none;
-
-  font-size: 12px;
-
-  font-weight: 700;
-
-  white-space: nowrap;
-
-  transition:
-    background 0.2s ease,
-    transform 0.15s ease;
-}
-
-
-/* ==============================
-   ACTIF
-============================== */
-
-.activeStatus {
-  background: #ecfdf3;
-
-  color: #15803d;
-}
-
-.activeStatus:hover {
-  background: #dcfce7;
-
-  transform: translateY(-1px);
-}
-
-
-/* ==============================
-   INACTIF
-============================== */
-
-.inactiveStatus {
-  background: #f1f5f9;
-
-  color: #64748b;
-}
-
-.inactiveStatus:hover {
-  background: #e2e8f0;
-
-  transform: translateY(-1px);
-}
-
-
-/* ==============================
-   POINT ÉTAT
-============================== */
-
-.statusDot {
-  width: 7px;
-  height: 7px;
-
-  border-radius: 50%;
-
-  background: currentColor;
-
-  flex-shrink: 0;
-}
-
-
-/* ==============================
-   BOUTON ÉTAT DÉSACTIVÉ
-============================== */
-
-.activeStatus:disabled,
-.inactiveStatus:disabled {
-  cursor: default;
-
-  opacity: 1;
-}
-
-.activeStatus:disabled:hover,
-.inactiveStatus:disabled:hover {
-  transform: none;
-}
-
-
-/* ==============================
-   ACTIONS
-============================== */
-
-.actions {
-  display: flex;
-
-  align-items: center;
-
-  gap: 7px;
-}
-
-.editButton,
-.deleteButton {
-  padding: 5px;
-
-  border: none;
-
-  border-radius: 9px;
-
-  cursor: pointer;
+.filtersRow .filterBar {
 
   display: flex;
 
   align-items: center;
 
-  justify-content: center;
+  min-width: 0;
 
-  font-size: 15px;
+  width: 100%;
 
-  transition:
-    transform 0.15s ease,
-    background 0.15s ease;
+  margin: 0;
+
+  gap: 0;
+
 }
 
-.editButton {
-  background: #eff6ff;
+.filtersRow .categorySelect {
+
+  width: 100%;
+
+  min-width: 0;
+
+  height: 48px;
+
+  padding: 0 32px 0 12px;
+
+  box-sizing: border-box;
+
 }
-
-.deleteButton {
-  background: #eb6161;
-  color: #dbeafe;
-}
-
-.editButton:hover {
-  background: #dbeafe;
-
-  transform: translateY(-1px);
-}
-
-.deleteButton:hover {
-  background: #fee2e2;
-  color: #dc2626;
-
-  transform: translateY(-1px);
-}
-
-
-/* ==============================
-   PRODUIT VIDE
-============================== */
-
-.empty {
-  background: white;
-
-  border-radius: 16px;
-
-  padding: 50px 20px;
-
-  text-align: center;
-
-  border: 1px solid #e8edf3;
-}
-
-.empty > span {
-  font-size: 40px;
-}
-
-.empty h3 {
-  margin: 12px 0 0;
-
-  color: #172033;
-
-  font-size: 16px;
-}
-
-.empty p {
-  margin: 8px 0 0;
-
-  color: #64748b;
-
-  font-size: 14px;
-}
-
-.emptyButton {
-  margin-top: 20px;
-
-  border: none;
-
-  background: #2563eb;
-
-  color: white;
-
-  padding: 11px 18px;
-
-  border-radius: 10px;
-
-  font-size: 14px;
-
-  font-weight: 600;
-
-  cursor: pointer;
-}
-
-.emptyButton:hover {
-  background: #1d4ed8;
-}
-
-
-/* ==============================
-   TABLETTE / PC
-============================== */
-
-@media (min-width: 768px) {
-
-  .container {
-    max-width: 1200px;
-
-    margin: 0 auto;
-
-    padding: 30px;
-  }
-
-  .header h1 {
-    font-size: 26px;
-  }
-
-  .tableContainer {
-    overflow-x: auto;
-
-    overflow-y: hidden;
-  }
-
-  .productTable {
-    min-width: 880px;
-  }
-}
-
-
-/* ==============================
-   PETITS ECRANS
-============================== */
-
 @media (max-width: 600px) {
 
-  .container {
-    padding: 15px;
-  }
+  .filtersRow {
 
-  .titleSection {
-    align-items: flex-start;
-  }
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
 
-  .titleSection h2 {
-    font-size: 16px;
-  }
+    gap: 8px;
 
-  .titleSection p {
+    margin-bottom: 22px;
+
+  }
+ .filtersRow .filterBar {
+
+    align-items: center;
+
+    flex-wrap: nowrap;
+
+  }
+ .filtersRow .categorySelect {
+
+    width: 100%;
+
+    min-width: 0;
+
+    padding: 0 22px 0 8px;
+
+    font-size: 11px;
+
+  }
+  .filtersRow .searchContainer {
+
+    padding: 0 10px;
+
+  }
+  .filtersRow .searchContainer input {
+
     font-size: 12px;
+
   }
 
-  .tableContainer {
-    border-radius: 13px;
-
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .productTable th,
-  .productTable td {
-    padding: 12px;
-  }
-}
-
-
-/* ==============================
-   TRES PETITS ECRANS
-============================== */
-
-@media (max-width: 380px) {
-
-  .header {
-    margin-bottom: 20px;
-  }
-
-  .header h1 {
-    font-size: 20px;
-  }
-
-  .backButton,
-  .addButton {
-    width: 40px;
-    height: 40px;
-  }
-
-  .searchContainer {
-    margin-bottom: 20px;
-  }
-
-  .productTable {
-    min-width: 840px;
-  }
-}
-.productLink {
-  padding: 0;
-  border: none;
-  background: transparent;
-
-  font-size: 13px;
-  font-weight: 700;
-
-  text-align: left;
-}
-
-.productLink:hover {
-  color: #2563eb;
-  text-decoration: underline;
 }

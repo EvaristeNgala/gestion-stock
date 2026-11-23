@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 
 
-
 import { useNavigate } from "react-router-dom";
 
-import { Capacitor, registerPlugin } from "@capacitor/core";
+import { Capacitor } from "@capacitor/core";
+import ReceiptPrinter from "../../plugins/receiptPrinter";
 
 
 
@@ -57,16 +57,6 @@ import { db } from "../../firebase";
 
 
 import styles from "./settings.module.css";
-
-
-
-const ReceiptPrinter = registerPlugin("ReceiptPrinter");
-
-
-
-
-
-
 
 function Settings() {
 
@@ -1043,20 +1033,23 @@ function Settings() {
 
 
       <header className={styles.header}>
-
-
-
-        <h1>Paramètres</h1>
-
-
+      
+              <button
+                className={styles.backButton}
+                onClick={() =>
+                  navigate("/dashboard")
+                }
+              >
+                ←
+              </button>
+      
+              <h1>
+                Paramètres
+              </h1>
+      
+            </header>
 
         <p>Configurez les informations et le fonctionnement de votre magasin.</p>
-
-
-
-      </header>
-
-
 
 
 
@@ -2064,179 +2057,7 @@ function Settings() {
 
         </form>
 
-
-
-        <section className={styles.settingsCard} style={{ marginTop: 20 }}>
-
-          <div className={styles.cardHeader}>
-
-            <div>
-
-              <h2>Diagnostic de l'imprimante Q2i</h2>
-
-              <p>Recherche des services d'impression Android installés sur le terminal.</p>
-
-            </div>
-
-          </div>
-
-
-
-          <button
-
-            type="button"
-
-            className={styles.secondaryButton}
-
-            onClick={handlePrinterDiagnostic}
-
-            disabled={diagnosing}
-
-          >
-
-            {diagnosing ? "Diagnostic en cours..." : "Diagnostiquer l'imprimante"}
-
-          </button>
-
-
-
-          {printerDiagnosticError && (
-
-            <p role="alert" style={{ color: "#b42318", marginTop: 12 }}>
-
-              {printerDiagnosticError}
-
-            </p>
-
-          )}
-
-
-
-          {printerDiagnostic && (
-
-            <div style={{ marginTop: 16 }}>
-
-              <strong>Résultats du diagnostic</strong>
-
-              <pre style={{
-
-                whiteSpace: "pre-wrap",
-
-                overflowWrap: "anywhere",
-
-                background: "#f3f4f6",
-
-                color: "#111827",
-
-                borderRadius: 8,
-
-                padding: 12,
-
-                fontSize: 12,
-
-                maxHeight: 380,
-
-                overflowY: "auto"
-
-              }}>
-
-                {JSON.stringify(printerDiagnostic, null, 2)}
-
-              </pre>
-
-              <button
-
-                type="button"
-
-                className={styles.secondaryButton}
-
-                onClick={async () => {
-
-                  try {
-
-                    await navigator.clipboard.writeText(JSON.stringify(printerDiagnostic, null, 2));
-
-                  } catch (err) {
-
-                    setPrinterDiagnosticError("Copie indisponible : faites une capture d'écran des résultats.");
-
-                  }
-
-                }}
-
-              >
-
-                Copier les résultats
-
-              </button>
-
-            </div>
-
-          )}
-
-        </section>
-
-
-
-        <section className={styles.settingsCard} style={{ marginTop: 20 }}>
-          <div className={styles.cardHeader}>
-            <div>
-              <h2>Imprimante Bluetooth — test Q2i</h2>
-              <p>Recherche des appareils associés et test direct ESC/POS. L'impression actuelle reste disponible.</p>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
-            <button type="button" className={styles.secondaryButton}
-              onClick={handleBluetoothSearch} disabled={bluetoothLoading || bluetoothTesting}>
-              {bluetoothLoading ? "Recherche en cours..." : "Rechercher les appareils Bluetooth"}
-            </button>
-          </div>
-
-          <div className={styles.field} style={{ marginBottom: 14 }}>
-            <label htmlFor="q2i-bluetooth-device">Appareil Bluetooth associé</label>
-            <select id="q2i-bluetooth-device" value={selectedBluetoothAddress}
-              onChange={(event) => {
-                const address = event.target.value;
-                setSelectedBluetoothAddress(address);
-                setBluetoothError("");
-                setBluetoothMessage("");
-                if (address) {
-                  localStorage.setItem(`stockManagerBluetoothPrinter:${storeId}`, address);
-                } else {
-                  localStorage.removeItem(`stockManagerBluetoothPrinter:${storeId}`);
-                }
-              }}>
-              <option value="">Sélectionner une imprimante...</option>
-              {bluetoothDevices.map((device) => (
-                <option key={device.address} value={device.address}>
-                  {device.name} — {device.address}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button type="button" className={styles.secondaryButton}
-            onClick={handleBluetoothTest}
-            disabled={!selectedBluetoothAddress || bluetoothLoading || bluetoothTesting}>
-            {bluetoothTesting ? "Test en cours..." : "Imprimer un ticket de test Bluetooth"}
-          </button>
-
-          {bluetoothMessage && (
-            <p role="status" style={{ marginTop: 12, color: "#166534" }}>
-              {bluetoothMessage}
-            </p>
-          )}
-          {bluetoothError && (
-            <p role="alert" style={{ marginTop: 12, color: "#b42318" }}>
-              {bluetoothError}
-            </p>
-          )}
-          <p style={{ marginTop: 12, fontSize: 13 }}>
-            Ce test envoie seulement un petit ticket. Un message d'envoi réussi ne garantit
-            pas que le papier est sorti. Vérifie directement l'imprimante intégrée.
-          </p>
-        </section>
+  
 
     </div>
 

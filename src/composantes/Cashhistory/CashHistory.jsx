@@ -172,11 +172,66 @@ export default function CashHistory() {
           </div>
           <div className={styles.summary}><span>Ventes : <strong>{money(s.actualTotal)}</strong></span><span>{s.actualCount} vente(s)</span></div>
           {s.mismatch && <p style={{ color: "#9a3412", fontSize: ".88rem" }}>⚠ Différence entre les ventes associées et les totaux mémorisés dans cette session.</p>}
-          <button className={styles.button} onClick={() => setSelected(selected === s.id ? null : s.id)}>{selected === s.id ? "Masquer les détails" : "Voir les détails"}</button>
-          {selected === s.id && <div className={styles.details}>{details(s).map(([label, value]) => <div key={label} className={styles.detail}><div className={styles.detailLabel}>{label}</div><div className={styles.detailValue}>{value}</div></div>)}</div>}
+          <button className={styles.button} onClick={() => setSelected(s.id)}>Voir les détails</button>
         </article>)}
       </div>}
       {!loading && !error && rows.length === 0 && <p className={styles.empty}>Aucune session ne correspond aux filtres.</p>}
+
+      {selected && (() => {
+        const selectedSession = rows.find(s => s.id === selected);
+        if (!selectedSession) return null;
+        return (
+          <div className={styles.modalOverlay} onClick={() => setSelected(null)}>
+            <section
+              className={styles.modal}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="cash-history-modal-title"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className={styles.modalHeader}>
+                <div>
+                  <span className={styles.modalEyebrow}>DÉTAILS DE LA SESSION</span>
+                  <h2 id="cash-history-modal-title" className={styles.modalTitle}>
+                    {selectedSession.userName || "Caissier inconnu"}
+                  </h2>
+                  <p className={styles.modalSubtitle}>Informations de la caisse et récapitulatif des opérations</p>
+                </div>
+                <button
+                  type="button"
+                  className={styles.modalClose}
+                  onClick={() => setSelected(null)}
+                  aria-label="Fermer la fenêtre"
+                >
+                  ×
+                </button>
+              </div>
+              <div className={styles.modalBody}>
+                <div className={styles.modalStatusRow}>
+                  <span className={`${styles.status} ${selectedSession.status === "closed" ? styles.closed : styles.open}`}>
+                    {selectedSession.status === "closed" ? "● Fermée" : "● Ouverte"}
+                  </span>
+                  <strong className={styles.modalTotal}>{money(selectedSession.actualTotal)}</strong>
+                </div>
+                <div className={styles.details}>
+                  {details(selectedSession).map(([label, value]) => (
+                    <div key={label} className={styles.detail}>
+                      <div className={styles.detailLabel}>{label}</div>
+                      <div className={styles.detailValue}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+                {selectedSession.mismatch && (
+                  <p className={styles.modalWarning}>⚠ Différence entre les ventes associées et les totaux mémorisés dans cette session.</p>
+                )}
+              </div>
+              <div className={styles.modalFooter}>
+                <button type="button" className={styles.button} onClick={() => setSelected(null)}>Fermer</button>
+              </div>
+            </section>
+          </div>
+        );
+      })()}
     </div>
   </main>;
 }

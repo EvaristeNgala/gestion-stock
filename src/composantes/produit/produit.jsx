@@ -25,6 +25,9 @@ function Produit() {
   // ==============================
 
   const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   // ==============================
   // PRODUITS
@@ -101,32 +104,62 @@ function Produit() {
   // RECHERCHE
   // ==============================
 
-  const filteredProducts = products.filter(
-    (product) => {
-      const searchValue = search
-        .toLowerCase()
-        .trim();
+  // Liste unique des catégories disponibles
+  const categories = [
+    ...new Set(
+      products
+        .map((product) =>
+          (product.categoryName || product.category || "").trim()
+        )
+        .filter(Boolean)
+    ),
+  ].sort((a, b) => a.localeCompare(b, "fr"));
 
-      if (!searchValue) {
-        return true;
-      }
+  // Recherche + filtre par catégorie
+  const filteredProducts = products.filter((product) => {
+    const searchValue = search.toLowerCase().trim();
+    const productName = (product.productName || "").toLowerCase();
+    const categoryName = (
+      product.categoryName || product.category || ""
+    ).toLowerCase();
 
-      const productName = (
-        product.productName || ""
-      ).toLowerCase();
+    const matchesSearch =
+      !searchValue ||
+      productName.includes(searchValue) ||
+      categoryName.includes(searchValue);
 
-      const categoryName = (
-        product.categoryName ||
-        product.category ||
-        ""
-      ).toLowerCase();
+    const productCategory =
+      (product.categoryName || product.category || "").trim();
 
-      return (
-        productName.includes(searchValue) ||
-        categoryName.includes(searchValue)
-      );
-    }
+    const matchesCategory =
+      selectedCategory === "all" ||
+      productCategory === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+  });
+
+  // Pagination : 10 produits par page
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredProducts.length / ITEMS_PER_PAGE)
   );
+
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Revenir à la première page quand un filtre change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedCategory]);
+
+  // Corriger la page si un produit est supprimé
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   // ==============================
   // ACTIVER / DESACTIVER PRODUIT
@@ -306,26 +339,37 @@ function Produit() {
 
       </header>
 
-      {/* ==========================
-          RECHERCHE
-      =========================== */}
+            {/* RECHERCHE + FILTRE PAR CATÉGORIE */}
+      <div className={styles.filtersRow}>
+        <div className={styles.searchContainer}>
+          <input
+            type="text"
+            placeholder="Rechercher un produit..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
-      <div
-        className={
-          styles.searchContainer
-        }
-      >
-
-        <input
-          type="text"
-          placeholder="Rechercher un produit..."
-          value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
-        />
-
+        <div className={styles.filterBar}>
+          <select
+            className={styles.categorySelect}
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            aria-label="Filtrer par catégorie"
+          >
+            <option value="all">Toutes les catégories</option>
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
+
+      {/* ==========================
+          TITRE
+      =========================== */}
 
       {/* ==========================
           TITRE
@@ -448,7 +492,7 @@ function Produit() {
 
             <tbody>
 
-              {filteredProducts.map(
+              {paginatedProducts.map(
                 (product) => {
 
                   const lowStock =
@@ -698,6 +742,38 @@ function Produit() {
 
         </div>
 
+      )}
+
+      {/* PAGINATION */}
+      {!loading && filteredProducts.length > 0 && (
+        <div className={styles.pagination}>
+          <button
+            type="button"
+            onClick={() =>
+              setCurrentPage((page) => Math.max(1, page - 1))
+            }
+            disabled={currentPage === 1}
+            className={styles.pageButton}
+          >
+            ← Précédent
+          </button>
+
+          <span className={styles.pageInfo}>
+            Page <strong>{currentPage}</strong> sur{" "}
+            <strong>{totalPages}</strong>
+          </span>
+
+          <button
+            type="button"
+            onClick={() =>
+              setCurrentPage((page) => Math.min(totalPages, page + 1))
+            }
+            disabled={currentPage === totalPages}
+            className={styles.pageButton}
+          >
+            Suivant →
+          </button>
+        </div>
       )}
 
     </div>

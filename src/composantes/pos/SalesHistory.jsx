@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
-import { Capacitor, registerPlugin } from "@capacitor/core";
-
-const ReceiptPrinter = registerPlugin("ReceiptPrinter");
+import { Capacitor } from "@capacitor/core";
+import ReceiptPrinter from "../../plugins/receiptPrinter";
 
 import {
 

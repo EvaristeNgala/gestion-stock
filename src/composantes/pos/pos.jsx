@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Capacitor, registerPlugin } from "@capacitor/core";
+import { Capacitor } from "@capacitor/core";
+import ReceiptPrinter from "../../plugins/receiptPrinter";
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebase";
 
-const ReceiptPrinter = registerPlugin("ReceiptPrinter");
 
 import {
   collection,

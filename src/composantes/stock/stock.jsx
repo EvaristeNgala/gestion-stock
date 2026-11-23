@@ -33,6 +33,9 @@ function Stock() {
   // ==============================
 
   const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PRODUCTS_PER_PAGE = 10;
 
   // ==============================
   // PRODUITS FIREBASE
@@ -112,26 +115,39 @@ function Stock() {
   // ==============================
 
   const filteredProducts = products.filter((product) => {
-    const productName =
-      product.productName || "";
+    const productName = product.productName || "";
+    const categoryName = product.categoryName || product.category || "";
+    const searchText = search.toLowerCase().trim();
 
-    const categoryName =
-      product.categoryName ||
-      product.category ||
-      "";
+    const matchesSearch =
+      productName.toLowerCase().includes(searchText) ||
+      categoryName.toLowerCase().includes(searchText);
 
-    const searchText =
-      search.toLowerCase().trim();
+    const matchesCategory =
+      selectedCategory === "all" || categoryName === selectedCategory;
 
-    return (
-      productName
-        .toLowerCase()
-        .includes(searchText) ||
-      categoryName
-        .toLowerCase()
-        .includes(searchText)
-    );
+    return matchesSearch && matchesCategory;
   });
+
+  // Catégories réellement présentes dans les produits du magasin
+  const categories = [...new Set(
+    products
+      .map((product) => product.categoryName || product.category || "")
+      .map((category) => category.trim())
+      .filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, "fr"));
+
+  // Pagination : 10 produits par page
+  const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * PRODUCTS_PER_PAGE,
+    currentPage * PRODUCTS_PER_PAGE
+  );
+
+  // Revenir à la première page lorsque les filtres changent
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedCategory]);
 
   // ==============================
   // CALCULS STOCK
@@ -450,23 +466,38 @@ function Stock() {
       </section>
 
       {/* ==========================
-          RECHERCHE
+          RECHERCHE ET FILTRE
       =========================== */}
 
-      <div className={styles.searchContainer}>
+      <div className={styles.filtersRow}>
+        <div className={styles.searchContainer}>
+          <input
+            type="text"
+            placeholder="Rechercher un produit..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
-        <input
-          type="text"
-          placeholder="Rechercher un produit..."
-          value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
-        />
-
+        <div className={styles.filterContainer}>
+          <label htmlFor="stock-category-filter">Catégorie</label>
+          <select
+            id="stock-category-filter"
+            className={styles.categoryFilter}
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          >
+            <option value="all">Toutes les catégories</option>
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* ==========================
+            {/* ==========================
           TITRE
       =========================== */}
 
@@ -526,8 +557,8 @@ function Stock() {
             <div className={styles.empty}>
 
               <p>
-                {search
-                  ? "Aucun produit trouvé"
+                {search || selectedCategory !== "all"
+                  ? "Aucun produit ne correspond aux filtres sélectionnés"
                   : "Aucun produit enregistré"}
               </p>
 
@@ -573,7 +604,7 @@ function Stock() {
 
               <tbody>
 
-                {filteredProducts.map(
+                {paginatedProducts.map(
                   (product) => {
 
                     const status =
@@ -847,6 +878,43 @@ function Stock() {
 
         </div>
 
+      )}
+
+      {!loading && filteredProducts.length > 0 && (
+        <div className={styles.pagination}>
+          <span className={styles.paginationInfo}>
+            Affichage de {((currentPage - 1) * PRODUCTS_PER_PAGE) + 1}
+            {" à "}
+            {Math.min(currentPage * PRODUCTS_PER_PAGE, filteredProducts.length)}
+            {" sur "}{filteredProducts.length} produit(s)
+          </span>
+
+          <div className={styles.paginationControls}>
+            <button
+              type="button"
+              className={styles.pageButton}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage === 1}
+              aria-label="Page précédente"
+            >
+              ← Précédent
+            </button>
+
+            <span className={styles.pageNumber}>
+              Page {currentPage} / {totalPages}
+            </span>
+
+            <button
+              type="button"
+              className={styles.pageButton}
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={currentPage === totalPages}
+              aria-label="Page suivante"
+            >
+              Suivant →
+            </button>
+          </div>
+        </div>
       )}
 
     </div>
