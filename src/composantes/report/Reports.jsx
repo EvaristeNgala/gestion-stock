@@ -47,6 +47,8 @@ function Reports() {
 
 
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [currentProductPage, setCurrentProductPage] = useState(1);
+  const productsPerPage = 10;
 
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
@@ -740,34 +742,118 @@ const filteredSales = useMemo(() => {
 
 
 
+  // Valeur commerciale de toutes les ventes de la période,
+  // y compris les ventes à crédit ou partiellement payées.
   const totalSales = useMemo(() => {
-    return filteredSales.reduce((total, sale) => total + Number(sale.total || 0), 0);
+    return filteredSales.reduce(
+      (total, sale) => total + Number(sale.total || 0),
+      0
+    );
   }, [filteredSales]);
 
-  // Argent réellement reçu : les ventes à crédit non encore réglées ne sont pas encaissées.
+  // Argent réellement encaissé pendant la période.
+  // Si paymentHistory contient des paiements, on utilise leurs dates réelles.
+  // Sinon, on utilise les anciens champs de paiement de la vente.
   const totalCollected = useMemo(() => {
     if (!selectedPeriod) return 0;
+
     return allSales.reduce((total, sale) => {
       if (sale.status === "cancelled") return total;
-      if (isAdmin && selectedEmployeeId !== "all" && sale.userId !== selectedEmployeeId) return total;
-      if (Array.isArray(sale.paymentHistory)) {
-        const paymentsInPeriod = sale.paymentHistory.reduce((sum, payment) => {
-          const paidAt = getDate(payment.paidAt);
-          if (!paidAt || paidAt < selectedPeriod.start || paidAt > selectedPeriod.end) return sum;
-          return sum + Number(payment.amount || 0);
-        }, 0);
+
+      if (
+        isAdmin &&
+        selectedEmployeeId !== "all" &&
+        sale.userId !== selectedEmployeeId
+      ) {
+        return total;
+      }
+
+      if (
+        Array.isArray(sale.paymentHistory) &&
+        sale.paymentHistory.length > 0
+      ) {
+        const paymentsInPeriod = sale.paymentHistory.reduce(
+          (sum, payment) => {
+            const paidAt = getDate(payment.paidAt);
+
+            if (
+              !paidAt ||
+              paidAt < selectedPeriod.start ||
+              paidAt > selectedPeriod.end
+            ) {
+              return sum;
+            }
+
+            return sum + Number(payment.amount || 0);
+          },
+          0
+        );
+
         return total + paymentsInPeriod;
       }
-      const saleDate = getDate(sale.offlineCreatedAt || sale.createdAt || sale.date);
-      if (!saleDate || saleDate < selectedPeriod.start || saleDate > selectedPeriod.end) return total;
-      return total + Number(sale.amountReceived ?? sale.cashReceived ?? sale.total ?? 0);
+
+      const saleDate = getDate(
+        sale.offlineCreatedAt || sale.createdAt || sale.date
+      );
+
+      if (
+        !saleDate ||
+        saleDate < selectedPeriod.start ||
+        saleDate > selectedPeriod.end
+      ) {
+        return total;
+      }
+
+      const paymentStatus = String(sale.paymentStatus || "").toLowerCase();
+      const hasReceivedAmount =
+        sale.amountReceived !== undefined && sale.amountReceived !== null;
+      const hasCashReceived =
+        sale.cashReceived !== undefined && sale.cashReceived !== null;
+
+      let receivedAmount = 0;
+
+      if (hasReceivedAmount || hasCashReceived) {
+        receivedAmount = Number(
+          hasReceivedAmount ? sale.amountReceived : sale.cashReceived
+        );
+      } else if (paymentStatus !== "unpaid" && paymentStatus !== "partial") {
+        // Anciennes ventes sans statut ni montant reçu : considérées comme payées.
+        receivedAmount = Number(sale.total || 0);
+      }
+
+      return total + receivedAmount;
     }, 0);
   }, [allSales, selectedPeriod, isAdmin, selectedEmployeeId]);
 
+  // Reste dû sur les ventes de la période sélectionnée.
   const totalOutstanding = useMemo(() => {
     return filteredSales.reduce((total, sale) => {
-      const remaining = sale.remainingAmount ?? Math.max(0, Number(sale.total || 0) - Number(sale.amountReceived ?? sale.cashReceived ?? sale.total ?? 0));
-      return total + Number(remaining || 0);
+      const saleTotal = Number(sale.total || 0);
+      const paymentStatus = String(sale.paymentStatus || "").toLowerCase();
+
+      const hasReceivedAmount =
+        sale.amountReceived !== undefined && sale.amountReceived !== null;
+      const hasCashReceived =
+        sale.cashReceived !== undefined && sale.cashReceived !== null;
+
+      let receivedAmount = 0;
+
+      if (hasReceivedAmount || hasCashReceived) {
+        receivedAmount = Number(
+          hasReceivedAmount ? sale.amountReceived : sale.cashReceived
+        );
+      } else if (paymentStatus !== "unpaid" && paymentStatus !== "partial") {
+        // Une ancienne vente sans champs de paiement est considérée comme réglée.
+        receivedAmount = saleTotal;
+      }
+
+      const remaining =
+        sale.remainingAmount !== undefined &&
+        sale.remainingAmount !== null
+          ? Number(sale.remainingAmount)
+          : Math.max(0, saleTotal - receivedAmount);
+
+      return total + Math.max(0, remaining);
     }, 0);
   }, [filteredSales]);
 
@@ -982,6 +1068,30 @@ const filteredSales = useMemo(() => {
   }, [filteredSales]);
 
 
+
+  // =========================================================
+  // PAGINATION DES VENTES PAR PRODUIT
+  // =========================================================
+
+  const totalProductPages = Math.max(
+    1,
+    Math.ceil(productReports.length / productsPerPage)
+  );
+
+  const paginatedProductReports = useMemo(() => {
+    const startIndex = (currentProductPage - 1) * productsPerPage;
+    return productReports.slice(startIndex, startIndex + productsPerPage);
+  }, [productReports, currentProductPage]);
+
+  useEffect(() => {
+    setCurrentProductPage(1);
+  }, [period, startDate, endDate, selectedEmployeeId]);
+
+  useEffect(() => {
+    if (currentProductPage > totalProductPages) {
+      setCurrentProductPage(totalProductPages);
+    }
+  }, [currentProductPage, totalProductPages]);
 
   // =========================================================
 
@@ -1778,7 +1888,7 @@ const filteredSales = useMemo(() => {
           </div>
 
         ) : (
-
+          <>
           <div className={styles.tableWrapper}>
 
 
@@ -1811,7 +1921,7 @@ const filteredSales = useMemo(() => {
 
 
 
-                {productReports.map((product) => (
+                {paginatedProductReports.map((product) => (
 
                   <tr
 
@@ -1969,10 +2079,74 @@ const filteredSales = useMemo(() => {
 
             </table>
 
-
-
           </div>
 
+          {totalProductPages > 1 && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "8px",
+                padding: "18px 0 4px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setCurrentProductPage((page) => Math.max(1, page - 1))}
+                disabled={currentProductPage === 1}
+                style={{
+                  padding: "8px 13px",
+                  border: "1px solid #d5deea",
+                  borderRadius: "8px",
+                  background: currentProductPage === 1 ? "#f1f4f8" : "#fff",
+                  color: currentProductPage === 1 ? "#9aa5b4" : "#263445",
+                  cursor: currentProductPage === 1 ? "not-allowed" : "pointer",
+                }}
+              >
+                Précédent
+              </button>
+
+              {Array.from({ length: totalProductPages }, (_, index) => index + 1).map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setCurrentProductPage(page)}
+                  aria-current={currentProductPage === page ? "page" : undefined}
+                  style={{
+                    minWidth: "36px",
+                    padding: "8px 11px",
+                    border: "1px solid #d5deea",
+                    borderRadius: "8px",
+                    background: currentProductPage === page ? "#2563eb" : "#fff",
+                    color: currentProductPage === page ? "#fff" : "#263445",
+                    fontWeight: currentProductPage === page ? 700 : 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => setCurrentProductPage((page) => Math.min(totalProductPages, page + 1))}
+                disabled={currentProductPage === totalProductPages}
+                style={{
+                  padding: "8px 13px",
+                  border: "1px solid #d5deea",
+                  borderRadius: "8px",
+                  background: currentProductPage === totalProductPages ? "#f1f4f8" : "#fff",
+                  color: currentProductPage === totalProductPages ? "#9aa5b4" : "#263445",
+                  cursor: currentProductPage === totalProductPages ? "not-allowed" : "pointer",
+                }}
+              >
+                Suivant
+              </button>
+            </div>
+          )}
+          </>
         )}
 
 

@@ -1262,6 +1262,7 @@
 
   z-index: 10000;
 
+  background: rgba(15, 23, 42, 0.62);
 
   display: grid;
 
@@ -1592,3 +1593,339 @@
   display: grid;
   place-items: center;
 }
+
+
+/* =========================================================
+   CENTRE DE NOTIFICATIONS CENTRALISÉ
+========================================================= */
+
+.notificationButton {
+  position: relative;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  margin-left: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.notificationButton:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.notificationButton:active {
+  transform: scale(0.95);
+}
+
+.notificationButton:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.notificationIcon {
+  display: block;
+  width: 23px;
+  height: 23px;
+  color: #fff;
+}
+
+.notificationBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  border: 2px solid #2563eb;
+  border-radius: 20px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  display: grid;
+  place-items: center;
+}
+
+.notificationsOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(15, 23, 42, 0.62);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  animation: overlayFade 0.2s ease;
+}
+
+.notificationsModal {
+  width: 100%;
+  max-width: 540px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: #fff;
+  color: #111827;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.25);
+}
+
+.notificationsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.notificationsHeader h2 {
+  margin: 0 0 4px;
+  color: #0f172a;
+  font-size: 19px;
+}
+
+.notificationsHeader p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.notificationsClose {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.notificationCategories,
+.notificationDetailsList {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.notificationCategory {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.notificationCategory:hover {
+  background: #f8fafc;
+  border-color: #bfdbfe;
+  transform: translateY(-1px);
+}
+
+.notificationCategoryIcon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #eff6ff;
+  font-size: 21px;
+}
+
+.notificationCategoryText {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notificationCategoryText strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.notificationCategoryText small {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.notificationCategoryArrow {
+  color: #94a3b8;
+  font-size: 25px;
+}
+
+.notificationsBack {
+  margin-top: 14px;
+  padding: 7px 0;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notificationDetailsTitle {
+  margin: 15px 0 0;
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.notificationDetailCard {
+  padding: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  background: #f8fafc;
+  display: grid;
+  gap: 7px;
+}
+
+.notificationDetailCard > strong {
+  color: #1e293b;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.notificationDetailMeta,
+.notificationDebtAmounts {
+  display: grid;
+  gap: 6px;
+  color: #475569;
+  font-size: 12px;
+}
+
+.notificationDetailMeta {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lowStockValue {
+  color: #c2410c;
+}
+
+.notificationCustomerPhone,
+.notificationSaleDate {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.notificationDebtAmounts span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.notificationDebtAmounts b {
+  color: #1e293b;
+  text-align: right;
+}
+
+.notificationDebtAmounts .unpaidValue {
+  color: #dc2626;
+}
+
+.notificationsLoading,
+.notificationsEmpty {
+  padding: 22px 10px;
+  color: #64748b;
+  text-align: center;
+  font-size: 13px;
+}
+
+.notificationsDone {
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px;
+  border: 0;
+  border-radius: 9px;
+  background: #1e3a8a;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.notificationsDone:hover {
+  background: #1d4ed8;
+}
+
+@media (max-width: 360px) {
+  .notificationsModal {
+    padding: 15px;
+  }
+
+  .notificationDetailMeta {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Encaissement des dettes depuis les notifications */
+.debtPaymentButton {
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 9px;
+  background: #1d4ed8;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.debtPaymentButton:hover { background: #1e40af; }
+.debtPaymentOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 11000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.68);
+}
+.debtPaymentModal {
+  width: 100%;
+  max-width: 430px;
+  padding: 22px;
+  border-radius: 16px;
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+}
+.debtPaymentModal h2 { margin: 0 0 16px; font-size: 20px; }
+.debtPaymentModal p { margin: 9px 0; color: #475569; font-size: 14px; }
+.debtPaymentModal label { display: block; margin: 18px 0 7px; color: #334155; font-size: 13px; font-weight: 700; }
+.debtPaymentModal input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  color: #0f172a;
+  font-size: 16px;
+  outline: none;
+}
+.debtPaymentModal input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+.debtPaymentHint { font-size: 12px !important; color: #64748b !important; }
+.debtPaymentActions { display: flex; gap: 10px; margin-top: 20px; }
+.debtPaymentActions button { flex: 1; padding: 12px 10px; border: 0; border-radius: 9px; font-weight: 700; cursor: pointer; }
+.debtPaymentActions button:disabled { opacity: 0.6; cursor: not-allowed; }
+.debtPaymentCancel { background: #f1f5f9; color: #334155; }
+.debtPaymentConfirm { background: #1d4ed8; color: #fff; }
