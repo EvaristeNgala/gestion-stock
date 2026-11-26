@@ -103,6 +103,16 @@ const POS_INACTIVITY_TIME = 5 * 60 * 1000;
   );
   const [loading, setLoading] = useState(true);
 
+  // Vente par mélange : les produits restent des lignes distinctes
+  // afin de conserver le détail du stock et des rapports.
+  const [showMixModal, setShowMixModal] = useState(false);
+  const [mixFormat, setMixFormat] = useState("bouteille");
+  const [mixSearch, setMixSearch] = useState("");
+  const [mixSelection, setMixSelection] = useState({});
+  const [mixNotice, setMixNotice] = useState("");
+  const [mixTargetQuantity, setMixTargetQuantity] = useState(11);
+  const [mixTotalPrice, setMixTotalPrice] = useState(50000);
+
   // Produit actuellement sélectionné
   // pour la modal des variantes
   const [selectedProduct, setSelectedProduct] =
@@ -947,6 +957,8 @@ useEffect(() => {
     });
 
   // ==============================
+
+  // ==============================
   // RÉCUPÉRER LES VARIANTES VALIDES
   // ==============================
 
@@ -971,6 +983,213 @@ useEffect(() => {
         ) > 0
     );
   };
+
+  // ==============================
+  // VENTE PAR MÉLANGE
+  // ==============================
+
+  // Retrouve la variante correspondant au format demandé.
+  // Une vente par bouteille peut utiliser le prix de base si le produit
+  // n'a pas de variantes. Un paquet doit toujours être une vraie variante.
+  const getMixSaleOption = (product, format) => {
+    const variants = getValidVariants(product);
+    const normalize = (value) =>
+      String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    if (format === "bouteille") {
+      const variant = variants.find((item) => {
+        const type = normalize(item.type);
+        return type.includes("bouteille") || type.includes("bottle") ||
+          type === "unite" || type === "unit";
+      });
+
+      if (variant) return variant;
+      if (variants.length === 0) {
+        return {
+          type: product.stockUnit || "Bouteille",
+          quantity: 1,
+          price: product.price ?? product.sellingPrice ?? 0,
+        };
+      }
+      return null;
+    }
+
+    return variants.find((item) => {
+      const type = normalize(item.type);
+      return type.includes("paquet") || type.includes("pack");
+    }) || null;
+  };
+
+  const openMixModal = () => {
+    if (!cashSession) {
+      alert("Ouvrez d'abord la caisse pour effectuer une vente.");
+      return;
+    }
+    setMixFormat("bouteille");
+    setMixSearch("");
+    setMixSelection({});
+    setMixNotice("");
+    setMixTargetQuantity(11);
+    setMixTotalPrice(50000);
+    setShowMixModal(true);
+  };
+
+  const changeMixFormat = (format) => {
+    setMixFormat(format);
+    setMixSelection({});
+    setMixNotice("");
+  };
+
+  const toggleMixProduct = (product) => {
+    const option = getMixSaleOption(product, mixFormat);
+    if (!option) {
+      setMixNotice(
+        mixFormat === "paquet"
+          ? `${product.productName} ne possède pas de variante « paquet ».`
+          : `${product.productName} ne possède pas de format bouteille compatible.`
+      );
+      return;
+    }
+
+    const price = Number(option.price ?? product.price ?? product.sellingPrice ?? 0);
+    const conversion = Number(option.quantity || 1);
+    if (!Number.isFinite(price) || price <= 0 || conversion <= 0) {
+      setMixNotice(`Le prix ou la conversion de ${product.productName} est invalide.`);
+      return;
+    }
+
+    const selectedEntries = Object.entries(mixSelection);
+    const firstSelected = selectedEntries.length
+      ? products.find((item) => item.id === selectedEntries[0][0])
+      : null;
+    const firstOption = firstSelected
+      ? getMixSaleOption(firstSelected, mixFormat)
+      : null;
+    const referencePrice = firstOption
+      ? Number(firstOption.price ?? firstSelected.price ?? firstSelected.sellingPrice ?? 0)
+      : null;
+
+    // En mode bouteille, on conserve la règle du même prix unitaire.
+    // En mode paquet, le prix est fixé pour tout le lot mélangé.
+    if (mixFormat === "bouteille" && referencePrice !== null && price !== referencePrice) {
+      setMixNotice(
+        `Ajout refusé : ${product.productName} coûte ${price.toLocaleString("fr-FR")} FC, alors que le mélange est à ${referencePrice.toLocaleString("fr-FR")} FC.`
+      );
+      return;
+    }
+
+    setMixSelection((current) => {
+      if (current[product.id]) {
+        const next = { ...current };
+        delete next[product.id];
+        return next;
+      }
+      return { ...current, [product.id]: 1 };
+    });
+    setMixNotice("");
+  };
+
+  const updateMixQuantity = (productId, value) => {
+    const quantity = Math.max(1, Math.floor(Number(value) || 1));
+    setMixSelection((current) => ({
+      ...current,
+      [productId]: quantity,
+    }));
+  };
+
+  const confirmMixSale = () => {
+    const selected = Object.entries(mixSelection);
+    if (selected.length < 2) {
+      setMixNotice("Sélectionnez au moins deux produits pour créer un mélange.");
+      return;
+    }
+
+    const selectedQuantity = selected.reduce((sum, [, quantity]) => sum + Number(quantity || 0), 0);
+    const targetQuantity = Math.max(1, Math.floor(Number(mixTargetQuantity) || 0));
+    const totalMixPrice = Number(mixTotalPrice);
+
+    if (mixFormat === "paquet") {
+      if (targetQuantity <= 0 || !Number.isFinite(totalMixPrice) || totalMixPrice <= 0) {
+        setMixNotice("Indiquez un nombre de paquets et un prix total valides.");
+        return;
+      }
+      if (selectedQuantity !== targetQuantity) {
+        setMixNotice(`Le mélange doit contenir exactement ${targetQuantity} paquets. Vous en avez sélectionné ${selectedQuantity}.`);
+        return;
+      }
+    }
+
+    const preparedItems = [];
+    const mixGroupId = `mix-${Date.now()}`;
+    const mixUnitPrice = mixFormat === "paquet" ? totalMixPrice / targetQuantity : null;
+
+    for (const [productId, quantity] of selected) {
+      const product = products.find((item) => item.id === productId);
+      const option = product && getMixSaleOption(product, mixFormat);
+      if (!product || !option) {
+        setMixNotice("Un des produits sélectionnés n'est plus disponible dans ce format.");
+        return;
+      }
+
+      const regularPrice = Number(option.price ?? product.price ?? product.sellingPrice ?? 0);
+      const conversion = Number(option.quantity || 1);
+      const variantType = option.type?.trim() || (mixFormat === "bouteille" ? "Bouteille" : "Paquet");
+      const alreadyInTicket = ticket
+        .filter((item) => item.productId === productId && item.variantType === variantType)
+        .reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+      const requiredStock = (alreadyInTicket + quantity) * conversion;
+
+      if (requiredStock > Number(product.stock || 0)) {
+        setMixNotice(
+          `Stock insuffisant pour ${product.productName}. Disponible : ${Math.floor(Number(product.stock || 0) / conversion)} ${variantType}(s).`
+        );
+        return;
+      }
+
+      preparedItems.push({
+        productId: product.id,
+        name: product.productName || "Produit",
+        // En mélange par paquet, chaque paquet reçoit une part égale du prix global.
+        price: mixFormat === "paquet" ? mixUnitPrice : regularPrice,
+        quantity,
+        variantType,
+        variantQuantity: conversion,
+        stockUnit: product.stockUnit || "",
+        stockAvailable: Number(product.stock || 0),
+        categoryName: product.categoryName || product.category || "Non classé",
+        basePurchasePrice: Number(product.purchasePrice || 0),
+        purchasePrice: Number(product.purchasePrice || 0) * conversion,
+        mixGroupId,
+        mixFormat,
+        mixTotalPrice: mixFormat === "paquet" ? totalMixPrice : null,
+        mixTargetQuantity: mixFormat === "paquet" ? targetQuantity : null,
+      });
+    }
+
+    if (mixFormat === "bouteille") {
+      const prices = [...new Set(preparedItems.map((item) => item.price))];
+      if (prices.length !== 1) {
+        setMixNotice("En vente par bouteille, tous les produits doivent avoir exactement le même prix.");
+        return;
+      }
+    }
+
+    // Garder chaque ligne du mélange séparée : cela évite de fusionner
+    // son prix spécial avec une vente normale du même produit.
+    setTicket((current) => [...current, ...preparedItems]);
+
+    setShowMixModal(false);
+    setMixSelection({});
+    setMixSearch("");
+    setMixNotice("");
+  };
+
+  const mixProducts = products.filter((product) => {
+    if (product.isActive === false) return false;
+    const name = String(product.productName || "").toLowerCase();
+    if (!name.includes(mixSearch.toLowerCase())) return false;
+    return Boolean(getMixSaleOption(product, mixFormat));
+  });
 
   // ==============================
   // CLIQUER SUR UN PRODUIT
@@ -1404,13 +1623,13 @@ useEffect(() => {
   // TOTAL
   // ==============================
 
-  const total = ticket.reduce(
+  const total = Math.round(ticket.reduce(
     (sum, item) =>
       sum +
       Number(item.price || 0) *
-        item.quantity,
+        Number(item.quantity || 0),
     0
-  );
+  ) * 100) / 100;
 
   // ==============================
   // NOMBRE ARTICLES
@@ -1618,6 +1837,11 @@ if (!cashSession?.id) {
 
         linePurchaseCost:
           purchasePrice * quantity,
+
+        mixGroupId: item.mixGroupId || null,
+        mixFormat: item.mixFormat || null,
+        mixTotalPrice: item.mixTotalPrice || null,
+        mixTargetQuantity: item.mixTargetQuantity || null,
 
         profit:
           (sellingPrice - purchasePrice) *
@@ -2789,7 +3013,7 @@ useEffect(() => {
       ) : null}
 
       <button type="button" onClick={() => { setShowPosMenu(false); setShowSyncCenter(true); }}>
-        <div><strong>☁️ Synchronisation {pendingSalesCount ? `(${pendingSalesCount})` : ""}</strong>
+        <div><strong> Synchronisation {pendingSalesCount ? `(${pendingSalesCount})` : ""}</strong>
         <small>Progression, erreurs et nouvelles tentatives</small></div>
       </button>
 
@@ -2818,10 +3042,10 @@ useEffect(() => {
 
 
       <button type="button" onClick={openPrinterSettings}>
-        <div><strong>🖨️ Configuration imprimante</strong><small>Bluetooth, sélection et ticket de test</small></div>
+        <div><strong> Configuration imprimante</strong><small>Bluetooth, sélection et ticket de test</small></div>
       </button>
       {isAdminSession && <button type="button" onClick={() => { setShowPosMenu(false); setLeavingStore(true); }}>
-        <div><strong>🚪 Se déconnecter du magasin</strong><small>Retour à la connexion email / mot de passe</small></div>
+        <div><strong>Se déconnecter du magasin</strong><small>Retour à la connexion email / mot de passe</small></div>
       </button>}
 
   <button
@@ -2830,7 +3054,7 @@ useEffect(() => {
 >
   <div>
     <strong>
-      🔒 Verrouiller le POS
+      Verrouiller le POS
     </strong>
 
     <small>
@@ -3015,31 +3239,39 @@ Clôture de caisse
       {/* RECHERCHE */}
 
       <section
-        className={
-          styles.searchBar
-        }
+        className={styles.searchBar}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          width: "100%",
+          boxSizing: "border-box",
+          flexWrap: "nowrap",
+        }}
       >
         <input
           type="text"
           placeholder="Rechercher un produit..."
           value={search}
-          onChange={(e) =>
-            setSearch(
-              e.target.value
-            )
-          }
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            flex: "1 1 0",
+            minWidth: 0,
+            width: "auto",
+            boxSizing: "border-box",
+          }}
         />
 
         <select
           value={category}
-          onChange={(e) =>
-            setCategory(
-              e.target.value
-            )
-          }
-          className={
-            styles.category
-          }
+          onChange={(e) => setCategory(e.target.value)}
+          className={styles.category}
+          style={{
+            flex: "0 0 155px",
+            width: 155,
+            minWidth: 0,
+            boxSizing: "border-box",
+          }}
         >
           {categories.map(
             (cat) => (
@@ -3056,6 +3288,21 @@ Clôture de caisse
        
       </section>
 
+      <div style={{ padding: "0 12px 12px", display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+        <button
+          type="button"
+          onClick={openMixModal}
+          disabled={!cashSession}
+          style={{
+            border: 0, borderRadius: 10, padding: "11px 16px",
+            background: "#6d28d9", color: "#fff", fontWeight: 700,
+            cursor: cashSession ? "pointer" : "not-allowed",
+            opacity: cashSession ? 1 : 0.55
+          }}
+        >
+          ⇄ Vente par mélange
+        </button>
+      </div>
 
       {/* PRODUITS */}
 
@@ -3227,6 +3474,161 @@ Clôture de caisse
         </div>
       </main>
 
+
+      {/* =================================
+          MODAL VENTE PAR MÉLANGE
+      ================================= */}
+      {showMixModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Vente par mélange"
+          onClick={() => setShowMixModal(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 10010,
+            background: "rgba(15,23,42,.65)", display: "flex",
+            alignItems: "center", justifyContent: "center", padding: 12
+          }}
+        >
+          <section
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: "min(100%, 650px)", maxHeight: "90vh", overflowY: "auto",
+              background: "#fff", color: "#172033", borderRadius: 16, padding: 18
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              <div>
+                <h2 style={{ margin: 0 }}>Vente par mélange</h2>
+                <p style={{ margin: "5px 0 0", color: "#64748b", fontSize: 13 }}>
+                  Mélangez plusieurs produits ayant le même prix.
+                </p>
+              </div>
+              <button type="button" onClick={() => setShowMixModal(false)} style={{ border: 0, background: "#eef2f7", borderRadius: 8, padding: "8px 12px" }}>✕</button>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, margin: "18px 0 12px" }}>
+              
+              <button
+                type="button"
+                onClick={() => changeMixFormat("paquet")}
+                style={{
+                  flex: 1, padding: 12, borderRadius: 10,
+                  border: mixFormat === "paquet" ? "2px solid #6d28d9" : "1px solid #cbd5e1",
+                  background: mixFormat === "paquet" ? "#f3e8ff" : "#fff",
+                  color: "#172033", fontWeight: 700
+                }}
+              > Par paquet</button>
+            </div>
+
+            <input
+              type="search"
+              value={mixSearch}
+              onChange={(event) => setMixSearch(event.target.value)}
+              placeholder="Rechercher un produit..."
+              style={{ width: "100%", boxSizing: "border-box", padding: 12, border: "1px solid #cbd5e1", borderRadius: 9, marginBottom: 10 }}
+            />
+
+            <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 10px" }}>
+              {mixFormat === "bouteille"
+                ? "Sélectionnez des produits vendus au même prix par bouteille."
+                : "Composez un lot avec plusieurs produits. Le prix indiqué sera celui de tout le mélange."}
+            </p>
+
+            {mixFormat === "paquet" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                <label style={{ display: "grid", gap: 5, fontSize: 12, color: "#475569", fontWeight: 700 }}>
+                  Nombre total de paquets
+                  <input
+                    type="number"
+                    min="2"
+                    value={mixTargetQuantity}
+                    onChange={(event) => setMixTargetQuantity(Math.max(2, Math.floor(Number(event.target.value) || 2)))}
+                    style={{ width: "100%", boxSizing: "border-box", padding: 10, border: "1px solid #cbd5e1", borderRadius: 8 }}
+                  />
+                </label>
+                <label style={{ display: "grid", gap: 5, fontSize: 12, color: "#475569", fontWeight: 700 }}>
+                  Prix total du mélange (FC)
+                  <input
+                    type="number"
+                    min="1"
+                    value={mixTotalPrice}
+                    onChange={(event) => setMixTotalPrice(event.target.value)}
+                    style={{ width: "100%", boxSizing: "border-box", padding: 10, border: "1px solid #cbd5e1", borderRadius: 8 }}
+                  />
+                </label>
+                <div style={{ gridColumn: "1 / -1", background: "#f1f5f9", borderRadius: 8, padding: 10, fontSize: 13 }}>
+                  Paquets sélectionnés : <strong>{Object.values(mixSelection).reduce((sum, quantity) => sum + Number(quantity || 0), 0)} / {mixTargetQuantity}</strong>
+                  {" · "}Prix moyen : <strong>{(Number(mixTotalPrice || 0) / Math.max(1, Number(mixTargetQuantity || 1))).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} FC / paquet</strong>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: "grid", gap: 8 }}>
+              {mixProducts.map((product) => {
+                const option = getMixSaleOption(product, mixFormat);
+                const price = Number(option?.price ?? product.price ?? product.sellingPrice ?? 0);
+                const conversion = Number(option?.quantity || 1);
+                const maxQuantity = Math.floor(Number(product.stock || 0) / conversion);
+                const isSelected = Boolean(mixSelection[product.id]);
+                return (
+                  <div key={product.id} style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    border: isSelected ? "2px solid #7c3aed" : "1px solid #e2e8f0",
+                    background: isSelected ? "#faf5ff" : "#fff",
+                    borderRadius: 10, padding: 10
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleMixProduct(product)}
+                      disabled={!isSelected && maxQuantity < 1}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <strong>{product.productName}</strong>
+                      <div style={{ fontSize: 12, color: "#64748b" }}>
+                        {mixFormat === "paquet" ? `Prix habituel : ${price.toLocaleString("fr-FR")} FC / paquet` : `${price.toLocaleString("fr-FR")} FC / ${mixFormat}`}
+                        {" · "}Stock : {maxQuantity} {mixFormat}(s)
+                      </div>
+                    </div>
+                    {isSelected && (
+                      <input
+                        type="number"
+                        min="1"
+                        max={maxQuantity}
+                        value={mixSelection[product.id]}
+                        onChange={(event) => updateMixQuantity(product.id, event.target.value)}
+                        onClick={(event) => event.stopPropagation()}
+                        style={{ width: 68, padding: 8, border: "1px solid #cbd5e1", borderRadius: 8 }}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+              {mixProducts.length === 0 && (
+                <p style={{ textAlign: "center", color: "#64748b", padding: 18 }}>
+                  Aucun produit disponible pour ce format.
+                </p>
+              )}
+            </div>
+
+            {mixNotice && (
+              <p role="alert" style={{ background: "#fff7ed", color: "#9a3412", borderRadius: 8, padding: 10, fontSize: 13 }}>
+                {mixNotice}
+              </p>
+            )}
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <button type="button" onClick={() => setShowMixModal(false)} style={{ flex: 1, padding: 12, borderRadius: 9, border: "1px solid #cbd5e1", background: "#fff" }}>
+                Annuler
+              </button>
+              <button type="button" onClick={confirmMixSale} disabled={Object.keys(mixSelection).length < 2} style={{ flex: 1, padding: 12, borderRadius: 9, border: 0, background: "#6d28d9", color: "#fff", fontWeight: 700, opacity: Object.keys(mixSelection).length < 2 ? .5 : 1 }}>
+                Ajouter au ticket ({Object.keys(mixSelection).length})
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* =================================
           MODAL VARIANTES
@@ -3664,12 +4066,12 @@ Clôture de caisse
                   ) : (
                     ticket.map((item, index) => {
                       const lineTotal =
-                        Number(item.price || 0) * item.quantity;
+                        Math.round(Number(item.price || 0) * Number(item.quantity || 0) * 100) / 100;
                       const baseQuantity = getBaseQuantity(item);
 
                       return (
                         <div
-                          key={`${item.productId}-${item.variantType}`}
+                          key={`${item.productId}-${item.variantType}-${item.mixGroupId || "normal"}-${index}`}
                           className={styles.ticketItem}
                         >
                           <div className={styles.ticketItemInfo}>
@@ -3898,7 +4300,7 @@ Clôture de caisse
                     className={styles.printReceiptButton}
                     onClick={printReceipt}
                   >
-                    🖨 Imprimer le reçu
+                    Imprimer le reçu
                   </button>
                 </div>
 
@@ -3908,7 +4310,7 @@ Clôture de caisse
                     className={styles.newSaleButton}
                     onClick={startNewSale}
                   >
-                    ✓ NOUVELLE VENTE
+                   NOUVELLE VENTE
                   </button>
                 </div>
               </>

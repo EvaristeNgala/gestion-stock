@@ -43,6 +43,17 @@ function Dashboard() {
   const [selectedDebt, setSelectedDebt] = useState(null);
   const [debtPaymentAmount, setDebtPaymentAmount] = useState("");
   const [savingDebtPayment, setSavingDebtPayment] = useState(false);
+  const [unpaidSearch, setUnpaidSearch] = useState("");
+
+  // Gestion simple des pertes de produits (administrateur uniquement)
+  const [lossProducts, setLossProducts] = useState([]);
+  const [showLossModal, setShowLossModal] = useState(false);
+  const [lossSearch, setLossSearch] = useState("");
+  const [lossItems, setLossItems] = useState([]);
+  const [lossReason, setLossReason] = useState("Abîmé");
+  const [lossNote, setLossNote] = useState("");
+  const [lossSaving, setLossSaving] = useState(false);
+  const [lossNotice, setLossNotice] = useState("");
 
   // ==============================
 
@@ -247,6 +258,167 @@ function Dashboard() {
     return () => unsubscribe();
   }, [isAdmin, storeId]);
 
+  // Charger les produits pour le formulaire d'enregistrement des pertes.
+  useEffect(() => {
+    if (!isAdmin || !storeId) {
+      setLossProducts([]);
+      return;
+    }
+
+    const productsQuery = query(
+      collection(db, "products"),
+      where("storeId", "==", storeId)
+    );
+
+    const unsubscribe = onSnapshot(
+      productsQuery,
+      (snapshot) => {
+        setLossProducts(
+          snapshot.docs
+            .map((productDoc) => ({ id: productDoc.id, ...productDoc.data() }))
+            .filter((product) => product.isActive !== false && product.status !== "inactive")
+            .sort((a, b) =>
+              String(a.productName || "").localeCompare(String(b.productName || ""), "fr")
+            )
+        );
+      },
+      (error) => {
+        console.error("Erreur chargement des produits pour les pertes :", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [isAdmin, storeId]);
+
+  const openLossModal = () => {
+    if (!isAdmin) return;
+    setLossSearch("");
+    setLossItems([]);
+    setLossReason("Abîmé");
+    setLossNote("");
+    setLossNotice("");
+    setShowLossModal(true);
+  };
+
+  const addLossProduct = (product) => {
+    setLossItems((current) => {
+      if (current.some((item) => item.productId === product.id)) {
+        setLossNotice("Ce produit est déjà dans la liste.");
+        return current;
+      }
+      setLossNotice("");
+      return [...current, { productId: product.id, quantity: "1" }];
+    });
+    setLossSearch("");
+  };
+
+  const updateLossQuantity = (productId, value) => {
+    setLossItems((current) =>
+      current.map((item) =>
+        item.productId === productId ? { ...item, quantity: value } : item
+      )
+    );
+  };
+
+  const removeLossProduct = (productId) => {
+    setLossItems((current) => current.filter((item) => item.productId !== productId));
+  };
+
+  const filteredLossProducts = lossProducts.filter((product) => {
+    const search = lossSearch.trim().toLocaleLowerCase("fr-FR");
+    if (!search) return false;
+    const name = String(product.productName || product.name || "").toLocaleLowerCase("fr-FR");
+    return name.includes(search);
+  }).filter((product) => !lossItems.some((item) => item.productId === product.id));
+
+  const registerProductLoss = async () => {
+    if (!isAdmin) {
+      setLossNotice("Seul l'administrateur peut enregistrer une perte.");
+      return;
+    }
+
+    if (lossItems.length === 0) {
+      setLossNotice("Ajoutez au moins un produit à la liste.");
+      return;
+    }
+
+    const preparedItems = lossItems.map((item) => ({
+      ...item,
+      quantity: Number(item.quantity),
+    }));
+
+    if (preparedItems.some((item) => !Number.isInteger(item.quantity) || item.quantity <= 0)) {
+      setLossNotice("Chaque quantité doit être un nombre entier supérieur à zéro.");
+      return;
+    }
+
+    if (!storeId || !userId) {
+      setLossNotice("Session du magasin introuvable. Reconnectez-vous.");
+      return;
+    }
+
+    setLossSaving(true);
+    setLossNotice("");
+
+    try {
+      const productRefs = preparedItems.map((item) => doc(db, "products", item.productId));
+      const lossRefs = preparedItems.map(() => doc(collection(db, "stockLosses")));
+
+      await runTransaction(db, async (transaction) => {
+        const productSnapshots = await Promise.all(
+          productRefs.map((productRef) => transaction.get(productRef))
+        );
+
+        const updates = productSnapshots.map((snapshot, index) => {
+          const item = preparedItems[index];
+          if (!snapshot.exists()) throw new Error("Un des produits sélectionnés n'existe plus.");
+
+          const currentProduct = snapshot.data();
+          const currentStock = Number(currentProduct.stock || 0);
+
+          if (currentProduct.storeId !== storeId) {
+            throw new Error("Un produit sélectionné n'appartient pas à votre magasin.");
+          }
+          if (currentStock < item.quantity) {
+            throw new Error(
+              `Stock insuffisant pour ${currentProduct.productName || "un produit"}. Disponible : ${currentStock}.`
+            );
+          }
+
+          return { item, currentProduct, nextStock: currentStock - item.quantity };
+        });
+
+        updates.forEach(({ item, currentProduct, nextStock }, index) => {
+          transaction.update(productRefs[index], { stock: nextStock });
+          transaction.set(lossRefs[index], {
+            storeId,
+            productId: item.productId,
+            productName: currentProduct.productName || currentProduct.name || "Produit",
+            quantity: item.quantity,
+            stockUnit: currentProduct.stockUnit || "unité",
+            reason: lossReason,
+            note: lossNote.trim(),
+            status: "validated",
+            createdAt: serverTimestamp(),
+            createdBy: userId,
+            createdByName: userName,
+            createdByRole: role,
+          });
+        });
+      });
+
+      setShowLossModal(false);
+      setLossItems([]);
+      setLossNotice("");
+      alert(`${preparedItems.length} produit(s) enregistré(s) comme perte. Les stocks ont été mis à jour. Ces pertes ne sont pas comptées comme ventes ou dépenses.`);
+    } catch (error) {
+      console.error("Erreur enregistrement pertes :", error);
+      setLossNotice(error.message || "Impossible d'enregistrer ces pertes.");
+    } finally {
+      setLossSaving(false);
+    }
+  };
+
   // Une notification correspond à une catégorie, pas à chaque produit ou vente.
   const notificationCategories = [
     ...(isAdmin && stockAlertProducts.length > 0
@@ -256,6 +428,15 @@ function Dashboard() {
       ? [{ id: "unpaid", title: "Ventes impayées", description: `${unpaidSales.length} vente(s) attendent un paiement.`, icon: "💰", count: unpaidSales.length }]
       : []),
   ];
+
+  const filteredUnpaidSales = unpaidSales.filter((sale) => {
+    const search = unpaidSearch.trim().toLocaleLowerCase("fr-FR");
+    if (!search) return true;
+    const customer = String(sale.customerName || "").toLocaleLowerCase("fr-FR");
+    const phoneNumber = String(sale.customerPhone || "").toLocaleLowerCase("fr-FR");
+    const saleNumber = String(sale.saleNumber || sale.id || "").toLocaleLowerCase("fr-FR");
+    return customer.includes(search) || phoneNumber.includes(search) || saleNumber.includes(search);
+  });
 
   const formatSaleDate = (value) => {
     if (!value) return "Date indisponible";
@@ -640,30 +821,41 @@ function Dashboard() {
 
       {/* ============================== */}
 
-      <section className={styles.userCard}>
-
-        <div>
-
-          <h2>
-
-            Bienvenue {userName}
-
-          </h2>
-
-          <p>
-
-            {storeName}
-
-          </p>
-
-          <span>
-
-            {roleLabel}
-
-          </span>
-
+      <section
+        className={styles.userCard}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ minWidth: 0, flex: "1 1 220px" }}>
+          <h2>Bienvenue {userName}</h2>
+          <p>{storeName}</p>
+          <span>{roleLabel}</span>
         </div>
 
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={openLossModal}
+            style={{
+              flex: "0 0 auto",
+              border: 0,
+              borderRadius: 10,
+              padding: "12px 16px",
+              background: "#dc2626",
+              color: "#fff",
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: "0 3px 8px rgba(220, 38, 38, .2)",
+            }}
+          >
+            + Enregistrer une perte
+          </button>
+        )}
       </section>
 
       {/* ============================== */}
@@ -684,7 +876,7 @@ function Dashboard() {
 
             className={styles.card}
 
-            onClick={() => navigate(item.path)}
+            onClick={() => item.onClick ? item.onClick() : navigate(item.path)}
 
           >
 
@@ -818,8 +1010,25 @@ function Dashboard() {
                     ) : unpaidSales.length === 0 ? (
                       <p className={styles.notificationsEmpty}>Aucune vente impayée.</p>
                     ) : (
+                      <>
+                        <div className={styles.unpaidSearchWrap}>
+                          <input
+                            type="search"
+                            className={styles.unpaidSearchInput}
+                            value={unpaidSearch}
+                            onChange={(event) => setUnpaidSearch(event.target.value)}
+                            placeholder="Rechercher un client, téléphone ou n° de vente..."
+                            aria-label="Rechercher une vente impayée"
+                          />
+                          <span className={styles.unpaidSearchCount}>
+                            {filteredUnpaidSales.length} résultat(s) sur {unpaidSales.length}
+                          </span>
+                        </div>
+                        {filteredUnpaidSales.length === 0 ? (
+                          <p className={styles.notificationsEmpty}>Aucune vente ne correspond à cette recherche.</p>
+                        ) : (
                       <div className={styles.notificationDetailsList}>
-                        {unpaidSales.map((sale) => {
+                        {filteredUnpaidSales.map((sale) => {
                           const remaining = Number(
                             sale.remainingAmount ??
                             Math.max(0, Number(sale.total || 0) - Number(sale.amountReceived || 0))
@@ -852,6 +1061,8 @@ function Dashboard() {
                           );
                         })}
                       </div>
+                        )}
+                      </>
                     )}
                   </>
                 )}
@@ -912,6 +1123,191 @@ function Dashboard() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {showLossModal && isAdmin && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Enregistrer une perte de stock"
+          onClick={(event) => {
+            if (event.target === event.currentTarget && !lossSaving) {
+              setShowLossModal(false);
+            }
+          }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10050,
+            background: "rgba(15, 23, 42, 0.65)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 12,
+          }}
+        >
+          <section
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: "min(100%, 480px)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              background: "#fff",
+              color: "#172033",
+              borderRadius: 16,
+              padding: 20,
+              boxShadow: "0 20px 60px rgba(0,0,0,.25)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              <div>
+                <h2 style={{ margin: 0 }}>Enregistrer une perte</h2>
+                <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 13 }}>
+                  Le stock sera diminué. Cette opération ne sera pas ajoutée aux ventes ni aux dépenses.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={lossSaving}
+                onClick={() => setShowLossModal(false)}
+                style={{ border: 0, background: "#eef2f7", borderRadius: 8, padding: "8px 12px", cursor: "pointer" }}
+              >✕</button>
+            </div>
+
+            <div style={{ display: "grid", gap: 14, marginTop: 18 }}>
+              <div style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700 }}>
+                Rechercher un produit
+                <input
+                  type="search"
+                  value={lossSearch}
+                  onChange={(event) => setLossSearch(event.target.value)}
+                  placeholder="Tapez le nom du produit..."
+                  autoComplete="off"
+                  style={{ width: "100%", boxSizing: "border-box", padding: 12, border: "1px solid #cbd5e1", borderRadius: 9, fontSize: 14 }}
+                />
+                {lossSearch.trim() && (
+                  <div style={{ display: "grid", gap: 6, maxHeight: 170, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 9, padding: 6 }}>
+                    {filteredLossProducts.length === 0 ? (
+                      <p style={{ margin: 8, color: "#64748b", fontWeight: 400 }}>
+                        Aucun produit disponible correspondant à cette recherche.
+                      </p>
+                    ) : filteredLossProducts.map((product) => (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => addLossProduct(product)}
+                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, textAlign: "left", padding: 10, border: 0, borderRadius: 7, background: "#f8fafc", cursor: "pointer", color: "#172033" }}
+                      >
+                        <span>
+                          <strong>{product.productName || product.name || "Produit"}</strong>
+                          <small style={{ display: "block", color: "#64748b", marginTop: 3 }}>
+                            Stock : {Number(product.stock || 0)} {product.stockUnit || "unités"}
+                          </small>
+                        </span>
+                        <strong style={{ color: "#2563eb" }}>＋ Ajouter</strong>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <strong style={{ fontSize: 14 }}>Produits à enregistrer</strong>
+                <span style={{ fontSize: 12, color: "#64748b" }}>{lossItems.length} produit(s)</span>
+              </div>
+
+              {lossItems.length === 0 ? (
+                <p style={{ margin: 0, padding: 14, textAlign: "center", color: "#64748b", background: "#f8fafc", borderRadius: 9, fontSize: 13 }}>
+                  Recherchez un produit puis cliquez sur « Ajouter ».
+                </p>
+              ) : (
+                <div style={{ display: "grid", gap: 8 }}>
+                  {lossItems.map((item) => {
+                    const product = lossProducts.find((entry) => entry.id === item.productId);
+                    if (!product) return null;
+                    return (
+                      <div key={item.productId} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 90px 34px", alignItems: "center", gap: 8, padding: 10, border: "1px solid #e2e8f0", borderRadius: 9 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <strong style={{ display: "block", fontSize: 13, overflowWrap: "anywhere" }}>
+                            {product.productName || product.name || "Produit"}
+                          </strong>
+                          <small style={{ color: "#64748b" }}>
+                            Stock : {Number(product.stock || 0)} {product.stockUnit || "unités"}
+                          </small>
+                        </div>
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={item.quantity}
+                          onChange={(event) => updateLossQuantity(item.productId, event.target.value)}
+                          aria-label={`Quantité perdue pour ${product.productName || product.name}`}
+                          style={{ width: "100%", boxSizing: "border-box", padding: 9, border: "1px solid #cbd5e1", borderRadius: 7 }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeLossProduct(item.productId)}
+                          disabled={lossSaving}
+                          aria-label={`Retirer ${product.productName || product.name}`}
+                          style={{ border: 0, borderRadius: 7, width: 32, height: 32, background: "#fee2e2", color: "#b91c1c", fontWeight: 800, cursor: "pointer" }}
+                        >×</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700 }}>
+                Motif de la perte
+                <select
+                  value={lossReason}
+                  onChange={(event) => setLossReason(event.target.value)}
+                  style={{ width: "100%", boxSizing: "border-box", padding: 11, border: "1px solid #cbd5e1", borderRadius: 9, background: "#fff" }}
+                >
+                  <option>Abîmé</option>
+                  <option>Cassé</option>
+                  <option>Périmé</option>
+                  <option>Détérioré</option>
+                  <option>Autre</option>
+                </select>
+              </label>
+
+              <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700 }}>
+                Observation (facultative)
+                <textarea
+                  value={lossNote}
+                  onChange={(event) => setLossNote(event.target.value)}
+                  rows={2}
+                  placeholder="Précision sur les produits perdus..."
+                  style={{ width: "100%", boxSizing: "border-box", padding: 11, border: "1px solid #cbd5e1", borderRadius: 9, resize: "vertical" }}
+                />
+              </label>
+            </div>
+
+            {lossNotice && (
+              <p role="alert" style={{ background: "#fff7ed", color: "#9a3412", borderRadius: 8, padding: 10, fontSize: 13 }}>
+                {lossNotice}
+              </p>
+            )}
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <button
+                type="button"
+                disabled={lossSaving}
+                onClick={() => setShowLossModal(false)}
+                style={{ flex: 1, padding: 12, borderRadius: 9, border: "1px solid #cbd5e1", background: "#fff", cursor: "pointer" }}
+              >Annuler</button>
+              <button
+                type="button"
+                disabled={lossSaving || lossItems.length === 0}
+                onClick={registerProductLoss}
+                style={{ flex: 1, padding: 12, borderRadius: 9, border: 0, background: "#b91c1c", color: "#fff", fontWeight: 700, cursor: "pointer", opacity: lossSaving || lossItems.length === 0 ? .55 : 1 }}
+              >
+                {lossSaving ? "Enregistrement..." : "Confirmer la perte"}
+              </button>
+            </div>
+          </section>
         </div>
       )}
 

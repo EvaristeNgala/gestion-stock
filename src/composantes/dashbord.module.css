@@ -1929,3 +1929,34 @@
 .debtPaymentActions button:disabled { opacity: 0.6; cursor: not-allowed; }
 .debtPaymentCancel { background: #f1f5f9; color: #334155; }
 .debtPaymentConfirm { background: #1d4ed8; color: #fff; }
+
+
+/* Recherche des ventes impayées dans les notifications */
+.unpaidSearchWrap {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.unpaidSearchInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 14px;
+  outline: none;
+}
+
+.unpaidSearchInput:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.unpaidSearchCount {
+  color: #64748b;
+  font-size: 12px;
+  text-align: right;
+}

@@ -1716,10 +1716,10 @@ function SalesHistory() {
 
 
 
-                {selectedSale.customerName && (
+                {(selectedSale.customerName || selectedSale.customerPhone) && (
                   <div>
                     <span>Client</span>
-                    <strong>{selectedSale.customerName}</strong>
+                    <strong>{selectedSale.customerName || "Nom non renseigné"}</strong>
                     {selectedSale.customerPhone && <small>{selectedSale.customerPhone}</small>}
                   </div>
                 )}
@@ -1778,8 +1778,8 @@ function SalesHistory() {
                           <span>
 
                             {item.variantType || "Unité"} ×{" "}
-
-                            {Number(item.quantity || 0)}
+                            {Number(item.quantity || 0)}{" "}
+                            • {formatMoney(item.price)} / unité
 
                           </span>
 
