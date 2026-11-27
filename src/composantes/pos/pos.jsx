@@ -1119,9 +1119,8 @@ useEffect(() => {
       }
     }
 
-    const preparedItems = [];
+    let preparedItems = [];
     const mixGroupId = `mix-${Date.now()}`;
-    const mixUnitPrice = mixFormat === "paquet" ? totalMixPrice / targetQuantity : null;
 
     for (const [productId, quantity] of selected) {
       const product = products.find((item) => item.id === productId);
@@ -1149,8 +1148,9 @@ useEffect(() => {
       preparedItems.push({
         productId: product.id,
         name: product.productName || "Produit",
-        // En mélange par paquet, chaque paquet reçoit une part égale du prix global.
-        price: mixFormat === "paquet" ? mixUnitPrice : regularPrice,
+        // Le prix est attribué après la collecte de tous les produits du mélange.
+        price: regularPrice,
+        regularPrice,
         quantity,
         variantType,
         variantQuantity: conversion,
@@ -1164,6 +1164,50 @@ useEffect(() => {
         mixTotalPrice: mixFormat === "paquet" ? totalMixPrice : null,
         mixTargetQuantity: mixFormat === "paquet" ? targetQuantity : null,
       });
+    }
+
+    if (mixFormat === "paquet") {
+      // Répartir le prix global selon le coût réel de chaque ligne,
+      // au lieu d'attribuer le même prix à chaque paquet.
+      const normalizedMixPrice = Math.round(totalMixPrice * 100) / 100;
+      const totalMixPurchaseCost = preparedItems.reduce(
+        (sum, item) => sum + item.purchasePrice * item.quantity,
+        0
+      );
+
+      if (normalizedMixPrice + 0.001 < totalMixPurchaseCost) {
+        setMixNotice(
+          `Vente refusée : le mélange coûte ${totalMixPurchaseCost.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} FC à l'achat, mais son prix total est de ${normalizedMixPrice.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} FC. Augmentez le prix du mélange pour ne pas vendre à perte.`
+        );
+        return;
+      }
+
+      const totalAllocationWeight = totalMixPurchaseCost > 0
+        ? totalMixPurchaseCost
+        : preparedItems.reduce((sum, item) => sum + item.regularPrice * item.quantity, 0);
+
+      if (totalAllocationWeight <= 0) {
+        setMixNotice("Impossible de répartir le prix : les coûts et prix des produits sont invalides.");
+        return;
+      }
+
+      let allocatedAmount = 0;
+      preparedItems = preparedItems.map((item, index) => {
+        const weight = totalMixPurchaseCost > 0
+          ? (item.purchasePrice * item.quantity) / totalAllocationWeight
+          : (item.regularPrice * item.quantity) / totalAllocationWeight;
+        const lineAmount = index === preparedItems.length - 1
+          ? Math.round((normalizedMixPrice - allocatedAmount) * 100) / 100
+          : Math.round(normalizedMixPrice * weight * 100) / 100;
+        allocatedAmount += lineAmount;
+        const { regularPrice, ...saleItem } = item;
+        return {
+          ...saleItem,
+          price: item.quantity > 0 ? lineAmount / item.quantity : 0,
+        };
+      });
+    } else {
+      preparedItems = preparedItems.map(({ regularPrice, ...item }) => item);
     }
 
     if (mixFormat === "bouteille") {

@@ -410,27 +410,49 @@ function AddProduct() {
     let finalPurchasePrice;
 
     if (automaticPurchase) {
+      const amount = Number(totalPurchaseAmount);
+      const quantity = Number(purchaseQuantity);
+      const unitsPerPurchase = Number(unitsPerPurchaseUnit);
+
       if (
         totalPurchaseAmount === "" ||
-        Number(totalPurchaseAmount) < 0 ||
+        !Number.isFinite(amount) ||
+        amount < 0 ||
         purchaseQuantity === "" ||
-        Number(purchaseQuantity) <= 0 ||
+        !Number.isFinite(quantity) ||
+        quantity <= 0 ||
         !purchaseUnit.trim() ||
         unitsPerPurchaseUnit === "" ||
-        Number(unitsPerPurchaseUnit) <= 0
+        !Number.isFinite(unitsPerPurchase) ||
+        unitsPerPurchase <= 0
       ) {
+        alert("Veuillez vérifier le montant, la quantité et le conditionnement de l'achat.");
         return;
       }
 
-      if (calculatedUnitPurchasePrice === null) {
+      if (
+        calculatedUnitPurchasePrice === null ||
+        !Number.isFinite(calculatedUnitPurchasePrice) ||
+        calculatedUnitPurchasePrice < 0
+      ) {
+        alert("Le coût d'achat calculé n'est pas valide.");
         return;
       }
 
       finalPurchasePrice = calculatedUnitPurchasePrice;
     } else {
-      if (purchasePrice === "" || Number(purchasePrice) < 0) {
+      const manualPurchasePrice = Number(purchasePrice);
+
+      if (
+        purchasePrice === "" ||
+        !Number.isFinite(manualPurchasePrice) ||
+        manualPurchasePrice < 0
+      ) {
+        alert("Veuillez saisir un prix d'achat valide (zéro ou plus).");
+        return;
       }
-      finalPurchasePrice = Number(purchasePrice);
+
+      finalPurchasePrice = manualPurchasePrice;
     }
 
     if (Number(stock) < 0) {

@@ -879,206 +879,145 @@ const filteredSales = useMemo(() => {
 
 
   const productReports = useMemo(() => {
-
     const productsMap = {};
 
-
-
     filteredSales.forEach((sale) => {
-
       if (!Array.isArray(sale.items)) return;
 
-
-
-      sale.items.forEach((item) => {
-
-        const productId =
-
-          item.productId ||
-
-          item.id ||
-
-          `${item.name || "Produit"}`;
-
-
-
-        const productName =
-
-          item.name ||
-
-          item.productName ||
-
-          "Produit";
-
-
-
-        const category =
-
-          item.categoryName ||
-
-          item.category ||
-
-          "Non classé";
-
-
-
-        const variantType =
-
-          item.variantType ||
-
-          item.type ||
-
-          item.stockUnit ||
-
-          "Unité";
-
-
-
-        const quantity = Number(item.quantity || 0);
-
-
-
-        const sellingPrice = Number(
-
-          item.price ||
-
-          item.sellingPrice ||
-
-          0
-
-        );
-
-
-
-        const purchasePrice = Number(
-
-          item.purchasePrice || 0
-
-        );
-
-
-
-        const amountSold =
-
-          sellingPrice * quantity;
-
-
-
-        const profit =
-
-          (sellingPrice - purchasePrice) *
-
-          quantity;
-
-
-
-        if (!productsMap[productId]) {
-
-          productsMap[productId] = {
-
-            id: productId,
-
-            name: productName,
-
-            category,
-
-            quantity: 0,
-
-            amountSold: 0,
-
-            profit: 0,
-
-            variants: {},
-
-          };
-
-        }
-
-
-
-        productsMap[productId].quantity += quantity;
-
-        productsMap[productId].amountSold += amountSold;
-
-        productsMap[productId].profit += profit;
-
-
-
-        // -----------------------------------------------------
-
-        // DETAIL VARIANTE
-
-        // -----------------------------------------------------
-
-
-
-        const variantKey = variantType;
-
-
-
-        if (
-
-          !productsMap[productId].variants[variantKey]
-
-        ) {
-
-          productsMap[productId].variants[variantKey] = {
-
-            type: variantType,
-
-            quantity: 0,
-
-            purchasePrice: 0,
-
-            sellingPrice: sellingPrice,
-
-            amountSold: 0,
-
-            profit: 0,
-
-          };
-
-        }
-
-
-
-        const variant =
-
-          productsMap[productId].variants[variantKey];
-
-
-
-        variant.quantity += quantity;
-
-
-
-        variant.purchasePrice = purchasePrice;
-
-        variant.sellingPrice = sellingPrice;
-
-
-
-        variant.amountSold += amountSold;
-
-        variant.profit += profit;
-
+      // Reconstituer la répartition des anciens mélanges par paquet.
+      // L'ancien POS partageait le prix global à parts égales, ce qui pouvait
+      // attribuer artificiellement une recette trop faible à un produit coûteux.
+      const mixLineAmounts = new Map();
+      const mixGroups = new Map();
+
+      sale.items.forEach((item, index) => {
+        if (!item.mixGroupId || item.mixFormat !== "paquet" || item.mixTotalPrice == null) return;
+        if (!mixGroups.has(item.mixGroupId)) mixGroups.set(item.mixGroupId, []);
+        mixGroups.get(item.mixGroupId).push({ item, index });
       });
 
+      mixGroups.forEach((entries) => {
+        const totalMixPrice = Number(entries[0]?.item.mixTotalPrice || 0);
+        const totalCost = entries.reduce((sum, entry) => {
+          const item = entry.item;
+          const quantity = Math.max(0, Number(item.quantity || 0));
+          let lineCost = 0;
+          if (item.linePurchaseCost != null && Number.isFinite(Number(item.linePurchaseCost))) {
+            lineCost = Number(item.linePurchaseCost);
+          } else if (item.basePurchasePrice != null) {
+            lineCost = Number(item.basePurchasePrice || 0)
+              * Math.max(1, Number(item.variantQuantity || 1)) * quantity;
+          } else {
+            lineCost = Number(item.purchasePrice || 0) * quantity;
+          }
+          return sum + lineCost;
+        }, 0);
+
+        // Si le mélange était globalement vendu au-dessus de son coût,
+        // répartir sa recette au prorata des coûts de chaque produit.
+        // Si le prix global était inférieur au coût, conserver la perte réelle.
+        if (Number.isFinite(totalMixPrice) && totalMixPrice >= totalCost && totalCost > 0) {
+          let allocated = 0;
+          entries.forEach((entry, index) => {
+            const item = entry.item;
+            const quantity = Math.max(0, Number(item.quantity || 0));
+            const itemCost = item.linePurchaseCost != null && Number.isFinite(Number(item.linePurchaseCost))
+              ? Number(item.linePurchaseCost)
+              : item.basePurchasePrice != null
+                ? Number(item.basePurchasePrice || 0) * Math.max(1, Number(item.variantQuantity || 1)) * quantity
+                : Number(item.purchasePrice || 0) * quantity;
+            const amount = index === entries.length - 1
+              ? Math.round((totalMixPrice - allocated) * 100) / 100
+              : Math.round((totalMixPrice * (itemCost / totalCost)) * 100) / 100;
+            allocated += amount;
+            mixLineAmounts.set(entry.index, amount);
+          });
+        }
+      });
+
+      sale.items.forEach((item, itemIndex) => {
+        const productId = item.productId || item.id || `${item.name || "Produit"}`;
+        const productName = item.name || item.productName || "Produit";
+        const category = item.categoryName || item.category || "Non classé";
+        const variantType = item.variantType || item.type || item.stockUnit || "Unité";
+        const quantity = Math.max(0, Number(item.quantity || 0));
+        const sellingPrice = Number(item.price ?? item.sellingPrice ?? 0);
+
+        // Le montant réel de la ligne est prioritaire : certaines anciennes
+        // ventes groupées peuvent avoir un total différent du prix unitaire × quantité.
+        const amountSold = mixLineAmounts.has(itemIndex)
+          ? mixLineAmounts.get(itemIndex)
+          : item.lineTotal !== undefined && item.lineTotal !== null
+            && Number.isFinite(Number(item.lineTotal))
+            ? Number(item.lineTotal)
+            : sellingPrice * quantity;
+
+        let linePurchaseCost;
+        if (item.linePurchaseCost !== undefined && item.linePurchaseCost !== null
+          && Number.isFinite(Number(item.linePurchaseCost))) {
+          linePurchaseCost = Number(item.linePurchaseCost);
+        } else if (item.basePurchasePrice !== undefined && item.basePurchasePrice !== null) {
+          linePurchaseCost = Number(item.basePurchasePrice || 0)
+            * Math.max(1, Number(item.variantQuantity || 1)) * quantity;
+        } else {
+          // Dans les anciennes ventes du POS, purchasePrice est le coût d'achat
+          // d'une variante, et non celui de l'unité de stock de base.
+          linePurchaseCost = Number(item.purchasePrice || 0) * quantity;
+        }
+
+        const profit = amountSold - linePurchaseCost;
+
+        if (!productsMap[productId]) {
+          productsMap[productId] = {
+            id: productId,
+            name: productName,
+            category,
+            quantity: 0,
+            amountSold: 0,
+            profit: 0,
+            variants: {},
+          };
+        }
+
+        const product = productsMap[productId];
+        product.quantity += quantity;
+        product.amountSold += amountSold;
+        product.profit += profit;
+
+        if (!product.variants[variantType]) {
+          product.variants[variantType] = {
+            type: variantType,
+            quantity: 0,
+            purchaseCostTotal: 0,
+            sellingTotal: 0,
+            amountSold: 0,
+            profit: 0,
+          };
+        }
+
+        const variant = product.variants[variantType];
+        variant.quantity += quantity;
+        variant.purchaseCostTotal += linePurchaseCost;
+        variant.sellingTotal += amountSold;
+        variant.amountSold += amountSold;
+        variant.profit += profit;
+      });
     });
 
-
-
     return Object.values(productsMap).map((product) => ({
-
       ...product,
-
-      variants: Object.values(product.variants),
-
+      variants: Object.values(product.variants).map((variant) => ({
+        ...variant,
+        // Prix moyens pondérés : ne pas afficher simplement le prix de la dernière vente.
+        purchasePrice: variant.quantity > 0
+          ? variant.purchaseCostTotal / variant.quantity
+          : 0,
+        sellingPrice: variant.quantity > 0
+          ? variant.sellingTotal / variant.quantity
+          : 0,
+      })),
     }));
-
   }, [filteredSales]);
-
-
 
   // =========================================================
   // PAGINATION DES VENTES PAR PRODUIT
